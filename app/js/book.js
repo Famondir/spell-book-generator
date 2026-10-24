@@ -481,6 +481,7 @@
       },
       { html: glassPage(d) },
       { html: formsPage(d) },
+      { html: medallionPage(d) },
       {
         html: `<h3>Vom Gebet</h3>
           <p>Jeden Tag zur selben Stunde verbringt der Streiter eine Stunde in stillem Gebet und Betrachtung. Was er erbittet, wird ihm gewährt, solange er dem Kodex treu bleibt; er muss es nicht verstehen, nur darum bitten.</p>
@@ -513,6 +514,18 @@
         <figure>${VITRAIL.borderMini(true, base)}<figcaption>Bordüre<br>Rettungswurf</figcaption></figure>
         <figure>${VITRAIL.borderMini(false, base)}<figcaption>ohne Bordüre<br>kein Rettungswurf</figcaption></figure></div>
       <h4>Sockel – die Wirkungsdauer</h4><div class="vt-socles">${durs.map(([k, t]) => `<div>${VITRAIL.socleMini(k, base)}<span>${e(t)}</span></div>`).join("")}</div>`;
+  }
+
+  function medallionPage(d) {
+    const base = VITRAIL.palette(d);
+    return `<h3>Das Medaillon</h3><p class="hint">Die Rosette in der Mitte der Bahnen trägt die Farben der Haupt- und der zweiten Essenz. Ihre Form erzählt, wie das Gebet gesprochen wird:</p>
+      <h4>Blätter – die Reichweite</h4><div class="vt-row med">${[[0, "persönlich", false], [4, "Berührung"], [6, "nah"], [8, "mittel"], [12, "weit"], [16, "unbegrenzt", true]].map(([p, t, u]) => `<figure>${VITRAIL.medallionMini({ petals: p, unlimited: !!u }, base)}<figcaption>${t}${p ? `<br>${p} Blätter` : "<br>Scheibe"}</figcaption></figure>`).join("")}</div>
+      <h4>Fassung – die Komponenten</h4><div class="vt-row med">${[[0, "keine"], [3, "eine"], [4, "zwei, z. B. V, S"], [5, "drei, z. B. V, S, GF"], [6, "vier"], [7, "fünf"]].map(([c, t]) => `<figure>${VITRAIL.medallionMini({ corners: c }, base)}<figcaption>${t}</figcaption></figure>`).join("")}</div>
+      <h4>Blattform und Ring – Zeitaufwand und Zauberresistenz</h4><div class="vt-row med">
+        <figure>${VITRAIL.medallionMini({ tip: "pointed" }, base)}<figcaption>spitz<br>schnell, augenblicklich</figcaption></figure>
+        <figure>${VITRAIL.medallionMini({ tip: "round" }, base)}<figcaption>rund<br>Standard-Aktion</figcaption></figure>
+        <figure>${VITRAIL.medallionMini({ tip: "double" }, base)}<figcaption>zwei Kränze<br>volle Aktion und länger</figcaption></figure>
+        <figure>${VITRAIL.medallionMini({ sr: true, corners: 5 }, base)}<figcaption>zweiter Ring<br>Zauberresistenz</figcaption></figure></div>`;
   }
 
   const DIVINE_TEXT = {

@@ -286,16 +286,9 @@ window.VITRAIL = (function () {
     A.md = [md.x + md.r * 0.62, md.y - md.r * 0.62];
     A.socle = [lanes[lanes.length - 1].x0 + lanes[lanes.length - 1].w / 2, YB - hz / 2];
     if (m.save && m.save.type && m.save.type !== "none") A.border = [lanes[0].x0 + 2, (md.y + YB - hz) / 2];
-    // Medaillon der Hauptessenz: Rosette aus Hauptessenz und zweiter Essenz
+    // Medaillon der Hauptessenz: Farben aus Haupt- und zweiter Essenz, Form aus Reichweite, Komponenten, Zeitaufwand, Zauberresistenz
     const e1 = ESS_GLASS[m.primary] || base[0], e2 = ESS_GLASS[(m.essences[1] || {}).id] || shade(e1, 1.4);
-    const petals = 8;
-    out.push(`<circle cx="${md.x}" cy="${f1(md.y)}" r="${f1(md.r + 2.2)}" fill="${base[0]}" stroke="${LEAD}" stroke-width="1.6"/>`);
-    for (let i = 0; i < petals; i++) {
-      const a0 = (2 * Math.PI * i) / petals, a1 = (2 * Math.PI * (i + 1)) / petals;
-      const p = (a, rr) => f1(md.x + rr * Math.cos(a)) + " " + f1(md.y + rr * Math.sin(a));
-      out.push(`<path d="M${p(a0, md.r * 0.32)}L${p(a0, md.r)}A${f1(md.r)} ${f1(md.r)} 0 0 1 ${p(a1, md.r)}L${p(a1, md.r * 0.32)}Z" fill="${shade(i % 2 ? e2 : e1, 1.02 + 0.06 * (i % 3))}" stroke="${LEAD}" stroke-width="1"/>`);
-    }
-    out.push(`<circle cx="${md.x}" cy="${f1(md.y)}" r="${f1(md.r * 0.32)}" fill="#f6eed3" stroke="${LEAD}" stroke-width="1"/>`);
+    out.push(medallion(md.x, md.y, md.r, medallionSpec(m), e1, e2, base[0]));
     out.push(`<path d="${poly(inner)}" fill="none" stroke="${LEAD}" stroke-width="2.4"/>`);
     // Beschriftung: rote Nummern wie bei den Magierkreisen (Reihenfolge = legend())
     if (opts.annotate)
@@ -307,6 +300,65 @@ window.VITRAIL = (function () {
 
     const cls = "vitrail" + (opts.cls ? " " + opts.cls : "");
     return `<svg class="${cls}" viewBox="${-W / 2 - 9} 0 ${W + 18} ${H + 2}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Andachtsbild">${out.join("")}</svg>`;
+  }
+
+
+  // --- Medaillon -----------------------------------------------------------------------
+  // Blätter = Reichweite, Ecken der Fassung = Komponenten (+2), Blattform = Zeitaufwand, zweiter Ring = Zauberresistenz
+  const PETALS = [0, 4, 6, 8, 12, 16]; // persönlich, Berührung, nah, mittel, weit, unbegrenzt
+  const COMP_KEYS = ["V", "S", "M", "F", "DF"];
+  function medallionSpec(m) {
+    const comps = COMP_KEYS.filter((k) => m.components && m.components[k]).length;
+    const ck = m.casting && m.casting.kind;
+    return {
+      petals: PETALS[(m.range && m.range.tier) || 0],
+      unlimited: m.range && m.range.tier === 5,
+      corners: comps ? comps + 2 : 0,
+      tip: ck === "swift" || ck === "immediate" ? "pointed" : ck === "standard" || !ck ? "round" : "double",
+      sr: !!(m.sr && m.sr.yes),
+    };
+  }
+  function medallion(cx, cy, r, spec, e1, e2, frame) {
+    const o = [];
+    const P = (a, rr) => f1(cx + rr * Math.cos(a)) + " " + f1(cy + rr * Math.sin(a));
+    const k = spec.corners;
+    // Fassung: Vieleck mit k Ecken (Inkreis = Medaillon), ohne Komponenten ein Kreis
+    const fr = r + 2.4;
+    const R0 = k ? Math.min(fr / Math.cos(Math.PI / k), fr * 1.55) : fr;
+    const inr = k ? R0 * Math.cos(Math.PI / k) : fr; // nutzbarer Innenradius
+    const rr = Math.min(r, inr - 1.6);
+    if (spec.unlimited) for (let i = 0; i < 16; i++) {
+      const a = (2 * Math.PI * i) / 16 - Math.PI / 2;
+      o.push(`<path d="M${P(a - 0.09, R0 - 1)}L${P(a, R0 + 7)}L${P(a + 0.09, R0 - 1)}Z" fill="#f4e8c6" stroke="${LEAD}" stroke-width=".8"/>`);
+    }
+    if (spec.sr) o.push(k ? `<path d="M${Array.from({ length: k }, (_, i) => P((2 * Math.PI * i) / k - Math.PI / 2, R0 + 3)).join("L")}Z" fill="none" stroke="${LEAD}" stroke-width="1"/>` : `<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(fr + 3)}" fill="none" stroke="${LEAD}" stroke-width="1"/>`);
+    o.push(k ? `<path d="M${Array.from({ length: k }, (_, i) => P((2 * Math.PI * i) / k - Math.PI / 2, R0)).join("L")}Z" fill="${frame}" stroke="${LEAD}" stroke-width="1.6" stroke-linejoin="round"/>` : `<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(fr)}" fill="${frame}" stroke="${LEAD}" stroke-width="1.6"/>`);
+    const n = spec.petals, ri = rr * 0.32;
+    if (!n) {
+      // persönlich: geschlossene Scheibe, innen die zweite Essenz
+      o.push(`<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(rr)}" fill="${shade(e1, 1.05)}" stroke="${LEAD}" stroke-width="1"/>`);
+      o.push(`<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(rr * 0.55)}" fill="${shade(e2, 1.05)}" stroke="${LEAD}" stroke-width="1"/>`);
+    } else {
+      const ring = (n2, rIn, rOut, off, shape) => {
+        for (let i = 0; i < n2; i++) {
+          const a0 = (2 * Math.PI * (i + off)) / n2 - Math.PI / 2, a1 = (2 * Math.PI * (i + 1 + off)) / n2 - Math.PI / 2, am = (a0 + a1) / 2;
+          const d = shape === "pointed"
+            ? `M${P(a0, rIn)}L${P(a0, rIn + (rOut - rIn) * 0.55)}L${P(am, rOut)}L${P(a1, rIn + (rOut - rIn) * 0.55)}L${P(a1, rIn)}Z`
+            : `M${P(a0, rIn)}L${P(a0, rOut * 0.86)}Q${P(am, rOut * 1.12)} ${P(a1, rOut * 0.86)}L${P(a1, rIn)}Z`;
+          o.push(`<path d="${d}" fill="${shade(i % 2 ? e2 : e1, 1.02 + 0.06 * (i % 3))}" stroke="${LEAD}" stroke-width="1" stroke-linejoin="round"/>`);
+        }
+      };
+      ring(n, ri, rr, 0, spec.tip === "pointed" ? "pointed" : "round");
+      // lange Gebete: ein zweiter, innerer Blattkranz, um ein halbes Blatt versetzt
+      if (spec.tip === "double") ring(n, ri, rr * 0.62, 0.5, "round");
+    }
+    o.push(`<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(ri)}" fill="#f6eed3" stroke="${LEAD}" stroke-width="1"/>`);
+    return o.join("");
+  }
+  // Musterbild eines Medaillons für die Legende
+  function medallionMini(spec, base) {
+    const e1 = ESS_GLASS.lux, e2 = ESS_GLASS.bonum;
+    return `<svg class="vt-mini" viewBox="-24 -24 48 48" xmlns="http://www.w3.org/2000/svg">${medallion(0, 0, 14, { petals: 8, corners: 0, tip: "round", sr: false, ...spec }, e1, e2, base[0])}</svg>`;
   }
 
   // Sockel: ein Band unter den Scheiben, Muster nach Wirkungsdauer
@@ -387,6 +439,7 @@ window.VITRAIL = (function () {
   const foilGeom = (n, r) => [r * (n > 6 ? 0.64 : 0.56), r * Math.min(0.42, 0.75 * Math.sin(Math.PI / n))];
 
   // Lesart eines Fensters (für Dialog und Vorspann); Reihenfolge = Nummern der Beschriftung
+  const CORNER_DE = { 3: "Dreieck", 4: "Viereck", 5: "Fünfeck", 6: "Sechseck", 7: "Siebeneck" };
   const ANNOT_ORDER = ["lanes", "tym", "md", "accent", "base", "cells", "socle", "border"];
   function legend(m, deity) {
     const T = window.THEORY;
@@ -398,7 +451,12 @@ window.VITRAIL = (function () {
     const items = [
       { k: "Bahnen", key: "lanes", t: `${Math.max(1, m.level)} Bahn${m.level > 1 ? "en" : ""} – ${m.level ? U.ROMAN[m.level] + ". Grad" : "ohne Grad"}. Je höher der Grad, desto mehr Bahnen nebeneinander.` },
       { k: "Bogenfeld", key: "tym", t: `Rundfenster oben mit dem heiligen Symbol (${deity ? deity.symbol + " → " : ""}${MOT[front]}${back ? " vor " + MOT[back] : ""}). Die ${foilCount(m.school)} Kreise darum sind die Pässe des Maßwerks; ihre Zahl zeigt die Schule (${m.schoolInfo.de}).` },
-      { k: "Medaillon", key: "md", t: `Rosette in der Mitte der Bahnen: acht Blätter abwechselnd in der Farbe der Hauptessenz ${T.ESS[m.primary].latin} (${ed(m.primary)})${m.essences[1] ? " und der zweiten Essenz " + T.ESS[m.essences[1].id].latin + " (" + ed(m.essences[1].id) + ")" : ""}, gefasst in der ersten Farbe der Gottheit.` },
+      { k: "Medaillon", key: "md", t: (() => {
+        const sp = medallionSpec(m);
+        const comps = COMP_KEYS.filter((c) => m.components && m.components[c]).map((c) => (c === "DF" ? "GF" : c)).join(", ");
+        const blatt = sp.petals ? `${sp.petals} Blätter für die Reichweite (${m.range.de})${sp.unlimited ? " mit Strahlen" : ""}, ${sp.tip === "pointed" ? "spitz: ein schnelles Gebet" : sp.tip === "double" ? "zwei Blattkränze: ein langes Gebet" : "rund: Standard-Aktion"}` : `eine geschlossene Scheibe für die Reichweite ${m.range.de}`;
+        return `Rosette in der Mitte der Bahnen, abwechselnd in der Farbe der Hauptessenz ${T.ESS[m.primary].latin} (${ed(m.primary)})${m.essences[1] ? " und der zweiten Essenz " + T.ESS[m.essences[1].id].latin : ""}: ${blatt}. Die Fassung ist ${sp.corners ? `ein ${CORNER_DE[sp.corners]} für ${comps.split(", ").length} Komponenten (${comps})` : "rund: keine Komponenten"}${sp.sr ? "; der zweite Ring zeigt Zauberresistenz" : ""}.`;
+      })() },
       { k: "Akzentscheiben", key: "accent", t: `Etwa jede dritte Scheibe trägt eine Essenzfarbe, so oft wie ihr Anteil: ${m.essences.map((x) => `${T.ESS[x.id].latin} ${x.pct} %`).join(", ")}.` },
       { k: "Grundscheiben", key: "base", t: deity && deity.colors.length ? `Die übrigen Scheiben in den heiligen Farben ${deity.name}s: ${deity.colors.map((c) => c.name).join(", ")}.` : "Die übrigen Scheiben in einer Palette nach Gesinnung (die Gottheit hat keine heiligen Farben)." },
       { k: "Zellen", key: "cells", t: `Form der Scheiben nach der Gestalt (${kind && T.SHAPES[kind] ? T.SHAPES[kind].de : "frei"}): ${cellMode}.` },
@@ -408,5 +466,5 @@ window.VITRAIL = (function () {
     return items.map((x, i) => ({ ...x, n: i + 1 }));
   }
 
-  return { render, ornament, legend, symbolMotifs, symbolSVG, palette, glassSwatch, foilsMini, socleMini, cellsMini, borderMini, foilCount, ESS_GLASS, MOTIFS };
+  return { render, ornament, legend, symbolMotifs, symbolSVG, palette, glassSwatch, medallionMini, foilsMini, socleMini, cellsMini, borderMini, foilCount, ESS_GLASS, MOTIFS };
 })();
