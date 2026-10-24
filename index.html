@@ -16,12 +16,24 @@
       <button data-view="theory">Lehre der Kreise</button>
     </nav>
     <div class="actions">
+      <select id="char-switch" title="Charakter wechseln"></select>
       <button id="btn-settings" title="Buch-Einstellungen">Einstellungen</button>
     </div>
   </header>
 
   <dialog id="settings">
     <form method="dialog">
+      <h3>Charakter</h3>
+      <div class="char-admin">
+        <label>Name <input id="char-name"></label>
+        <label>Profil <select id="char-profile"></select></label>
+        <div class="row">
+          <button type="button" id="char-new">Neuer Charakter</button>
+          <button type="button" id="char-dup">Duplizieren</button>
+          <button type="button" id="char-del" class="danger">Löschen</button>
+        </div>
+        <div class="muted" id="char-hint"></div>
+      </div>
       <h3>Buch-Einstellungen</h3>
       <label>Besitzer <input name="owner"></label>
       <label>Buchtitel <input name="bookTitle"></label>
@@ -153,6 +165,7 @@
   <script src="data/profile.js"></script>
   <!-- optional, eigene Backstory (siehe data/profile.local.example.js); fehlt die Datei, gilt das neutrale Profil -->
   <script src="data/profile.local.js" onerror="this.remove()"></script>
+  <script src="app/js/chars.js"></script>
   <script src="app/js/profile.js"></script>
   <script src="data/spells.js"></script>
   <script src="data/everyday_spells.js"></script>

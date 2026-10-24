@@ -5,7 +5,8 @@ window.PREP = (function () {
   const $ = (s, el = document) => el.querySelector(s);
   const e = U.esc;
   const GRADES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-  const KEY = "spellbook.prep", KEY_PRESETS = "spellbook.prepPresets", KEY_LOG = "spellbook.prepLog";
+  // Speicherschlüssel je Charakter (chars.js)
+  const KEY = CHARS.key("prep"), KEY_PRESETS = CHARS.key("prepPresets"), KEY_LOG = CHARS.key("prepLog");
 
   const load = (k, d) => {
     try {

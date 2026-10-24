@@ -16,6 +16,10 @@ Erzeugt ein In-Game-Zauberbuch: Zu jedem Zauber gibt es einen magischen Kreis, d
 
 Seitenumfang: Grad 0 und Alltagszauber = ½ Seite, Grad n = n Seiten. Jeder Grad ist ein Kapitel mit eigener Doppelseite (Titel, Ordnungsfigur, Text zur Stufe, Formelliste). Kapitel und mehrseitige Zauber beginnen links – davor bei Bedarf eine Notizseite, oder der vorherige Zauber bekommt den Umfang des nächsthöheren Grades; beides abschaltbar.
 
+## Mehrere Charaktere
+
+Oben rechts wählst du den Charakter. Jeder hat sein eigenes Buch, eigene Einstellungen, Vorbereitung und Protokoll; in den Einstellungen lassen sich Charaktere anlegen, umbenennen, duplizieren und löschen und je Charakter ein Profil wählen. Alles liegt nur im Browser – zum Sichern oder für ein anderes Gerät „Liste exportieren“ (die Datei enthält den Charakternamen; beim Import lässt sie sich als neuer Charakter anlegen).
+
 ## Eigene Backstory
 
 Alles, was Besitzer, Welt und Tonfall bestimmt, steht in **Profilen**:
@@ -26,7 +30,7 @@ Alles, was Besitzer, Welt und Tonfall bestimmt, steht in **Profilen**:
 | `data/profile.local.example.js` | kommentierte Vorlage |
 | `data/profile.local.js` | **dein** Profil – überschreibt einzelne Felder, wird von Git ignoriert |
 
-Vorgehen: Vorlage nach `data/profile.local.js` kopieren, Felder anpassen, Seite neu laden. Anpassbar sind:
+Vorgehen: Vorlage nach `data/profile.local.js` kopieren, Felder anpassen, Seite neu laden. Für mehrere Charaktere registriert `data/profile.local.js` mehrere Profile unter `window.PROFILES_LOCAL` (siehe Vorlage); jeder Charakter wählt seines in den Einstellungen. Anpassbar sind:
 
 - `owner`, `bookTitle`, `subtitle` – Titelblatt und Randnotizen
 - `calendar` (Monatsnamen, Jahr) und `places` – Übungsprotokoll und Notizen
@@ -51,7 +55,8 @@ Vorgehen: Vorlage nach `data/profile.local.js` kopieren, Felder anpassen, Seite 
 | `app/js/everyday.js` | Alltagszauber: erben fehlende Regelfelder vom Basiszauber |
 | `app/js/import.js` | Zauberlisten aus xlsx/csv/txt lesen |
 | `app/js/prepare.js` | Tagesvorbereitung, Abstreichen, Nutzungsprotokoll |
-| `app/js/profile.js` | mischt neutrales und lokales Profil |
+| `app/js/chars.js` | Charakter-Slots: getrennter Speicher je Charakter |
+| `app/js/profile.js` | mischt neutrales Profil und das Profil des aktiven Charakters |
 | `data/spells.js` | Zauberdaten (erzeugt) |
 | `data/everyday_spells.js` | Alltagszauber mit Ideengebern |
 | `tools/parse_spells.py` | erzeugt `data/spells.js` aus AoN-Seiten (`spells/*.aspx`) und dem d20pfsrd-Export (`data/spell_full*.tsv`); beide Rohdaten sind nicht im Repository |

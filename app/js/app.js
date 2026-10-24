@@ -24,7 +24,7 @@
   const store = {
     get(k, d) {
       try {
-        const v = localStorage.getItem("spellbook." + k);
+        const v = localStorage.getItem(CHARS.key(k));
         return v ? JSON.parse(v) : d;
       } catch (_) {
         return d;
@@ -32,7 +32,7 @@
     },
     set(k, v) {
       try {
-        localStorage.setItem("spellbook." + k, JSON.stringify(v));
+        localStorage.setItem(CHARS.key(k), JSON.stringify(v));
       } catch (_) { /* privater Modus o. Ä. */ }
     },
   };
@@ -621,9 +621,11 @@
       if (el.type === "checkbox") el.checked = !!v;
       else el.value = v;
     }
+    renderCharAdmin();
     dlg.showModal();
   };
   dlg.addEventListener("close", () => {
+    if (charReload) return location.reload();
     const f = dlg.querySelector("form");
     const owner = state.settings.owner, wizard = state.settings.onlyWizard;
     for (const k of Object.keys(DEFAULTS)) {
@@ -639,23 +641,26 @@
     if (state.view !== "browse") show(state.view);
   });
   $("#btn-export").onclick = () => {
-    const data = { book: [...state.book].map((id) => byId.get(id)?.s.name).filter(Boolean), settings: state.settings, preparation: PREP.exportData() };
+    const ch = CHARS.current();
+    const data = { character: ch.name, profile: ch.profile, book: [...state.book].map((id) => byId.get(id)?.s.name).filter(Boolean), settings: state.settings, preparation: PREP.exportData() };
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
-    a.download = (state.settings.owner || "zauberbuch").toLowerCase() + "-zauberbuch.json";
+    a.download = (ch.name || state.settings.owner || "zauberbuch").toLowerCase().replace(/[^a-z0-9äöüß]+/g, "-") + "-zauberbuch.json";
     a.click();
   };
   $("#file-import").onchange = async (ev) => {
     const file = ev.target.files[0];
     if (!file) return;
     try {
-      let names = [], settings = null, preparation = null;
+      let names = [], settings = null, preparation = null, character = null, profile = null;
       if (/\.xlsx$/i.test(file.name)) names = await IMPORT.xlsxNames(await file.arrayBuffer());
       else if (/\.json$/i.test(file.name)) {
         const data = JSON.parse(await file.text());
         names = data.book || [];
         settings = data.settings || null;
         preparation = data.preparation || null;
+        character = data.character || null;
+        profile = data.profile || null;
       } else names = IMPORT.textNames(await file.text());
       const norm = (n) => String(n).toLowerCase().replace(/[^a-z0-9äöüß]/g, "");
       const lookup = new Map(ALL.map((x) => [norm(x.s.name), x.s.id]));
@@ -670,6 +675,22 @@
       }
       progress.hide();
       if (!found.length) throw new Error("Keine bekannten Zaubernamen gefunden.");
+      // Datei eines anderen Charakters: als neuen Charakter anlegen?
+      if (character && character !== CHARS.current().name && confirm(`Die Datei gehört zu „${character}“.\nOK = als neuen Charakter anlegen, Abbrechen = in „${CHARS.current().name}“ übernehmen.`)) {
+        const c = CHARS.create(character, CHARS.profiles().some((p) => p.key === profile) ? profile : null);
+        CHARS.write(c.id, "book", found);
+        if (settings) CHARS.write(c.id, "settings", settings);
+        if (preparation) {
+          if (preparation.state) CHARS.write(c.id, "prep", preparation.state);
+          if (preparation.presets) CHARS.write(c.id, "prepPresets", preparation.presets);
+          if (preparation.log) CHARS.write(c.id, "prepLog", preparation.log);
+          if (preparation.days) CHARS.write(c.id, "prepDays", preparation.days);
+        }
+        progress.hide();
+        alert(`Charakter „${character}“ mit ${found.length} Zaubern angelegt.` + (missing.length ? `\nNicht gefunden (${missing.length}): ${missing.slice(0, 30).join(", ")}` : ""));
+        CHARS.switchTo(c.id);
+        return;
+      }
       const replace = !state.book.size || confirm(`${found.length} Zauber gefunden.\nOK = Buch ersetzen, Abbrechen = zum bestehenden Buch hinzufügen.`);
       if (replace) state.book = new Set();
       view.g = 0;
@@ -699,6 +720,48 @@
       updateCount();
       renderList();
     }
+  };
+
+  // --- Charaktere --------------------------------------------------------------------
+  function renderCharSwitch() {
+    const sel = $("#char-switch");
+    sel.innerHTML = CHARS.list().map((c) => `<option value="${e(c.id)}" ${c.id === CHARS.active() ? "selected" : ""}>${e(c.name)}</option>`).join("") + `<option value="__new">+ Neuer Charakter …</option>`;
+  }
+  $("#char-switch").onchange = (ev) => {
+    if (ev.target.value === "__new") return newCharacter();
+    CHARS.switchTo(ev.target.value);
+  };
+  function newCharacter() {
+    const name = prompt("Name des neuen Charakters:");
+    if (!name) return renderCharSwitch();
+    CHARS.switchTo(CHARS.create(name.trim(), null).id);
+  }
+  let charReload = false;
+  function renderCharAdmin() {
+    const c = CHARS.current();
+    $("#char-name").value = c.name;
+    $("#char-profile").innerHTML = `<option value="">Neutral (data/profile.js)</option>` + CHARS.profiles().map((p) => `<option value="${e(p.key)}" ${p.key === c.profile ? "selected" : ""}>${e(p.label)}</option>`).join("");
+    $("#char-del").disabled = CHARS.list().length < 2;
+    $("#char-hint").textContent = charReload ? "Das neue Profil gilt nach dem Schließen (die Seite lädt neu)." : `${CHARS.list().length} Charakter${CHARS.list().length > 1 ? "e" : ""} in diesem Browser.`;
+  }
+  $("#char-name").onchange = (ev) => {
+    CHARS.update(CHARS.active(), { name: ev.target.value.trim() || CHARS.current().name });
+    renderCharSwitch();
+  };
+  $("#char-profile").onchange = (ev) => {
+    CHARS.update(CHARS.active(), { profile: ev.target.value || null });
+    charReload = true;
+    renderCharAdmin();
+  };
+  $("#char-new").onclick = newCharacter;
+  $("#char-dup").onclick = () => {
+    const c = CHARS.current();
+    const name = prompt("Name der Kopie:", c.name + " (Kopie)");
+    if (name) CHARS.switchTo(CHARS.create(name.trim(), c.profile, c.id).id);
+  };
+  $("#char-del").onclick = () => {
+    const c = CHARS.current();
+    if (confirm(`Charakter „${c.name}“ mit Buch, Vorbereitung und Protokoll endgültig löschen?\nTipp: vorher „Liste exportieren“.`)) CHARS.remove(c.id);
   };
 
   // --- Kreis groß anzeigen ----------------------------------------------------------
@@ -774,6 +837,7 @@
   // --- Start ----------------------------------------------------------------------
   PREP.init({ byId, model, book: () => state.book, select, show, printPages, owner: () => state.settings.owner });
   initFilters();
+  renderCharSwitch();
   applySides();
   renderList();
   updateCount();
