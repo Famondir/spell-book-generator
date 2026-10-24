@@ -331,7 +331,9 @@ window.VITRAIL = (function () {
       const a = (2 * Math.PI * i) / 16 - Math.PI / 2;
       o.push(`<path d="M${P(a - 0.09, R0 - 1)}L${P(a, R0 + 7)}L${P(a + 0.09, R0 - 1)}Z" fill="#f4e8c6" stroke="${LEAD}" stroke-width=".8"/>`);
     }
-    if (spec.sr) o.push(k ? `<path d="M${Array.from({ length: k }, (_, i) => P((2 * Math.PI * i) / k - Math.PI / 2, R0 + 3)).join("L")}Z" fill="none" stroke="${LEAD}" stroke-width="1"/>` : `<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(fr + 3)}" fill="none" stroke="${LEAD}" stroke-width="1"/>`);
+    // Zauberresistenz: zweiter Rahmen aus hellem Glas hinter der Fassung (einfarbig, damit kein Glas durchscheint)
+    const RING = "#f4e8c6", rw = 3.6;
+    if (spec.sr) o.push(k ? `<path d="M${Array.from({ length: k }, (_, i) => P((2 * Math.PI * i) / k - Math.PI / 2, R0 + rw / Math.cos(Math.PI / k))).join("L")}Z" fill="${RING}" stroke="${LEAD}" stroke-width="1.2" stroke-linejoin="round"/>` : `<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(fr + rw)}" fill="${RING}" stroke="${LEAD}" stroke-width="1.2"/>`);
     o.push(k ? `<path d="M${Array.from({ length: k }, (_, i) => P((2 * Math.PI * i) / k - Math.PI / 2, R0)).join("L")}Z" fill="${frame}" stroke="${LEAD}" stroke-width="1.6" stroke-linejoin="round"/>` : `<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(fr)}" fill="${frame}" stroke="${LEAD}" stroke-width="1.6"/>`);
     const n = spec.petals, ri = rr * 0.32;
     if (!n) {
