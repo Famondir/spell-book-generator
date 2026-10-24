@@ -39,6 +39,10 @@ window.PROFILE_LOCAL = {
 
   // planes, essenceText, correspond: siehe data/profile.js – nur angeben, was abweichen soll
 
+  chapters: {
+    3: ["Das Dreieck trägt", "Großmutter nannte die dritte Ordnung die Erntehelfer: Formeln, die ein ganzes Feld auf einmal erreichen."],
+  },
+
   everyday: {
     add: [
       // Eigene Alltagszauber im Format von data/everyday_spells.js, z. B.:

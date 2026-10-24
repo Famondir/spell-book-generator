@@ -573,7 +573,7 @@ label.toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 1
 .sp-qr { position: absolute; top: -0.2em; left: 0; width: 13mm; height: 13mm; color: var(--ink); }
 .sp-qr svg { width: 100%; height: 100%; display: block; fill: currentColor; stroke: none; }
 .rules-i {
-  position: absolute; left: 0; bottom: -0.2em; width: 22px; height: 22px; padding: 0;
+  position: absolute; left: 0; top: -0.2em; width: 26px; height: 26px; padding: 0; z-index: 2;
   border-radius: 50%; border: 1px solid var(--ink-soft); background: var(--parch); color: var(--ink);
   font: italic 700 13px/1 Georgia, serif; cursor: pointer;
 }
@@ -592,3 +592,29 @@ fieldset.refs legend { font-size: 0.9em; color: var(--ui-muted); }
 .progress .pg-bar i { display: block; height: 100%; background: var(--ui-accent); }
 .progress .pg-count { font-variant-numeric: tabular-nums; }
 @media print { .rules-i, .progress { display: none !important; } }
+
+/* --- Kapitel -------------------------------------------------------------------- */
+.chapter { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 6mm; }
+.ch-kicker { font-family: var(--font-title); font-size: 0.8em; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-soft); }
+.page h1.ch-title { font-family: var(--font-title); font-weight: 600; font-size: 2.1em; color: var(--rubric); margin: 0.3em 0 0.6em; line-height: 1.15; }
+.ch-fig { width: 52mm; height: 52mm; fill: none; stroke: var(--ink); stroke-width: 1; margin-bottom: 6mm; }
+.ch-fig .thin { stroke-width: 0.5; }
+.ch-fig .dash { stroke-dasharray: 2 2; }
+.ch-fig .node { fill: var(--parch); stroke: var(--rubric); stroke-width: 1.2; }
+.ch-sub { font-family: var(--font-title); font-size: 1.15em; color: var(--rubric); margin-bottom: 0.6em; }
+.chapter p { text-align: center; font-style: italic; max-width: 95mm; margin: 0 auto 0.6em; }
+.ch-list { column-count: 2; column-gap: 5mm; font-size: 0.82em; }
+.ch-row { display: flex; align-items: center; gap: 1.5mm; break-inside: avoid; padding: 0.4mm 0; border-bottom: 1px dotted color-mix(in srgb, var(--ink) 30%, transparent); }
+.ch-row .tq svg { width: 4.5mm; height: 4.5mm; display: block; }
+.ch-row .ch-nm { flex: 1; min-width: 0; line-height: 1.15; }
+.ch-row .ch-nm i { display: block; font-size: 0.8em; color: var(--ink-soft); }
+.ch-row .tp { font-variant-numeric: tabular-nums; }
+.ch-list.compact .ch-nm i { display: none; }
+.ch-list.compact .ch-nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ch-list.compact .tq svg { width: 3.6mm; height: 3.6mm; }
+.toc-list li.toc-chapter b { font-style: italic; font-weight: 400; }
+/* Regelband-Inhalt */
+.rb-index { column-count: 2; column-gap: 5mm; font-size: 0.78em; }
+.rb-row { display: flex; gap: 1.5mm; break-inside: avoid; border-bottom: 1px dotted color-mix(in srgb, var(--ink) 30%, transparent); padding: 0.3mm 0; }
+.rb-nr { width: 2.2em; text-align: right; color: var(--rubric); font-weight: 800; }
+.rb-nm { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

@@ -162,7 +162,8 @@
 
   // opts.detail: ausführliche Fassung (wie Grad 9 plus beschrifteter Kreis), unabhängig vom Grad
   function spellPages(m, t, opts = {}) {
-    const L = opts.detail ? 10 : m.level;
+    // opts.layout: Seitenaufbau eines anderen Grades (z. B. nächsthöherer Grad statt Notizseite)
+    const L = opts.detail ? 10 : opts.layout || m.level;
     const n = t.notes;
     const B = {
       head: () => head(m, t, false, opts.ref),
@@ -414,10 +415,49 @@
     let pageNo = front.length + tocPageCount + 1;
     const body = [];
     let pendingHalf = null;
-    let fillers = 0;
+    let fillers = 0, expanded = 0;
     const ref = settings.refNo || settings.refQr || settings.refSource;
+    // Mehrseitige Zauber links beginnen: "notes" Notizseite, "expand" Aufbau des nächsthöheren Grades, "off" aus
+    const mode = settings.leftStart || (settings.startLeft === false ? "off" : "notes");
+    const withChapters = settings.chapters !== false;
+    const chapters = [];
+    let chapter = null, last = null;
+    const optsFor = (m, idx) => ({ detail: settings.detailPrint, ref: ref ? { no: settings.refNo && idx + 1, qr: settings.refQr, source: settings.refSource } : null });
+    const spellPageObjs = (m, t, sp, startNo) =>
+      sp.map((p, i) => ({ html: p.html, spell: m.id, cls: p.first ? "first-page" : "", no: startNo + i, running: t.title + (sp.length > 1 ? ` · ${i + 1}/${sp.length}` : "") }));
+    // nächste Seite auf eine gerade (linke) Seite bringen
+    const toLeft = () => {
+      if (pageNo % 2 === 0) return;
+      if (mode === "expand" && last && last.len % 2 === 1 && last.level < 9 && body.length === last.start + last.len) {
+        const sp2 = spellPages(last.m, last.t, { ...last.opts, layout: last.len + 1 });
+        if (sp2.length === last.len + 1) {
+          body.splice(last.start, last.len, ...spellPageObjs(last.m, last.t, sp2, body[last.start].no));
+          pageNo++;
+          expanded++;
+          last.len++;
+          return;
+        }
+      }
+      body.push({ no: pageNo++, running: "", cls: "filler-page", html: fillerHTML() });
+      fillers++;
+    };
     entries.forEach(({ m, t }, idx) => {
-      const sp = spellPages(m, t, { detail: settings.detailPrint, ref: ref ? { no: settings.refNo && idx + 1, qr: settings.refQr, source: settings.refSource } : null });
+      const key = chapterKey(m);
+      if (!chapter || chapter.key !== key) {
+        pendingHalf = null;
+        chapter = { key, name: chapterName(key), items: [] };
+        chapters.push(chapter);
+        if (withChapters) {
+          if (mode !== "off") toLeft();
+          chapter.page = pageNo;
+          body.push({ no: pageNo++, running: "", cls: "chapter-page", html: chapterHTML(key, chapters.length) });
+          chapter.listPage = { no: pageNo++, running: chapter.name, cls: "chapter-list", html: "" };
+          body.push(chapter.listPage);
+        }
+        last = null;
+      }
+      const opts = optsFor(m, idx);
+      const sp = spellPages(m, t, opts);
       if (sp.length === 1 && sp[0].half) {
         const block = `<div class="half" data-spell="${e(m.id)}">${sp[0].html}</div>`;
         if (pendingHalf) {
@@ -430,19 +470,23 @@
           toc.push({ t, m, page: pageNo });
           pageNo++;
         }
+        chapter.items.push(toc[toc.length - 1]);
+        last = null;
         return;
       }
       pendingHalf = null;
       // Mehrseitige Zauber beginnen links (gerade Seite), damit sie aufgeschlagen nebeneinander liegen
-      if (settings.startLeft !== false && sp.length > 1 && pageNo % 2 === 1) {
-        body.push({ no: pageNo++, running: "", cls: "filler-page", html: fillerHTML() });
-        fillers++;
-      }
+      if (mode !== "off" && sp.length > 1) toLeft();
       toc.push({ t, m, page: pageNo });
-      sp.forEach((p, i) => {
-        body.push({ html: p.html, spell: m.id, cls: p.first ? "first-page" : "", no: pageNo++, running: t.title + (sp.length > 1 ? ` · ${i + 1}/${sp.length}` : "") });
-      });
+      chapter.items.push(toc[toc.length - 1]);
+      last = { m, t, opts, start: body.length, len: sp.length, level: m.level };
+      body.push(...spellPageObjs(m, t, sp, pageNo));
+      pageNo += sp.length;
     });
+    // Kapitellisten erst jetzt füllen: die Seitenzahlen stehen fest
+    for (const c of chapters) {
+      if (c.listPage) c.listPage.html = `<h3>Formeln dieses Kapitels</h3><div class="ch-list${c.items.length > 44 ? " compact" : ""}">${c.items.map((x) => `<div class="ch-row"><span class="tq">${quickGlyph(x.m)}</span><span class="ch-nm">${e(x.t.title)}<i>${e(x.m.name)}</i></span><span class="tp">${x.page}</span></div>`).join("")}</div>`;
+    }
     front.forEach((p, i) => pages.push({ ...p, no: i + 1, running: "" }));
     if (settings.frontMatter) {
       for (let i = 0; i < tocPageCount; i++) {
@@ -456,8 +500,72 @@
       }
     }
     pages.push(...body);
-    const spellPagesCount = body.length - fillers;
-    return { pages, toc, spellPagesCount, fillers };
+    const chapterPages = chapters.filter((c) => c.listPage).length * 2;
+    const spellPagesCount = body.length - fillers - chapterPages;
+    return { pages, toc, spellPagesCount, fillers, expanded, chapters: chapters.filter((c) => c.page).map((c) => ({ key: c.key, name: c.name, page: c.page })) };
+  }
+
+  // --- Kapitel ---------------------------------------------------------------------
+  const chapterKey = (m) => (m.spell.everyday ? "everyday" : m.level === 0 ? "cantrip" : String(m.level));
+  const chapterName = (k) => (k === "everyday" ? "Alltagszauber" : k === "cantrip" ? "Zaubertricks" : U.ROMAN[+k] + ". Grad");
+  const ORDINAL = ["", "erste", "zweite", "dritte", "vierte", "fünfte", "sechste", "siebte", "achte", "neunte"];
+  const CHAPTER_TEXT = {
+    cantrip: ["Fingerübungen", "Kreise ohne Ordnungsknoten: ein Ring, ein Zeichen, ein Kern. Nichts hält diese Formeln fest, also verbrauchen sie sich nicht – sie lassen sich wirken, solange die Hand ruhig bleibt.", "Wer die großen Kreise ziehen will, beginnt hier. Jede Fingerübung lehrt eine einzelne Bewegung, die später in mächtigeren Formeln wiederkehrt."],
+    everyday: ["Kleine Künste", "Sonderformen, die in keinem Lehrbuch stehen. Jede nimmt eine bekannte Formel und schneidet sie auf genau einen Zweck zu, bis kaum Kraft übrig bleibt – dafür passt sie in einen Atemzug.", "Gesammelt in Gasthäusern, auf Märkten und aus den Notizbüchern anderer. Nützlich selten, erfreulich fast immer."],
+    1: ["Ein Knoten hält den Kreis", "Der erste Ordnungsknoten bindet die Formel an den Wirker. Sie reicht nicht weit und hält nicht lang, aber sie gehorcht.", "Hier lernt man, dass ein Kreis nur so gut ist wie seine schwächste Linie."],
+    2: ["Zwei Knoten, eine Achse", "Mit dem zweiten Knoten bekommt der Kreis eine Achse. Kraft lässt sich nun ausrichten, verteilen und eine Weile halten.", "Die meisten Fehler dieser Stufe sind Ungleichgewichte: ein Knoten zieht stärker als der andere."],
+    3: ["Das Dreieck trägt", "Drei Knoten bilden die erste stabile Figur. Formeln der dritten Ordnung tragen sich selbst, greifen weit und treffen viele zugleich.", "Was hier gelingt, entscheidet Schlachten. Was misslingt, ebenso."],
+    4: ["Das Viereck öffnet", "Vier Knoten spannen ein Feld, das größer ist als der Kreis. Formeln dieser Ordnung reichen in Räume, die der Wirker nicht sieht.", "Ab hier verlangt jede Linie Geduld; ein hastig gezogenes Viereck schließt sich nicht."],
+    5: ["Das Pentagramm verbindet", "Fünf Knoten verbinden Orte, Ebenen und Wesen. Die fünfte Ordnung ist die Schwelle zur Meisterschaft.", "Wer sie überschreitet, zeichnet nicht mehr nur Kreise – er verknüpft sie."],
+    6: ["Das Hexagon beharrt", "Sechs Knoten geben einer Formel Dauer und Gewicht. Sie überlebt Störungen, die kleinere Kreise zerreißen.", "Die Kunst liegt darin, das Hexagon nicht starr werden zu lassen."],
+    7: ["Das Siebeneck greift aus", "Sieben Knoten lassen sich nicht in einem Zug schließen. Formeln dieser Ordnung berühren Ebenen, Zeit und Wirklichkeit selbst.", "Jeder Fehler hier hat Folgen, die länger bleiben als der Zauber."],
+    8: ["Das Achteck bindet", "Acht Knoten binden Geist, Gestalt und Schicksal. Was diese Ordnung festhält, bleibt festgehalten.", "Sie wird selten gewirkt und nie leichtfertig."],
+    9: ["Neun Knoten, die Grenze", "Die neunte Ordnung ist die Grenze dessen, was ein sterblicher Kreis tragen kann. Darüber hinaus beginnt das Reich der Götter.", "Wer hier zeichnet, hat jede Linie dieses Buches tausendmal gezogen."],
+  };
+  function chapterFigure(k) {
+    const n = /^\d$/.test(k) ? +k : 0;
+    const pt = (i, r) => [Math.sin((2 * Math.PI * i) / n) * r, -Math.cos((2 * Math.PI * i) / n) * r].map((v) => v.toFixed(2)).join(" ");
+    let inner = "";
+    if (n >= 2) {
+      inner += `<path class="thin" d="M${Array.from({ length: n }, (_, i) => pt(i, 40)).join("L")}Z"/>`;
+      if (n >= 5) inner += `<path class="thin" d="${Array.from({ length: n }, (_, i) => `M${pt(i, 40)}L${pt(i + Math.floor(n / 2), 40)}`).join("")}"/>`;
+      inner += Array.from({ length: n }, (_, i) => `<circle class="node" r="4.5" cx="${pt(i, 40).split(" ")[0]}" cy="${pt(i, 40).split(" ")[1]}"/>`).join("");
+    } else if (n === 1) inner += `<circle class="node" r="4.5" cx="0" cy="-40"/>`;
+    else if (k === "everyday") inner += `<circle r="3"/><circle r="10" class="thin"/><circle class="node" r="3" cx="0" cy="-22"/><circle class="node" r="3" cx="19" cy="11"/><circle class="node" r="3" cx="-19" cy="11"/>`;
+    else inner += `<circle r="4"/>`;
+    return `<svg class="ch-fig" viewBox="-56 -56 112 112"><circle r="50"/><circle r="46" class="thin"/><circle r="40" class="thin dash"/>${inner}</svg>`;
+  }
+  function chapterHTML(k, no) {
+    const own = (window.PROFILE && PROFILE.chapters && PROFILE.chapters[k]) || null;
+    const [sub, ...paras] = own || CHAPTER_TEXT[k] || ["", ""];
+    const title = k === "everyday" ? "Alltagszauber" : k === "cantrip" ? "Zaubertricks" : `Zauber des ${U.ROMAN[+k]}. Grades`;
+    const kicker = /^\d$/.test(k) ? `Die ${ORDINAL[+k]} Ordnung` : k === "cantrip" ? "Ohne Ordnung" : "Sonderformen";
+    return `<div class="chapter"><div class="ch-kicker">Kapitel ${U.ROMAN[no] || no} · ${kicker}</div><h1 class="ch-title">${e(title)}</h1>${chapterFigure(k)}<div class="ch-sub">${e(sub)}</div>${paras.map((p) => `<p>${e(p)}</p>`).join("")}</div>`;
+  }
+
+  // Inhaltsverzeichnis des Regelbands: Nummer → Name → Seite, aus den gesetzten Seiten gelesen
+  const RB_TOC_ROWS = 76;
+  async function rulesIndex(root) {
+    const rows = [];
+    root.querySelectorAll(":scope > .page").forEach((pg) => {
+      const no = pg.querySelector(".page-foot span:last-child")?.textContent;
+      pg.querySelectorAll(".rules-title").forEach((t) => {
+        if (t.closest(".rules")?.dataset.splitOf) return; // Fortsetzung eines umbrochenen Kastens
+        const nr = t.querySelector(".rb-no");
+        if (nr) rows.push({ nr: nr.textContent.replace("Nr. ", ""), name: t.textContent.replace(nr.textContent, "").trim(), page: no });
+      });
+    });
+    const tocs = [...root.querySelectorAll(":scope > .page.rb-toc")];
+    for (let i = 0; i < tocs.length; i++) {
+      const chunk = rows.slice(i * RB_TOC_ROWS, (i + 1) * RB_TOC_ROWS);
+      const inner = tocs[i].querySelector(".page-inner");
+      inner.innerHTML = (i === 0 ? "<h3>Inhalt</h3>" : "") + `<div class="rb-index">${chunk.map((r) => `<div class="rb-row"><span class="rb-nr">${r.nr}</span><span class="rb-nm">${e(r.name)}</span><span class="tp">${r.page}</span></div>`).join("")}</div>`;
+      const box = document.createElement("div");
+      tocs[i].before(box);
+      box.append(tocs[i]);
+      fit(box);
+      box.replaceWith(tocs[i]);
+    }
   }
 
   // Leere Seite vor einem mehrseitigen Zauber
@@ -472,6 +580,8 @@
       if (!groups.has(k)) groups.set(k, []);
       groups.get(k).push(rulesBox(m, i + 1));
     });
+    // Platzhalter fürs Inhaltsverzeichnis; rulesIndex() füllt sie nach dem Setzen (dann stehen die Seiten fest)
+    for (let i = 0; i < Math.ceil(entries.length / RB_TOC_ROWS); i++) pages.push({ no: 0, running: "Regelband · Inhalt", cls: "rb-toc", html: "" });
     // je Abschnitt eine fließende Seite; der Umbruch verteilt sie auf Folgeseiten
     for (const [k, boxes] of groups) pages.push({ no: 0, running: "Regelband · " + k, cls: "rules-page flow", html: `<h3>${e(k)}</h3>` + boxes.join("") });
     return pages;
@@ -689,5 +799,5 @@
     return p.spell ? ` data-spell="${e(p.spell)}"` : "";
   }
 
-  window.BOOK = { spellPages, scrollPages, assemble, rulesBook, pageHTML, autofit, typeset, rulesBox, frontMatter };
+  window.BOOK = { spellPages, scrollPages, assemble, rulesBook, rulesIndex, pageHTML, autofit, typeset, rulesBox, frontMatter };
 })();

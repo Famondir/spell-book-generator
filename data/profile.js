@@ -81,6 +81,11 @@ window.PROFILE = {
     tempus: { body: "Mond", planet: "Saturn" },
   },
 
+  // --- Kapitel -------------------------------------------------------------------
+  // Eigene Kapiteltexte: { "3": ["Untertitel", "Absatz", "Absatz"], cantrip: […], everyday: […] }
+  // Fehlende Kapitel nutzen die Standardtexte aus app/js/book.js.
+  chapters: {},
+
   // --- Alltagszauber -------------------------------------------------------------
   // add: zusätzliche Alltagszauber (Format wie data/everyday_spells.js)
   // remove: Namen, die ausgeblendet werden

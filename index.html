@@ -26,7 +26,10 @@
       <label>Besitzer <input name="owner"></label>
       <label>Buchtitel <input name="bookTitle"></label>
       <label>Untertitel <input name="subtitle"></label>
-      <label class="check"><input type="checkbox" name="startLeft"> Mehrseitige Zauber beginnen links (fügt bei Bedarf Notizseiten ein)</label>
+      <label class="check"><input type="checkbox" name="chapters"> Kapitel je Grad (Doppelseite mit Titel, Text zur Stufe und Formelliste)</label>
+      <label>Mehrseitige Zauber und Kapitel beginnen links
+        <select name="leftStart"><option value="notes">ja, mit Notizseite davor</option><option value="expand">ja, vorherigen Zauber im Umfang des nächsthöheren Grades</option><option value="off">nein (spart Papier)</option></select>
+      </label>
       <fieldset class="refs"><legend>Regelverweise auf den Zauberseiten (für den Druck)</legend>
         <label class="check"><input type="checkbox" name="refNo"> Nummer im Regelband</label>
         <label class="check"><input type="checkbox" name="refQr"> QR-Code zur Seite bei Archives of Nethys</label>

@@ -9,7 +9,8 @@
     owner: PROFILE.owner,
     bookTitle: PROFILE.bookTitle,
     subtitle: PROFILE.subtitle,
-    startLeft: true,
+    leftStart: "notes",
+    chapters: true,
     refNo: false,
     refQr: false,
     refSource: false,
@@ -36,7 +37,12 @@
     },
   };
   const state = {
-    settings: { ...DEFAULTS, ...store.get("settings", {}) },
+    settings: (() => {
+      const st = { ...DEFAULTS, ...store.get("settings", {}) };
+      if (st.startLeft === false && !store.get("settings", {}).leftStart) st.leftStart = "off"; // alte Einstellung
+      delete st.startLeft;
+      return st;
+    })(),
     book: new Set(store.get("book", [])),
     selected: null,
     view: "browse",
@@ -267,7 +273,7 @@
     const byLevel = {};
     d.entries.forEach(({ m }) => (byLevel[m.spell.everyday ? "A" : m.level] = (byLevel[m.spell.everyday ? "A" : m.level] || 0) + 1));
     $("#book-stats").innerHTML = d.entries.length
-      ? `<b>${d.entries.length}</b> Formeln · <b>${d.spellPagesCount}</b> Seiten Formeln${d.fillers ? ` · ${d.fillers} Notizseiten` : ""} · <b>${d.pages.length}</b> Seiten gesamt
+      ? `<b>${d.entries.length}</b> Formeln · <b>${d.spellPagesCount}</b> Seiten Formeln${d.chapters?.length ? ` · ${d.chapters.length * 2} Kapitelseiten` : ""}${d.fillers ? ` · ${d.fillers} Notizseiten` : ""}${d.expanded ? ` · ${d.expanded} Zauber im Umfang des nächsthöheren Grades` : ""} · <b>${d.pages.length}</b> Seiten gesamt
          <span class="muted">(Gesegnetes Buch: 1000 Seiten · gewöhnliches Zauberbuch: 100 Seiten)</span>
          <div class="muted">${Object.entries(byLevel).map(([l, n]) => (l === "A" ? "Alltag" : "Grad " + l) + ": " + n).join(" · ")}</div>`
       : `Das Buch ist leer. Nimm im Verzeichnis Zauber mit <b>+</b> auf.`;
@@ -408,12 +414,15 @@
       groups[groups.length - 1].items.push(li);
     };
     d.front.forEach((x) => add("Vorspann", `<li data-page="${x.page}"><span class="q"></span><span class="nm"><b>${e(x.title)}</b></span><span class="pg">${x.page}</span></li>`));
+    const chapterPage = new Map((d.chapters || []).map((c) => [c.name, c.page]));
     d.toc.forEach((x) => {
       const gr = x.m.spell.everyday ? "Alltagszauber" : x.m.level === 0 ? "Zaubertricks" : U.ROMAN[x.m.level] + ". Grad";
+      if (chapterPage.has(gr) && (!groups.length || groups[groups.length - 1].name !== gr))
+        add(gr, `<li data-page="${chapterPage.get(gr)}" class="toc-chapter"><span class="q"></span><span class="nm"><b>Kapitelseite</b></span><span class="pg">${chapterPage.get(gr)}</span></li>`);
       add(gr, `<li data-page="${x.page}"><span class="q">${quickGlyph(x.m)}</span><span class="nm"><b>${e(x.t.title)}</b><i>${e(x.m.name)}</i></span><span class="pg">${x.page}</span></li>`);
     });
     $("#book-toc-list").innerHTML = groups.map((g) => `<li class="toc-group ${tocOpen.has(g.name) ? "open" : ""}" data-grp="${e(g.name)}">
-        <button class="toc-grade"><span>${e(g.name)}</span><span class="muted">${g.items.length}</span></button>
+        <button class="toc-grade"><span>${e(g.name)}</span><span class="muted">${g.items.filter((x) => !x.includes("toc-chapter")).length}</span></button>
         <ul>${g.items.join("")}</ul></li>`).join("");
   }
   $("#book-toc-list").addEventListener("click", (ev) => {
@@ -488,7 +497,7 @@
   const PAPER = { a5: "A5", a4: "A4", "a4-2up": "A4 landscape" };
   const printCache = new Map();
   let printing = false;
-  async function printPages(pages, paperOverride, label = "Seiten setzen") {
+  async function printPages(pages, paperOverride, label = "Seiten setzen", after = null) {
     if (printing) return;
     printing = true;
     const root = $("#print-root");
@@ -517,6 +526,7 @@
         progress.show(label, 0, typeof pages === "string" ? 1 : pages.length);
         await tick();
         await BOOK.typeset(root, pages, (n, total) => progress.show(label, n, total));
+        if (after) await after(root);
         printCache.set(key, root.innerHTML);
         if (printCache.size > 3) printCache.delete(printCache.keys().next().value);
       }
@@ -544,7 +554,7 @@
   $("#btn-print-book").onclick = () => printPages(bookData().pages, null, "Buch setzen");
   $("#btn-print-rules").onclick = () => {
     const d = bookData();
-    if (d.entries.length) printPages(BOOK.rulesBook(d.entries, state.settings), null, "Regelband setzen");
+    if (d.entries.length) printPages(BOOK.rulesBook(d.entries, state.settings), null, "Regelband setzen", BOOK.rulesIndex);
   };
 
   // --- Ansichten ------------------------------------------------------------------
