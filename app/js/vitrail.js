@@ -440,12 +440,13 @@ window.VITRAIL = (function () {
     const body = tafel();
     const sep = { y: TB.shoulder + 2, h: 7 }; // schlichter Trennbalken zwischen Symbolfeld und Schichten
     out.push(`<path d="${poly(steppedFrame(fw))}" fill="${MAT.frame}" stroke="${MAT.edge}" stroke-width="1.2" stroke-linejoin="round"/>`, ashlar(body, fw));
-    // Flechtbänder auf den Seitenpfeilern
-    out.push(knot(-W / 2 - fw / 2, sep.y + 4, -W / 2 - fw / 2, YB - 2, fw * 0.62));
-    out.push(knot(W / 2 + fw / 2, sep.y + 4, W / 2 + fw / 2, YB - 2, fw * 0.62));
+    const hz = 16; // Sockelhöhe
+    // Flechtbänder auf den Seitenpfeilern, vom obersten bis zum untersten Knotenstein
+    out.push(knot(-W / 2 - fw / 2, sep.y + sep.h / 2, -W / 2 - fw / 2, YB - hz, fw * 0.62));
+    out.push(knot(W / 2 + fw / 2, sep.y + sep.h / 2, W / 2 + fw / 2, YB - hz, fw * 0.62));
 
     // Schichten: n waagerechte Bänder, getrennt durch Steinbalken mit Flechtband
-    const hz = 16, lh = n > 1 ? 9 : 0;
+    const lh = n > 1 ? 9 : 0;
     const top = sep.y + sep.h, bottom = YB - hz;
     const bh = (bottom - top - (n - 1) * lh) / n;
     const bands = Array.from({ length: n }, (_, i) => {
