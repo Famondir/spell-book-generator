@@ -21,4 +21,4 @@
 ## 4. Abschluss
 
 - [x] 4.1 README um die Vorbereitung ergänzen
-- [ ] 4.2 `openspec validate add-spell-preparation` und Change archivieren
+- [x] 4.2 `openspec validate add-spell-preparation` und Change archivieren

@@ -273,7 +273,7 @@
     const byLevel = {};
     d.entries.forEach(({ m }) => (byLevel[m.spell.everyday ? "A" : m.level] = (byLevel[m.spell.everyday ? "A" : m.level] || 0) + 1));
     $("#book-stats").innerHTML = d.entries.length
-      ? `<b>${d.entries.length}</b> Formeln · <b>${d.spellPagesCount}</b> Seiten Formeln${d.chapters?.length ? ` · ${d.chapters.length * 2} Kapitelseiten` : ""}${d.fillers ? ` · ${d.fillers} Notizseiten` : ""}${d.expanded ? ` · ${d.expanded} Zauber im Umfang des nächsthöheren Grades` : ""} · <b>${d.pages.length}</b> Seiten gesamt
+      ? `<b>${d.entries.length}</b> Formeln · <b>${d.spellPagesCount}</b> Seiten Formeln${d.chapterPages ? ` · ${d.chapterPages} Kapitelseiten` : ""}${d.fillers ? ` · ${d.fillers} Notizseiten` : ""}${d.expanded ? ` · ${d.expanded} Zauber im Umfang des nächsthöheren Grades` : ""} · <b>${d.pages.length}</b> Seiten gesamt
          <span class="muted">(Gesegnetes Buch: 1000 Seiten · gewöhnliches Zauberbuch: 100 Seiten)</span>
          <div class="muted">${Object.entries(byLevel).map(([l, n]) => (l === "A" ? "Alltag" : "Grad " + l) + ": " + n).join(" · ")}</div>`
       : `Das Buch ist leer. Nimm im Verzeichnis Zauber mit <b>+</b> auf.`;

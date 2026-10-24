@@ -8,7 +8,8 @@
 
 - [x] 2.1 Einstellungen: Kapitel ein/aus, Auswahl für den Ausgleichsmodus
 - [x] 2.2 Inhaltsverzeichnis rechts: Kapitelseiten als Einträge
-- [x] 2.3 (i) oben links
+- [x] 2.3 (i) oben links, vollständig innerhalb der Seite
+- [x] 2.4 Formellisten der Kapitel mit Namen, bei Bedarf über mehrere Seiten (40 je Seite)
 
 ## 3. Regelband
 

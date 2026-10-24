@@ -422,6 +422,8 @@
     const withChapters = settings.chapters !== false;
     const chapters = [];
     let chapter = null, last = null;
+    const perChapter = new Map();
+    entries.forEach(({ m }) => perChapter.set(chapterKey(m), (perChapter.get(chapterKey(m)) || 0) + 1));
     const optsFor = (m, idx) => ({ detail: settings.detailPrint, ref: ref ? { no: settings.refNo && idx + 1, qr: settings.refQr, source: settings.refSource } : null });
     const spellPageObjs = (m, t, sp, startNo) =>
       sp.map((p, i) => ({ html: p.html, spell: m.id, cls: p.first ? "first-page" : "", no: startNo + i, running: t.title + (sp.length > 1 ? ` · ${i + 1}/${sp.length}` : "") }));
@@ -451,8 +453,9 @@
           if (mode !== "off") toLeft();
           chapter.page = pageNo;
           body.push({ no: pageNo++, running: "", cls: "chapter-page", html: chapterHTML(key, chapters.length) });
-          chapter.listPage = { no: pageNo++, running: chapter.name, cls: "chapter-list", html: "" };
-          body.push(chapter.listPage);
+          // Formelliste mit Namen; lange Kapitel bekommen mehrere Listenseiten
+          chapter.listPages = Array.from({ length: Math.ceil(perChapter.get(key) / CH_LIST_ROWS) }, () => ({ no: pageNo++, running: chapter.name, cls: "chapter-list", html: "" }));
+          body.push(...chapter.listPages);
         }
         last = null;
       }
@@ -485,7 +488,10 @@
     });
     // Kapitellisten erst jetzt füllen: die Seitenzahlen stehen fest
     for (const c of chapters) {
-      if (c.listPage) c.listPage.html = `<h3>Formeln dieses Kapitels</h3><div class="ch-list${c.items.length > 44 ? " compact" : ""}">${c.items.map((x) => `<div class="ch-row"><span class="tq">${quickGlyph(x.m)}</span><span class="ch-nm">${e(x.t.title)}<i>${e(x.m.name)}</i></span><span class="tp">${x.page}</span></div>`).join("")}</div>`;
+      (c.listPages || []).forEach((lp, i) => {
+        const part = c.items.slice(i * CH_LIST_ROWS, (i + 1) * CH_LIST_ROWS);
+        lp.html = `<h3>Formeln dieses Kapitels${i ? " (Forts.)" : ""}</h3><div class="ch-list">${part.map((x) => `<div class="ch-row"><span class="tq">${quickGlyph(x.m)}</span><span class="ch-nm">${e(x.t.title)}<i>${e(x.m.name)}</i></span><span class="tp">${x.page}</span></div>`).join("")}</div>`;
+      });
     }
     front.forEach((p, i) => pages.push({ ...p, no: i + 1, running: "" }));
     if (settings.frontMatter) {
@@ -500,12 +506,13 @@
       }
     }
     pages.push(...body);
-    const chapterPages = chapters.filter((c) => c.listPage).length * 2;
+    const chapterPages = chapters.reduce((a, c) => a + (c.listPages ? 1 + c.listPages.length : 0), 0);
     const spellPagesCount = body.length - fillers - chapterPages;
-    return { pages, toc, spellPagesCount, fillers, expanded, chapters: chapters.filter((c) => c.page).map((c) => ({ key: c.key, name: c.name, page: c.page })) };
+    return { pages, toc, spellPagesCount, fillers, expanded, chapterPages, chapters: chapters.filter((c) => c.page).map((c) => ({ key: c.key, name: c.name, page: c.page })) };
   }
 
   // --- Kapitel ---------------------------------------------------------------------
+  const CH_LIST_ROWS = 40;
   const chapterKey = (m) => (m.spell.everyday ? "everyday" : m.level === 0 ? "cantrip" : String(m.level));
   const chapterName = (k) => (k === "everyday" ? "Alltagszauber" : k === "cantrip" ? "Zaubertricks" : U.ROMAN[+k] + ". Grad");
   const ORDINAL = ["", "erste", "zweite", "dritte", "vierte", "fünfte", "sechste", "siebte", "achte", "neunte"];

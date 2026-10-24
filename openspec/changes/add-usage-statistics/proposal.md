@@ -18,4 +18,11 @@ Seit `add-spell-preparation` protokolliert die App, welche Zauber vorbereitet un
 
 ## Impact
 
-Nur lesend auf `spellbook.prepLog`. Offene Frage: Spieltage nach Kalenderdatum oder nach „Neuer Tag“ gruppieren?
+Liest `spellbook.prepLog`; zum Löschen einzelner Tage auch schreibend.
+
+Offene Fragen (aus dem Backlog):
+
+- **Verlauf ansehen:** Tagesliste mit allen Ereignissen (vorbereitet, gewirkt, zurückgenommen) als Teil dieses Changes.
+- **Testtage löschen:** einen Tag als „Probe“ markieren oder nachträglich aus dem Protokoll entfernen.
+- **Was ist ein Tag?** Ein Spieltag = Zeitraum zwischen zwei „Neuer Tag“. Das echte Datum mit Uhrzeit hilft beim Wiederfinden; zusätzlich ein frei eintragbares **Ingame-Datum** je Tag (z. B. „3. Arodus 4713 AR“, Monatsnamen aus dem Profilkalender).
+- **Mehrere Charaktere:** Heute teilen sich alle Buch-, Vorbereitungs- und Protokolldaten die Schlüssel `spellbook.*` im Browser. Getrennte Ordner helfen nur, wenn der Browser file://-Seiten getrennt speichert (Chrome tut das nicht). Lösung: Charakter-Slots in der App (Präfix je Charakter), Export/Import pro Charakter – eigener Change.
