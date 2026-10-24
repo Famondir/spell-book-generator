@@ -593,7 +593,14 @@ fieldset.refs legend { font-size: 0.9em; color: var(--ui-muted); }
 .progress .pg-bar { flex: 1; min-width: 80px; height: 6px; background: var(--ui-line); border-radius: 3px; overflow: hidden; }
 .progress .pg-bar i { display: block; height: 100%; background: var(--ui-accent); }
 .progress .pg-count { font-variant-numeric: tabular-nums; }
-@media print { .rules-i, .progress { display: none !important; } }
+@media print { .rules-i, .progress, .legal-bar { display: none !important; } }
+.legal-bar { flex: none; padding: 3px 16px; font-size: 11px; color: var(--ui-muted); background: var(--ui-panel); border-top: 1px solid var(--ui-line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.legal-bar .linkish { border: none; background: none; padding: 0; font: inherit; color: var(--ui-accent); text-decoration: underline; cursor: pointer; }
+.legal-modal { max-width: 600px; max-height: 88vh; overflow-y: auto; }
+.legal-modal p, .legal-modal li { font-size: 14px; line-height: 1.45; }
+.legal-modal ul { padding-left: 18px; }
+.legal-modal form { flex-direction: row; }
+@media (max-width: 700px) { .legal-bar { white-space: normal; } }
 
 /* --- Kapitel -------------------------------------------------------------------- */
 .chapter { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 6mm; }

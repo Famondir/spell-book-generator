@@ -73,4 +73,6 @@ Anforderungen und geplante Änderungen liegen als [OpenSpec](https://github.com/
 - **Magietheorie**: angeregt von den *Signs* aus *Witch Hat Atelier* und der Alchemie aus *Fullmetal Alchemist*; eigene Ausarbeitung.
 - **QR-Codes**: [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) von Kazuhiko Arase, MIT-Lizenz (`app/vendor/qrcode.js`).
 - **Schriften**: Cinzel, IM Fell English, Caveat – SIL Open Font License 1.1, siehe [`app/fonts/`](app/fonts/).
-- Pathfinder ist eine Marke von Paizo Inc. Dieses Projekt ist ein inoffizielles Fanprojekt und steht in keiner Verbindung zu Paizo.
+- **Eigennamen** aus Paizos Welt (Gottheiten, Orte, Figuren – etwa in Zaubernamen wie *Light of Iomedae*) sind kein Open Game Content. Sie werden nur beschreibend unter Paizos [Community Use Policy](https://paizo.com/licenses/communityuse) verwendet. Das Projekt bleibt deshalb kostenlos, nutzt keine Paizo-Logos und übernimmt keine längeren Paizo-Texte wörtlich.
+
+> Zauberbuch-Generator uses trademarks and/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy ([paizo.com/licenses/communityuse](https://paizo.com/licenses/communityuse)). We are expressly prohibited from charging you to use or access this content. Zauberbuch-Generator is not published, endorsed, or specifically approved by Paizo. For more information about Paizo Inc. and Paizo products, visit [paizo.com](https://paizo.com).

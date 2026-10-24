@@ -497,6 +497,8 @@
     dlg.showModal();
   });
 
+  $("#btn-legal").addEventListener("click", () => $("#legal-modal").showModal());
+
   // Ein- und ausklappbare Seitenleisten
   function applySides() {
     $("#view-browse .filters").classList.toggle("collapsed", !!state.ui.browseLeft);
