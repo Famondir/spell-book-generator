@@ -9,7 +9,10 @@
     owner: PROFILE.owner,
     bookTitle: PROFILE.bookTitle,
     subtitle: PROFILE.subtitle,
-    rules: "appendix",
+    startLeft: true,
+    refNo: false,
+    refQr: false,
+    refSource: false,
     frontMatter: true,
     onlyWizard: true,
     paper: "a5",
@@ -203,7 +206,7 @@
     };
     $("#d-print").onclick = () => printPages(pages.join(""));
     $("#d-scroll").onclick = () => printPages(BOOK.scrollPages(m, t, { paper: state.settings.scrollPaper }).map(BOOK.pageHTML).join(""), state.settings.scrollPaper);
-    BOOK.autofit($("#detail"));
+    BOOK.autofit($("#detail")).then(() => addRulesButtons($("#detail .pages")));
   }
 
   // --- Buchansicht ----------------------------------------------------------------
@@ -228,7 +231,7 @@
     r.pages.forEach((p, i) => {
       const last = units[units.length - 1];
       if (p.spell && last && last.spell === p.spell) last.n++;
-      else units.push({ spell: p.spell || null, start: i, n: 1, flow: /\bflow\b/.test(p.cls || "") });
+      else units.push({ spell: p.spell || null, start: i, n: 1 });
     });
     const pageBySpell = new Map(r.toc.map((x) => [x.m.id, x.page]));
     // Vorspann fürs Inhaltsverzeichnis: Titel jeder Seite bis zur ersten Formel (Fortsetzungsseiten zusammengefasst)
@@ -240,20 +243,19 @@
       const title = /title-page/.test(p.cls || "") ? "Titelblatt" : h ? strip(h[1]) : null;
       if (title && title !== front[front.length - 1]?.title) front.push({ title, page: p.no });
     }
-    bookCache = { key, entries, ...r, units, pageBySpell, front, flowPages: null };
+    const idxByNo = new Map(r.pages.map((p, i) => [p.no, i]));
+    // Seitenindizes, an denen ein Zauber beginnt (für „vorheriger/nächster Zauber“)
+    const starts = [...new Set(r.toc.map((x) => idxByNo.get(x.page)))].filter((i) => i != null).sort((x, y) => x - y);
+    bookCache = { key, entries, ...r, units, pageBySpell, front, starts, idxByNo };
     view.rendered = null;
     return bookCache;
   }
 
   // Position: g = Index der ersten sichtbaren Seite (über alle Seiten, der Regelanhang zählt nach dem Rendern mit)
-  const view = { g: store.get("bookPos", 0), rendered: null, busy: false };
+  const view = { g: store.get("bookPos", 0), rendered: null, nav: null };
   const spreadSize = () => {
     const w = $("#book-pages").clientWidth;
     return w >= 2 * 560 + 18 ? 2 : 1; // A5 = 148 mm ≈ 560 px
-  };
-  const totalPages = (d) => {
-    const last = d.units[d.units.length - 1];
-    return last && last.flow ? last.start + (d.flowPages || 1) : d.pages.length;
   };
   const unitAt = (d, g) => {
     for (let i = d.units.length - 1; i >= 0; i--) if (g >= d.units[i].start) return i;
@@ -265,7 +267,7 @@
     const byLevel = {};
     d.entries.forEach(({ m }) => (byLevel[m.spell.everyday ? "A" : m.level] = (byLevel[m.spell.everyday ? "A" : m.level] || 0) + 1));
     $("#book-stats").innerHTML = d.entries.length
-      ? `<b>${d.entries.length}</b> Formeln · <b>${d.spellPagesCount}</b> Seiten Formeln
+      ? `<b>${d.entries.length}</b> Formeln · <b>${d.spellPagesCount}</b> Seiten Formeln${d.fillers ? ` · ${d.fillers} Notizseiten` : ""} · <b>${d.pages.length}</b> Seiten gesamt
          <span class="muted">(Gesegnetes Buch: 1000 Seiten · gewöhnliches Zauberbuch: 100 Seiten)</span>
          <div class="muted">${Object.entries(byLevel).map(([l, n]) => (l === "A" ? "Alltag" : "Grad " + l) + ": " + n).join(" · ")}</div>`
       : `Das Buch ist leer. Nimm im Verzeichnis Zauber mit <b>+</b> auf.`;
@@ -273,6 +275,16 @@
     renderBookToc();
     showSpread();
   }
+
+  // Ausschnitt um Seite g: im Doppelseitenmodus wie ein gebundenes Buch
+  // (Index 0 = Seite 1 rechts allein, danach 1|2, 3|4 … = gerade Seite links, ungerade rechts)
+  const spreadAt = (g, s, total) => {
+    g = Math.max(0, Math.min(g, total - 1));
+    if (s === 1) return [g, g];
+    if (g === 0) return [0, 0];
+    const a = g % 2 === 1 ? g : g - 1;
+    return [a, Math.min(a + 1, total - 1)];
+  };
 
   function showSpread() {
     const d = bookData();
@@ -286,78 +298,61 @@
     // schmale Bildschirme: eine Seite auf Bildschirmbreite verkleinern
     const w = root.clientWidth;
     root.style.zoom = s === 1 && w < 560 ? (w / 570).toFixed(3) : "";
-    let g = Math.max(0, Math.min(view.g, totalPages(d) - 1));
-    g -= g % s;
-    view.g = g;
-    store.set("bookPos", g);
-    const u0 = unitAt(d, g), u1 = unitAt(d, Math.min(g + s - 1, totalPages(d) - 1));
+    const [ga, gb] = spreadAt(view.g, s, d.pages.length);
+    view.g = ga;
+    store.set("bookPos", ga);
+    const u0 = unitAt(d, ga), u1 = unitAt(d, gb);
     const want = u0 + "-" + u1;
     const reveal = () => {
-      // DOM-Seiten den globalen Seitenindizes zuordnen und nur den aktuellen Ausschnitt zeigen
+      // DOM-Seiten den Seitenindizes zuordnen und nur den aktuellen Ausschnitt zeigen
       const pages = [...root.querySelectorAll(":scope > .page")];
-      let unitIdx = -1, gi = 0;
-      for (const pg of pages) {
-        const u = +pg.dataset.unit;
-        if (u !== unitIdx) (unitIdx = u), (gi = d.units[u].start);
-        else gi++;
-        pg.classList.toggle("offstage", gi < g || gi >= g + s);
-      }
-      const flowUnit = d.units.findIndex((x) => x.flow);
-      if (flowUnit >= 0 && view.rendered && +view.rendered.split("-")[1] >= flowUnit && !d.flowPages) {
-        // Länge des Regelanhangs steht erst jetzt fest; „Ende“ dann wirklich ans Ende
-        d.flowPages = pages.filter((p) => +p.dataset.unit === flowUnit).length;
-        if (view.toEnd) {
-          view.toEnd = false;
-          view.g = totalPages(d) - 1;
-          return showSpread();
-        }
-      }
-      view.toEnd = false;
-      renderPager(d, g, s, pages.filter((p) => !p.classList.contains("offstage")).map((p, i) => p.querySelector(".page-foot span:last-child")?.textContent || d.pages[g + i]?.no || g + i + 1));
+      pages.forEach((pg) => pg.classList.toggle("offstage", +pg.dataset.idx < ga || +pg.dataset.idx > gb));
+      root.querySelectorAll(".page-ghost").forEach((x) => x.remove());
+      // Seite 1 liegt rechts: links ein leerer Platzhalter
+      if (s === 2 && ga === 0) pages[0]?.insertAdjacentHTML("beforebegin", `<div class="page-ghost"></div>`);
+      renderPager(d, ga, gb);
     };
     if (view.rendered === want) return reveal();
     view.rendered = want;
-    root.innerHTML = d.pages.slice(d.units[u0].start, d.units[u1].start + d.units[u1].n).map((p, i) => {
-      const gi = d.units[u0].start + i;
-      return BOOK.pageHTML(p).replace("<section ", `<section data-unit="${unitAt(d, gi)}" `);
-    }).join("");
+    const start = d.units[u0].start;
+    root.innerHTML = d.pages.slice(start, d.units[u1].start + d.units[u1].n).map((p, i) => BOOK.pageHTML(p).replace("<section ", `<section data-idx="${start + i}" `)).join("");
     root.classList.add("fitting");
-    renderPager(d, g, s);
+    renderPager(d, ga, gb);
     $("#book-pager").insertAdjacentHTML("beforeend", `<span class="muted pager-busy">Seiten werden gesetzt …</span>`);
     BOOK.autofit(root).then(() => {
       if (view.rendered !== want) return;
       root.classList.remove("fitting");
+      addRulesButtons(root);
       reveal();
     });
   }
 
-  function renderPager(d, g, s, shown) {
-    const total = totalPages(d);
-    const flowLast = d.units[d.units.length - 1]?.flow && !d.flowPages;
-    // Seitenzahlen aus den sichtbaren Seiten (im Regelanhang erst nach dem Umbruch bekannt)
-    const nos = shown && shown.length ? shown : [d.pages[Math.min(g, d.pages.length - 1)]?.no || g + 1];
-    const from = nos[0], to = nos.length > 1 ? nos[nos.length - 1] : null;
+  function renderPager(d, a, b) {
+    const total = d.pages.length;
+    const from = d.pages[a].no || a + 1, to = b > a ? d.pages[b].no || b + 1 : null;
+    const prevSpell = d.starts.filter((i) => i < a).pop(), nextSpell = d.starts.find((i) => i > b);
+    view.nav = { a, b, prevSpell, nextSpell };
     $("#book-pager").innerHTML = `
-      <button data-go="first" title="Anfang" ${g === 0 ? "disabled" : ""}>⏮</button>
-      <button data-go="prev" title="Zurückblättern" ${g === 0 ? "disabled" : ""}>‹</button>
-      <span class="pager-pos">Seite <input type="text" inputmode="numeric" id="book-goto" title="Seitenzahl eingeben und Enter drücken" value="${from || 1}${to ? `–${to}` : ""}" size="${String(from || 1).length + (to ? String(to).length + 1 : 0) + 1}"> <span class="muted">von ${(d.pages[0]?.no || 1) + total - 1}${flowLast ? "+" : ""}</span></span>
-      <button data-go="next" title="Weiterblättern" ${g + s >= total ? "disabled" : ""}>›</button>
-      <button data-go="last" title="Ende" ${g + s >= total ? "disabled" : ""}>⏭</button>
+      <button data-go="first" title="Anfang" ${a === 0 ? "disabled" : ""}>⏮</button>
+      <button data-go="prevSpell" title="Vorheriger Zauber" ${prevSpell == null ? "disabled" : ""}>«</button>
+      <button data-go="prev" title="Zurückblättern" ${a === 0 ? "disabled" : ""}>‹</button>
+      <span class="pager-pos">Seite <input type="text" inputmode="numeric" id="book-goto" title="Seitenzahl eingeben und Enter drücken" value="${from}${to ? `–${to}` : ""}" size="${String(from).length + (to ? String(to).length + 1 : 0) + 1}"> <span class="muted">von ${d.pages[total - 1].no || total}</span></span>
+      <button data-go="next" title="Weiterblättern" ${b >= total - 1 ? "disabled" : ""}>›</button>
+      <button data-go="nextSpell" title="Nächster Zauber" ${nextSpell == null ? "disabled" : ""}>»</button>
+      <button data-go="last" title="Ende" ${b >= total - 1 ? "disabled" : ""}>⏭</button>
       <button id="book-toc-toggle" class="${state.ui.toc ? "on" : ""}" title="Inhaltsverzeichnis rechts ein-/ausklappen">Inhalt</button>`;
   }
 
   $("#book-pager").addEventListener("click", (ev) => {
     const b = ev.target.closest("button");
-    if (!b) return;
+    if (!b || !view.nav) return;
     if (b.id === "book-toc-toggle") return toggleSide("toc");
-    const d = bookData(), s = spreadSize(), total = totalPages(d);
-    if (b.dataset.go === "first") view.g = 0;
-    if (b.dataset.go === "prev") view.g = Math.max(0, view.g - s);
-    if (b.dataset.go === "next") view.g = Math.min(total - 1, view.g + s);
-    if (b.dataset.go === "last") (view.g = total - 1), (view.toEnd = true);
+    const n = view.nav, total = bookData().pages.length;
+    const go = { first: 0, prev: n.a - 1, next: n.b + 1, last: total - 1, prevSpell: n.prevSpell, nextSpell: n.nextSpell }[b.dataset.go];
+    if (go == null) return;
+    view.g = go;
     showSpread();
   });
-  $("#book-pager").addEventListener("focusin", (ev) => ev.target.id === "book-goto" && ev.target.select());
   $("#book-pager").addEventListener("change", (ev) => {
     if (ev.target.id !== "book-goto") return;
     const no = parseInt(ev.target.value, 10);
@@ -371,9 +366,7 @@
   function gotoPageNo(no) {
     const d = bookData();
     const i = d.pages.findIndex((p) => p.no === no);
-    const last = d.pages[d.pages.length - 1];
-    // Seiten im Regelanhang liegen hinter der letzten zusammengesetzten Seite
-    view.g = i >= 0 ? i : last && no > last.no ? d.pages.length - 1 + (no - last.no) : 0;
+    view.g = i >= 0 ? i : no > (d.pages[d.pages.length - 1]?.no || 0) ? d.pages.length - 1 : 0;
     showSpread();
   }
   let resizeT = null;
@@ -405,22 +398,52 @@
     if (no) gotoPageNo(no);
   });
 
-  // Inhaltsverzeichnis rechts
+  // Inhaltsverzeichnis rechts: Akkordeon, Abschnitte zu Beginn eingeklappt
+  const tocOpen = new Set();
   function renderBookToc() {
     const d = bookData();
-    let lastGrade = null;
-    $("#book-toc-list").innerHTML = (d.front.length ? `<li class="toc-grade">Vorspann</li>` : "") +
-      d.front.map((x) => `<li data-page="${x.page}"><span class="q"></span><span class="nm"><b>${e(x.title)}</b></span><span class="pg">${x.page}</span></li>`).join("") +
-      d.toc.map((x) => {
+    const groups = [];
+    const add = (name, li) => {
+      if (!groups.length || groups[groups.length - 1].name !== name) groups.push({ name, items: [] });
+      groups[groups.length - 1].items.push(li);
+    };
+    d.front.forEach((x) => add("Vorspann", `<li data-page="${x.page}"><span class="q"></span><span class="nm"><b>${e(x.title)}</b></span><span class="pg">${x.page}</span></li>`));
+    d.toc.forEach((x) => {
       const gr = x.m.spell.everyday ? "Alltagszauber" : x.m.level === 0 ? "Zaubertricks" : U.ROMAN[x.m.level] + ". Grad";
-      const head = gr !== lastGrade ? `<li class="toc-grade">${gr}</li>` : "";
-      lastGrade = gr;
-      return head + `<li data-page="${x.page}"><span class="q">${quickGlyph(x.m)}</span><span class="nm"><b>${e(x.t.title)}</b><i>${e(x.m.name)}</i></span><span class="pg">${x.page}</span></li>`;
-    }).join("") + (d.units.some((u) => u.flow) ? `<li data-page="${d.pages[d.pages.length - 1].no}"><span class="q"></span><span class="nm"><b>Regelanhang</b></span><span class="pg">${d.pages[d.pages.length - 1].no}</span></li>` : "");
+      add(gr, `<li data-page="${x.page}"><span class="q">${quickGlyph(x.m)}</span><span class="nm"><b>${e(x.t.title)}</b><i>${e(x.m.name)}</i></span><span class="pg">${x.page}</span></li>`);
+    });
+    $("#book-toc-list").innerHTML = groups.map((g) => `<li class="toc-group ${tocOpen.has(g.name) ? "open" : ""}" data-grp="${e(g.name)}">
+        <button class="toc-grade"><span>${e(g.name)}</span><span class="muted">${g.items.length}</span></button>
+        <ul>${g.items.join("")}</ul></li>`).join("");
   }
   $("#book-toc-list").addEventListener("click", (ev) => {
+    const head = ev.target.closest(".toc-grade");
+    if (head) {
+      const grp = head.parentElement;
+      grp.classList.toggle("open");
+      grp.classList.contains("open") ? tocOpen.add(grp.dataset.grp) : tocOpen.delete(grp.dataset.grp);
+      return;
+    }
     const li = ev.target.closest("li[data-page]");
     if (li) gotoPageNo(+li.dataset.page);
+  });
+
+  // Regeltext auf Abruf: (i) an jedem Zauberkopf der Vorschau
+  function addRulesButtons(root) {
+    root.querySelectorAll(".sp-head").forEach((h) => {
+      const id = h.closest("[data-spell]")?.dataset.spell;
+      if (!id || h.querySelector(".rules-i")) return;
+      h.insertAdjacentHTML("beforeend", `<button class="rules-i" data-spell="${e(id)}" title="Regeltext anzeigen">i</button>`);
+    });
+  }
+  document.addEventListener("click", (ev) => {
+    const b = ev.target.closest(".rules-i");
+    if (!b) return;
+    const x = byId.get(b.dataset.spell);
+    if (!x) return;
+    const dlg = $("#rules-modal");
+    dlg.querySelector(".rm-body").innerHTML = BOOK.rulesBox(model(x));
+    dlg.showModal();
   });
 
   // Ein- und ausklappbare Seitenleisten
@@ -444,12 +467,32 @@
     BOOK.autofit($("#theory-pages"));
   }
 
+  // --- Fortschritt -----------------------------------------------------------------
+  const progress = {
+    show(label, done, total) {
+      const el = $("#progress");
+      el.hidden = false;
+      el.querySelector(".pg-label").textContent = label;
+      el.querySelector(".pg-count").textContent = total ? `${done}/${total}` : "";
+      el.querySelector(".pg-bar i").style.width = total ? (100 * done) / total + "%" : "100%";
+    },
+    hide() {
+      $("#progress").hidden = true;
+    },
+  };
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+
   // --- Drucken --------------------------------------------------------------------
+  // pages: Seitenobjekte (werden in Häppchen gesetzt, mit Zähler) oder fertiges HTML.
+  // Fertig gesetzte Druckaufträge werden im Speicher gehalten (gleicher Inhalt + Format = sofort druckbereit).
   const PAPER = { a5: "A5", a4: "A4", "a4-2up": "A4 landscape" };
-  function printPages(html, paperOverride) {
+  const printCache = new Map();
+  let printing = false;
+  async function printPages(pages, paperOverride, label = "Seiten setzen") {
+    if (printing) return;
+    printing = true;
     const root = $("#print-root");
     const paper = paperOverride || state.settings.paper || "a5";
-    root.innerHTML = html;
     root.className = "paper-" + paper + (state.settings.printBackground ? "" : " no-bg");
     let st = $("#page-size-style");
     if (!st) {
@@ -462,40 +505,46 @@
     const done = () => {
       document.body.classList.remove("printing");
       root.innerHTML = "";
+      printing = false;
       window.removeEventListener("afterprint", done);
     };
     window.addEventListener("afterprint", done);
-    BOOK.autofit(root).then(() => {
+    try {
+      const html = typeof pages === "string" ? pages : pages.map(BOOK.pageHTML).join("");
+      const key = U.hash(html) + "|" + html.length + "|" + paper;
+      if (printCache.has(key)) root.innerHTML = printCache.get(key);
+      else {
+        progress.show(label, 0, typeof pages === "string" ? 1 : pages.length);
+        await tick();
+        await BOOK.typeset(root, pages, (n, total) => progress.show(label, n, total));
+        printCache.set(key, root.innerHTML);
+        if (printCache.size > 3) printCache.delete(printCache.keys().next().value);
+      }
       if (paper === "a4-2up") {
         // je zwei A5-Seiten auf ein A4-Querblatt
-        const pages = [...root.querySelectorAll(":scope > .page")];
-        for (let i = 0; i < pages.length; i += 2) {
+        const list = [...root.querySelectorAll(":scope > .page")];
+        for (let i = 0; i < list.length; i += 2) {
           const sheet = document.createElement("div");
           sheet.className = "sheet";
-          pages[i].before(sheet);
-          sheet.append(pages[i]);
-          if (pages[i + 1]) sheet.append(pages[i + 1]);
+          list[i].before(sheet);
+          sheet.append(list[i]);
+          if (list[i + 1]) sheet.append(list[i + 1]);
         }
       }
-      setTimeout(() => window.print(), 50);
-    });
+    } finally {
+      progress.hide();
+    }
+    setTimeout(() => window.print(), 50);
   }
   $("#btn-print-scrolls").onclick = () => {
     const entries = bookEntries();
     if (!entries.length) return;
-    printPages(entries.flatMap(({ m, t }) => BOOK.scrollPages(m, t, { paper: state.settings.scrollPaper })).map(BOOK.pageHTML).join(""), state.settings.scrollPaper);
+    printPages(entries.flatMap(({ m, t }) => BOOK.scrollPages(m, t, { paper: state.settings.scrollPaper })), state.settings.scrollPaper, "Schriftrollen setzen");
   };
-  $("#btn-print-book").onclick = () => {
-    const b = $("#btn-print-book"), label = b.textContent;
-    b.textContent = "Wird vorbereitet …";
-    b.disabled = true;
-    // dem Knopf Zeit zum Neuzeichnen geben, dann das ganze Buch für den Druck aufbauen
-    setTimeout(() => {
-      printPages(bookData().pages.map(BOOK.pageHTML).join(""));
-      const reset = () => ((b.textContent = label), (b.disabled = false), window.removeEventListener("afterprint", reset));
-      window.addEventListener("afterprint", reset);
-      setTimeout(reset, 120000);
-    }, 30);
+  $("#btn-print-book").onclick = () => printPages(bookData().pages, null, "Buch setzen");
+  $("#btn-print-rules").onclick = () => {
+    const d = bookData();
+    if (d.entries.length) printPages(BOOK.rulesBook(d.entries, state.settings), null, "Regelband setzen");
   };
 
   // --- Ansichten ------------------------------------------------------------------
@@ -560,11 +609,14 @@
       const lookup = new Map(ALL.map((x) => [norm(x.s.name), x.s.id]));
       const missing = [];
       const found = [];
-      for (const n of names) {
+      for (let i = 0; i < names.length; i++) {
+        const n = names[i];
         const id = lookup.get(norm(n)) || (byId.has(n) ? n : null);
         if (id) found.push(id);
         else missing.push(n);
+        if (i % 25 === 0) progress.show("Zauber zuordnen", i + 1, names.length), await tick();
       }
+      progress.hide();
       if (!found.length) throw new Error("Keine bekannten Zaubernamen gefunden.");
       const replace = !state.book.size || confirm(`${found.length} Zauber gefunden.\nOK = Buch ersetzen, Abbrechen = zum bestehenden Buch hinzufügen.`);
       if (replace) state.book = new Set();
@@ -573,12 +625,17 @@
       if (settings) Object.assign(state.settings, settings);
       if (preparation) PREP.importData(preparation);
       save();
+      progress.show("Buch zusammensetzen", 0, 0);
+      await tick();
+      bookData();
+      progress.hide();
       updateCount();
       renderList();
       if (state.view === "book") renderBook();
       if (state.view === "prepare") PREP.render();
       alert(`${found.length} Zauber übernommen, ${state.book.size} jetzt im Buch.` + (missing.length ? `\nNicht gefunden (${missing.length}): ${missing.slice(0, 30).join(", ")}${missing.length > 30 ? " …" : ""}` : ""));
     } catch (err) {
+      progress.hide();
       alert("Datei konnte nicht gelesen werden: " + err.message);
     }
     ev.target.value = "";

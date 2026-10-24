@@ -191,7 +191,7 @@ main { flex: 1; min-height: 0; }
    eingeklappt bleibt nur die Lasche sichtbar, nichts verschiebt sich. */
 .side { position: relative; }
 .side-toggle {
-  position: absolute; top: 10px; z-index: 5;
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 5;
   width: 22px; height: 40px; padding: 0;
   display: flex; align-items: center; justify-content: center;
   background: var(--ui-panel); border: 1px solid var(--ui-line);
@@ -213,6 +213,15 @@ main { flex: 1; min-height: 0; }
 .toc-side.collapsed .side-toggle { right: 0; border-right: 1px solid var(--ui-line); }
 .toc-side.collapsed .side-toggle::before { content: "‹"; }
 .toc-list { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; }
+.toc-group { display: block !important; padding: 0 !important; cursor: default !important; }
+.toc-group:hover { background: none !important; }
+.toc-group > ul { list-style: none; margin: 0 0 6px; padding: 0; display: none; }
+.toc-group.open > ul { display: block; }
+.toc-grade { width: 100%; display: flex; justify-content: space-between; align-items: center; border: none; border-radius: 6px; background: none; padding: 6px 4px; font-family: var(--font-title); font-weight: 600; color: var(--ui-accent); text-align: left; }
+.toc-grade::before { content: "▸"; margin-right: 6px; font-size: 0.8em; }
+.toc-group.open > .toc-grade::before { content: "▾"; }
+.toc-grade span:first-child { flex: 1; }
+.toc-grade .muted { font-family: system-ui, sans-serif; font-weight: 400; }
 .toc-list li { display: flex; align-items: center; gap: 8px; padding: 3px 4px; border-radius: 6px; cursor: pointer; }
 .toc-list li:hover { background: var(--ui-hover); }
 .toc-list li.toc-grade { font-family: var(--font-title); font-weight: 600; color: var(--ui-accent); cursor: default; margin-top: 8px; }
@@ -536,10 +545,10 @@ label.toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 1
   .book-main { overflow: visible; }
   .filters.collapsed, .toc-side.collapsed { width: 100%; height: 0; padding: 0; border: none; }
   .toc-side { width: 100%; border-left: none; border-top: 1px solid var(--ui-line); max-height: 60vh; }
-  .filters .side-toggle, .filters.collapsed .side-toggle { top: 100%; left: auto; right: 16px; width: 40px; height: 22px; border: 1px solid var(--ui-line); border-top: none; border-radius: 0 0 6px 6px; }
+  .filters .side-toggle, .filters.collapsed .side-toggle { transform: none; top: 100%; left: auto; right: 16px; width: 40px; height: 22px; border: 1px solid var(--ui-line); border-top: none; border-radius: 0 0 6px 6px; }
   .filters .side-toggle::before { content: "▴"; }
   .filters.collapsed .side-toggle::before { content: "▾"; }
-  .toc-side .side-toggle, .toc-side.collapsed .side-toggle { top: auto; bottom: 100%; right: 16px; width: 40px; height: 22px; border: 1px solid var(--ui-line); border-bottom: none; border-radius: 6px 6px 0 0; }
+  .toc-side .side-toggle, .toc-side.collapsed .side-toggle { transform: none; top: auto; bottom: 100%; right: 16px; width: 40px; height: 22px; border: 1px solid var(--ui-line); border-bottom: none; border-radius: 6px 6px 0 0; }
   .toc-side .side-toggle::before { content: "▾"; }
   .toc-side.collapsed .side-toggle::before { content: "▴"; }
   .detail-side { width: 100%; }
@@ -548,3 +557,38 @@ label.toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 1
   .tabs button { white-space: nowrap; }
   .page { transform-origin: top left; }
 }
+
+/* --- Kreisfenster: Knöpfe untereinander ------------------------------------------ */
+.cm-side .row { flex-direction: column; align-items: stretch; }
+
+/* --- Doppelseiten wie im Buch, Notizseiten ------------------------------------------ */
+.page-ghost { width: 148mm; height: 210mm; flex-shrink: 0; }
+.filler { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4mm; opacity: 0.35; }
+.filler-orn { width: 30mm; height: 30mm; fill: none; stroke: var(--ink); stroke-width: 1.2; }
+.filler-orn .thin { stroke-width: 0.6; }
+.filler-txt { font-family: var(--font-hand); font-size: 14pt; color: var(--ink-soft); }
+
+/* --- Regelverweise im Zauberkopf --------------------------------------------------- */
+.sp-ref { font-size: 0.7em; color: var(--ink-soft); letter-spacing: 0.04em; margin-top: 0.2em; }
+.sp-qr { position: absolute; top: -0.2em; left: 0; width: 13mm; height: 13mm; color: var(--ink); }
+.sp-qr svg { width: 100%; height: 100%; display: block; fill: currentColor; stroke: none; }
+.rules-i {
+  position: absolute; left: 0; bottom: -0.2em; width: 22px; height: 22px; padding: 0;
+  border-radius: 50%; border: 1px solid var(--ink-soft); background: var(--parch); color: var(--ink);
+  font: italic 700 13px/1 Georgia, serif; cursor: pointer;
+}
+.rules-i:hover { background: var(--rubric); color: #fff; border-color: var(--rubric); }
+.rb-no { color: var(--rubric); font-weight: 800; }
+.rules-modal { max-width: 640px; max-height: 88vh; }
+.rules-modal .rm-body { overflow-y: auto; max-height: calc(88vh - 90px); }
+.rules-modal form { flex-direction: row; }
+fieldset.refs { border: 1px solid var(--ui-line); border-radius: 6px; padding: 6px 10px; display: flex; flex-direction: column; gap: 4px; }
+fieldset.refs legend { font-size: 0.9em; color: var(--ui-muted); }
+
+/* --- Fortschritt ---------------------------------------------------------------- */
+.progress { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 1000; background: var(--ui-panel); color: var(--ui-text); border: 1px solid var(--ui-line); border-radius: 10px; padding: 10px 16px; box-shadow: 0 4px 18px rgb(0 0 0 / 0.25); display: flex; align-items: center; gap: 10px; min-width: 260px; }
+.progress[hidden] { display: none; }
+.progress .pg-bar { flex: 1; min-width: 80px; height: 6px; background: var(--ui-line); border-radius: 3px; overflow: hidden; }
+.progress .pg-bar i { display: block; height: 100%; background: var(--ui-accent); }
+.progress .pg-count { font-variant-numeric: tabular-nums; }
+@media print { .rules-i, .progress { display: none !important; } }

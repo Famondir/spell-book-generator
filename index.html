@@ -26,9 +26,12 @@
       <label>Besitzer <input name="owner"></label>
       <label>Buchtitel <input name="bookTitle"></label>
       <label>Untertitel <input name="subtitle"></label>
-      <label>Regelwerte im Druck
-        <select name="rules"><option value="appendix">als Anhang am Buchende</option><option value="none">nicht drucken</option></select>
-      </label>
+      <label class="check"><input type="checkbox" name="startLeft"> Mehrseitige Zauber beginnen links (fügt bei Bedarf Notizseiten ein)</label>
+      <fieldset class="refs"><legend>Regelverweise auf den Zauberseiten (für den Druck)</legend>
+        <label class="check"><input type="checkbox" name="refNo"> Nummer im Regelband</label>
+        <label class="check"><input type="checkbox" name="refQr"> QR-Code zur Seite bei Archives of Nethys</label>
+        <label class="check"><input type="checkbox" name="refSource"> Quellenangabe (Regelwerk und Seite)</label>
+      </fieldset>
       <label>Papierformat
         <select name="paper"><option value="a5">A5 (eine Buchseite pro Blatt)</option><option value="a4">A4 (A5-Seite hochskaliert)</option><option value="a4-2up">A4 quer (zwei A5-Seiten nebeneinander)</option></select>
       </label>
@@ -94,6 +97,7 @@
         <div class="book-bar">
           <div id="book-stats"></div>
           <div class="row">
+            <button id="btn-print-rules" title="Zweites Buch nur mit den Regeltexten, nummeriert wie das Inhaltsverzeichnis">Regelband drucken</button>
             <button id="btn-print-scrolls" title="Pro Zauber zwei Seiten: Kreis vorne, Regeln hinten – beidseitig drucken">Alle als Schriftrollen drucken</button>
             <button id="btn-print-book" class="primary">Buch drucken / als PDF</button>
           </div>
@@ -134,6 +138,13 @@
     </div>
   </dialog>
 
+  <dialog id="rules-modal" class="rules-modal">
+    <div class="rm-body"></div>
+    <form method="dialog" class="row end"><button class="primary">Schließen</button></form>
+  </dialog>
+
+  <div id="progress" class="progress" hidden><span class="pg-label"></span> <b class="pg-count"></b><span class="pg-bar"><i></i></span></div>
+
   <div id="print-root"></div>
 
   <script src="data/profile.js"></script>
@@ -143,6 +154,7 @@
   <script src="data/spells.js"></script>
   <script src="data/everyday_spells.js"></script>
   <script src="data/custom_texts.js"></script>
+  <script src="app/vendor/qrcode.js"></script>
   <script src="app/js/util.js"></script>
   <script src="app/js/everyday.js"></script>
   <script src="app/js/theory.js"></script>

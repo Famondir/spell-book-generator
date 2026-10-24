@@ -8,8 +8,29 @@
   // ---------------------------------------------------------------------------
   // Bausteine
   // ---------------------------------------------------------------------------
-  function head(m, t, small) {
-    return `<header class="sp-head ${small ? "small" : ""}">${quickGlyph(m, { cls: "sp-quick" })}
+  // Regelverweise (optional): Nummer im Regelband, Quellenangabe, QR-Code zur AoN-Seite
+  const aonUrl = (s) => "https://www.aonprd.com/SpellDisplay.aspx?ItemName=" + encodeURIComponent(s.everyday ? s.base : s.name);
+  function qrSVG(text) {
+    if (typeof qrcode !== "function") return "";
+    const q = qrcode(0, "L");
+    q.addData(text);
+    q.make();
+    const n = q.getModuleCount();
+    let d = "";
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += `M${c} ${r}h1v1h-1z`;
+    return `<svg class="qr" viewBox="-1 -1 ${n + 2} ${n + 2}" shape-rendering="crispEdges"><path d="${d}"/></svg>`;
+  }
+  function refBlock(m, ref) {
+    if (!ref) return "";
+    const s = m.spell;
+    const src = (x) => String(x || "").replace(/\bpg\. ?/g, "S. ").replace(/^PRPG /, "");
+    const parts = [];
+    if (ref.no) parts.push(`Regelband Nr. ${ref.no}`);
+    if (ref.source) parts.push(e(s.everyday ? `nach ${s.base}, ${src(s.baseSource)}` : src(s.source)));
+    return (parts.length ? `<div class="sp-ref">${parts.join(" · ")}</div>` : "") + (ref.qr ? `<div class="sp-qr" title="${e(aonUrl(s))}">${qrSVG(aonUrl(s))}</div>` : "");
+  }
+  function head(m, t, small, ref) {
+    return `<header class="sp-head ${small ? "small" : ""}">${quickGlyph(m, { cls: "sp-quick" })}${refBlock(m, ref)}
       <div class="sp-meta">${m.spell.everyday ? "Alltagszauber" : m.level === 0 ? "Fingerübung" : U.ROMAN[m.level] + ". Ordnung"} · ${e(SCHOOL_DE(m))}${m.subschools.length ? " (" + m.subschools.map((s) => T.SUBSCHOOLS[s].de).join(", ") + ")" : ""}</div>
       <h2 class="sp-title">${e(t.title)}</h2>
       <div class="sp-epithet">${e(t.epithet)}</div>
@@ -144,7 +165,7 @@
     const L = opts.detail ? 10 : m.level;
     const n = t.notes;
     const B = {
-      head: () => head(m, t),
+      head: () => head(m, t, false, opts.ref),
       circle: () => circleBox(m, t, "big"),
       formula: () => formulaBlock(t),
       comp: () => componentsBlock(m, t),
@@ -274,11 +295,11 @@
     return `<div class="rules-source"><div><b>Quelle</b> ${e(s.source || "unbekannt")}</div><div><b>Regeltext</b> Open Game Content (OGL 1.0a), übernommen über ${via}</div></div>`;
   }
 
-  function rulesBox(m) {
+  function rulesBox(m, no) {
     const s = m.spell;
     const row = (k, v) => (v ? `<div class="rr"><b>${k}</b> ${e(v)}</div>` : "");
     return `<div class="rules splittable">
-      <div class="rules-title">${e(s.name)}</div>
+      <div class="rules-title">${no ? `<span class="rb-no">Nr. ${no}</span> ` : ""}${e(s.name)}</div>
       ${row("Schule", s.school_raw)}
       ${s.everyday ? row("Grad", "Alltagszauber (Grad 0)") + row("Basiszauber", s.base + " – " + Object.entries(s.baseLevels).map(([k, v]) => k + " " + v).join(", ")) : row("Grad", Object.entries(s.levels).map(([k, v]) => k + " " + v).join(", "))}
       ${row("Zeitaufwand", s.casting_time)}${row("Komponenten", s.components)}${row("Reichweite", s.range)}
@@ -393,8 +414,10 @@
     let pageNo = front.length + tocPageCount + 1;
     const body = [];
     let pendingHalf = null;
-    for (const { m, t } of entries) {
-      const sp = spellPages(m, t, { detail: settings.detailPrint });
+    let fillers = 0;
+    const ref = settings.refNo || settings.refQr || settings.refSource;
+    entries.forEach(({ m, t }, idx) => {
+      const sp = spellPages(m, t, { detail: settings.detailPrint, ref: ref ? { no: settings.refNo && idx + 1, qr: settings.refQr, source: settings.refSource } : null });
       if (sp.length === 1 && sp[0].half) {
         const block = `<div class="half" data-spell="${e(m.id)}">${sp[0].html}</div>`;
         if (pendingHalf) {
@@ -407,14 +430,19 @@
           toc.push({ t, m, page: pageNo });
           pageNo++;
         }
-        continue;
+        return;
       }
       pendingHalf = null;
+      // Mehrseitige Zauber beginnen links (gerade Seite), damit sie aufgeschlagen nebeneinander liegen
+      if (settings.startLeft !== false && sp.length > 1 && pageNo % 2 === 1) {
+        body.push({ no: pageNo++, running: "", cls: "filler-page", html: fillerHTML() });
+        fillers++;
+      }
       toc.push({ t, m, page: pageNo });
       sp.forEach((p, i) => {
         body.push({ html: p.html, spell: m.id, cls: p.first ? "first-page" : "", no: pageNo++, running: t.title + (sp.length > 1 ? ` · ${i + 1}/${sp.length}` : "") });
       });
-    }
+    });
     front.forEach((p, i) => pages.push({ ...p, no: i + 1, running: "" }));
     if (settings.frontMatter) {
       for (let i = 0; i < tocPageCount; i++) {
@@ -428,12 +456,25 @@
       }
     }
     pages.push(...body);
-    if (settings.rules === "appendix" && entries.length) {
-      // Regelanhang: alle Regeltexte auf einer fließenden Seite; autofit() verteilt sie auf Folgeseiten
-      pages.push({ no: pageNo, running: "Regelanhang", html: "<h3>Regelanhang</h3>" + entries.map(({ m }) => rulesBox(m)).join(""), cls: "rules-page flow" });
-    }
-    const spellPagesCount = body.length;
-    return { pages, toc, spellPagesCount };
+    const spellPagesCount = body.length - fillers;
+    return { pages, toc, spellPagesCount, fillers };
+  }
+
+  // Leere Seite vor einem mehrseitigen Zauber
+  const fillerHTML = () => `<div class="filler"><svg viewBox="-50 -50 100 100" class="filler-orn"><circle r="44"/><circle r="38" class="thin"/><path d="M0-38L33 19-33 19Z M0 38L33-19-33-19Z" class="thin"/><circle r="6"/></svg><div class="filler-txt">Für Notizen</div></div>`;
+
+  // Regelband: zweites Buch nur mit Regeltexten, nummeriert wie das Inhaltsverzeichnis des Zauberbuchs
+  function rulesBook(entries, settings) {
+    const pages = [{ cls: "title-page", no: 1, running: "", html: `<div class="tp"><h1>Regelband</h1><div class="tp-owner">${e(settings.bookTitle)}</div><div class="tp-sub">Regeltexte aller Formeln in der Reihenfolge des Zauberbuchs · Open Game Content (OGL 1.0a)</div></div>` }];
+    const groups = new Map();
+    entries.forEach(({ m }, i) => {
+      const k = m.spell.everyday ? "Alltagszauber" : m.level === 0 ? "Zaubertricks" : U.ROMAN[m.level] + ". Grad";
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(rulesBox(m, i + 1));
+    });
+    // je Abschnitt eine fließende Seite; der Umbruch verteilt sie auf Folgeseiten
+    for (const [k, boxes] of groups) pages.push({ no: 0, running: "Regelband · " + k, cls: "rules-page flow", html: `<h3>${e(k)}</h3>` + boxes.join("") });
+    return pages;
   }
 
   function pageHTML(p) {
@@ -543,7 +584,7 @@
     }
   }
 
-  function fit(root) {
+  function fit(root, seen) {
     flow(root);
     rebalance(root);
     const over = (el) => el.scrollHeight > el.clientHeight + 1;
@@ -553,7 +594,8 @@
       return last ? el.clientHeight - (last.offsetTop + last.offsetHeight - el.offsetTop) : el.clientHeight;
     };
     const groups = new Map();
-    const seenNotes = new Set([...root.querySelectorAll(".note")].filter((n) => !n.closest(".opt")).map((n) => n.textContent.trim()));
+    const seenNotes = seen || new Set();
+    root.querySelectorAll(".note").forEach((n) => !n.closest(".opt") && seenNotes.add(n.textContent.trim()));
     for (const inner of root.querySelectorAll(".page-inner, .half")) {
       if (inner.classList.contains("page-inner") && inner.querySelector(".half")) continue;
       if (inner.closest(".page.flow")) continue;
@@ -603,11 +645,49 @@
       }
     }
   }
+  // Setzen in Häppchen: Seiten eines Zaubers bleiben zusammen; zwischen den Häppchen bekommt der Browser Luft
+  // und onProgress(erledigt, gesamt) wird aufgerufen. pages: Array von Seitenobjekten oder fertiges HTML.
+  async function typeset(root, pages, onProgress, chunk = 12) {
+    if (document.fonts) await document.fonts.ready;
+    if (typeof pages === "string") {
+      root.innerHTML = pages;
+      fit(root);
+      onProgress && onProgress(1, 1);
+      return;
+    }
+    root.innerHTML = "";
+    const groups = [];
+    for (const p of pages) {
+      const last = groups[groups.length - 1];
+      if (p.spell && last && last.spell === p.spell) last.pages.push(p);
+      else groups.push({ spell: p.spell, pages: [p] });
+    }
+    const seen = new Set();
+    let done = 0;
+    for (let i = 0; i < groups.length; ) {
+      const part = [];
+      while (i < groups.length && (part.length < chunk || !part.length)) part.push(...groups[i++].pages);
+      const box = document.createElement("div");
+      root.appendChild(box);
+      box.innerHTML = part.map(pageHTML).join("");
+      fit(box, seen);
+      box.replaceWith(...box.childNodes);
+      done += part.length;
+      onProgress && onProgress(done, pages.length);
+      await new Promise((r) => setTimeout(r, 0));
+    }
+    // fließende Seiten (Regelband) haben Folgeseiten bekommen: fortlaufend nummerieren
+    if (root.querySelector(".flow")) {
+      let no = 1;
+      root.querySelectorAll(":scope > .page > .page-foot span:last-child").forEach((f) => (f.textContent = no++));
+    }
+  }
+
   const autofit = (root) => (document.fonts ? document.fonts.ready.then(() => fit(root)) : Promise.resolve(fit(root)));
 
   function pageHTMLAttr(p) {
     return p.spell ? ` data-spell="${e(p.spell)}"` : "";
   }
 
-  window.BOOK = { spellPages, scrollPages, assemble, pageHTML, autofit, rulesBox, frontMatter };
+  window.BOOK = { spellPages, scrollPages, assemble, rulesBook, pageHTML, autofit, typeset, rulesBox, frontMatter };
 })();
