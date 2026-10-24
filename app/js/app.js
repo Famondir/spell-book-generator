@@ -819,7 +819,8 @@
     if (!cls.deity) return;
     const all = $("#char-deity-all").checked;
     const list = (window.DEITIES || []).filter((d) => all || !cls.alignments || cls.alignments.includes(d.align));
-    $("#deity-list").innerHTML = list.map((d) => `<option value="${e(d.name)}">${e(d.align)} · ${e(d.title || d.pantheon)}</option>`).join("");
+    // Beschriftung enthält den Namen: manche Browser (Firefox) suchen nur in der Beschriftung, nicht im Wert
+    $("#deity-list").innerHTML = list.map((d) => `<option value="${e(d.name)}" label="${e(d.name)} – ${e(d.align)}, ${e(d.title || d.pantheon)}"></option>`).join("");
     const cur = deityById(CHARS.current().deity) || (CLASS.deity ? window.DEITY : null);
     if (document.activeElement !== $("#char-deity")) $("#char-deity").value = cur ? cur.name : "";
     $("#char-deity-info").textContent = cur ? `${cur.name}: ${cur.align}, ${cur.areas.join(", ")} · Symbol: ${cur.symbol}` : "Noch keine Gottheit gewählt (Standard: Iomedae).";
@@ -877,6 +878,7 @@
       cm.querySelector(".cm-legend").innerHTML = "";
     }
     cmSpell = x ? x.s.id : null;
+    cmVitrail = null;
     cmAnnot = false;
     cm.dataset.legend = cm.querySelector(".cm-legend").innerHTML;
     $("#cm-annot").hidden = !x;
@@ -892,16 +894,27 @@
     cmSvg = big;
     cmSpell = null;
     cmName = (x ? x.s.id : "fenster") + "-fenster";
+    cmVitrail = x || null;
+    cmAnnot = false;
     if (x) {
-      const m = model(x), t = texts(x);
+      const t = texts(x);
       cm.querySelector(".cm-head").innerHTML = `<h3>${e(t.title)}</h3><div class="muted">${e(t.epithet)} · ${e(x.s.name)}</div>`;
-      cm.querySelector(".cm-legend").innerHTML = `<dl class="struct">${VITRAIL.legend(m, window.DEITY).map((l) => `<dt>${e(l.k)}</dt><dd>${e(l.t)}</dd>`).join("")}</dl>`;
+      renderModalVitrail();
     } else {
       cm.querySelector(".cm-head").innerHTML = `<h3>Andachtsbild</h3>`;
       cm.querySelector(".cm-legend").innerHTML = "";
     }
-    $("#cm-annot").hidden = true;
+    $("#cm-annot").hidden = !x;
     cm.showModal();
+  }
+  // Andachtsbild im Dialog: mit „Beschriftung“ nummeriert, Legende als Liste mit denselben Nummern
+  let cmVitrail = null;
+  function renderModalVitrail() {
+    const m = model(cmVitrail);
+    cm.querySelector(".cm-figure").innerHTML = VITRAIL.render(m, window.DEITY, { annotate: cmAnnot, cls: "cm-svg" });
+    cmSvg = cm.querySelector(".cm-figure svg");
+    cm.querySelector(".cm-legend").innerHTML = `<ol class="annot-list">${VITRAIL.legend(m, window.DEITY).map((l) => `<li value="${l.n}"><b>${e(l.k)}:</b> ${e(l.t)}</li>`).join("")}</ol>`;
+    $("#cm-annot").classList.toggle("primary", cmAnnot);
   }
   let cmSpell = null, cmAnnot = false;
   function renderModalCircle() {
@@ -917,7 +930,7 @@
   }
   $("#cm-annot").onclick = () => {
     cmAnnot = !cmAnnot;
-    renderModalCircle();
+    cmVitrail ? renderModalVitrail() : renderModalCircle();
   };
   $("#cm-close").onclick = () => cm.close();
   cm.addEventListener("click", (ev) => { if (ev.target === cm) cm.close(); });

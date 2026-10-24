@@ -470,10 +470,12 @@
       { html: deityPage(d) },
       {
         html: `<h3>Vom Lesen der Fenster</h3><p>Zu jedem Gebet gehört ein Fenster. Es wird nicht gezeichnet, um verstanden zu werden, sondern um davor zu knien. Wer es dennoch lesen will, findet darin alles, worum das Gebet bittet:</p>
-          <div class="pr-grid"><figure class="vt-box">${VITRAIL.render(sample, d)}</figure>
-          <dl class="struct">${legend.map((l) => `<dt>${e(l.k)}</dt><dd>${e(l.t)}</dd>`).join("")}</dl></div>
-          <p class="hint">Beispiel: ${e(PRAYER.texts(sample, d).title)} (${e(sample.name)}). Die Bahnen zählen den Grad, das Bogenfeld trägt das Zeichen der Gottheit, die Farben sind die der Kirche.</p>`,
+          <div class="pr-grid"><figure class="vt-box">${VITRAIL.render(sample, d, { annotate: true })}</figure>
+          <ol class="annot-list vt-legend">${legend.map((l) => `<li value="${l.n}"><b>${e(l.k)}:</b> ${e(l.t)}</li>`).join("")}</ol></div>
+          <p class="hint">Beispiel: ${e(PRAYER.texts(sample, d).title)} (${e(sample.name)}). Die folgenden Seiten zeigen alle Farben und Formen.</p>`,
       },
+      { html: glassPage(d) },
+      { html: formsPage(d) },
       {
         html: `<h3>Vom Gebet</h3>
           <p>Jeden Tag zur selben Stunde verbringt der Streiter eine Stunde in stillem Gebet und Betrachtung. Was er erbittet, wird ihm gewährt, solange er dem Kodex treu bleibt; er muss es nicht verstehen, nur darum bitten.</p>
@@ -481,6 +483,31 @@
           <p>Ein heiliges Symbol in der Hand genügt als Fokus. Rüstung behindert das Gebet nicht.</p>`,
       },
     ];
+  }
+
+
+  // Legendenseiten des Breviers: alle Gläser und Formen, die ein Fenster tragen kann
+  function glassPage(d) {
+    const base = VITRAIL.palette(d);
+    return `<h3>Die Gläser</h3><p class="hint">Jede Essenz hat ihr eigenes Glas. Es erscheint als Akzentscheibe, so oft wie ihr Anteil am Zauber, und im Medaillon, wenn sie die Hauptessenz ist.</p>
+      <div class="legend-grid vt-glass">${T.ESSENCES.map((x) => `<div class="lg">${VITRAIL.glassSwatch(VITRAIL.ESS_GLASS[x.id])}<div><b>${x.latin}</b> – ${e(x.de.replace(/ \(.*\)$/, ""))}<br><span>Gegenpol: ${T.ESS[x.opp].latin}</span></div></div>`).join("")}</div>
+      <h4>Grundscheiben</h4><p>Die übrigen Scheiben tragen die heiligen Farben der Gottheit${d ? ` – bei ${e(d.name)}: ` : ""}${d && d.colors.length ? d.colors.map((c) => `<span class="swatch" style="background:${c.hex}"></span>${e(c.name)}`).join(" ") : d ? "keine überliefert, daher eine Palette nach Gesinnung: " + base.map((c) => `<span class="swatch" style="background:${c}"></span>`).join("") : ""}. Die erste Farbe fasst auch das Medaillon und färbt den Grund des Bogenfelds.</p>`;
+  }
+  function formsPage(d) {
+    const base = VITRAIL.palette(d);
+    const tint = base[0];
+    const schools = Object.entries(T.SCHOOLS).filter(([k]) => k !== "universal").concat([["universal", T.SCHOOLS.universal]]);
+    const durs = [["instant", "Augenblicklich – schlichtes Band"], ["rounds", "Runden – Quader"], ["minutes", "Minuten – Wellen"], ["hours", "Stunden – zwei Streifen"], ["days", "Tage – Zinnen"], ["permanent", "Permanent – Ringkette"], ["concentration", "Konzentration und Besonderes – Rauten"]];
+    return `<h3>Maßwerk, Zellen und Sockel</h3>
+      <h4>Bahnen – der Grad</h4><div class="vt-row">${[1, 2, 3, 4].map((g) => `<figure>${VITRAIL.ornament(g).replace('class="vt-orn"', 'class="vt-orn small"')}<figcaption>${U.ROMAN[g]}. Grad</figcaption></figure>`).join("")}</div>
+      <h4>Pässe im Bogenfeld – die Schule</h4><div class="vt-row">${schools.map(([k, sc]) => `<figure>${VITRAIL.foilsMini(VITRAIL.foilCount(k), tint)}<figcaption>${e(sc.de)}<br>${VITRAIL.foilCount(k)} Pässe</figcaption></figure>`).join("")}</div>
+      <h4>Zellen – die Gestalt</h4><div class="vt-row">
+        <figure>${VITRAIL.cellsMini("even", base)}<figcaption>gleichmäßig<br>Ziele, Berührung, selbst</figcaption></figure>
+        <figure>${VITRAIL.cellsMini("stretched", base)}<figcaption>gestreckt<br>Strahl, Linie, Kegel</figcaption></figure>
+        <figure>${VITRAIL.cellsMini("radial", base)}<figcaption>in Ringen<br>Explosion, Ausbreitung, Ausströmung</figcaption></figure>
+        <figure>${VITRAIL.borderMini(true, base)}<figcaption>Bordüre<br>Rettungswurf</figcaption></figure>
+        <figure>${VITRAIL.borderMini(false, base)}<figcaption>ohne Bordüre<br>kein Rettungswurf</figcaption></figure></div>
+      <h4>Sockel – die Wirkungsdauer</h4><div class="vt-socles">${durs.map(([k, t]) => `<div>${VITRAIL.socleMini(k, base)}<span>${e(t)}</span></div>`).join("")}</div>`;
   }
 
   const DIVINE_TEXT = {

@@ -694,3 +694,15 @@ svg.vitrail { display: block; width: 100%; height: auto; }
 .dt-legal { font-size: 0.8em; margin-top: 1em; }
 .tp-vitrail { width: 46mm; margin-bottom: 6mm; }
 .vt-orn { width: 30mm; height: 70mm; color: var(--ink); margin-bottom: 6mm; }
+.vt-legend { font-size: 0.85em; }
+.legend-grid.vt-glass svg { width: 24px; height: 24px; }
+.vt-row { display: flex; flex-wrap: wrap; gap: 2mm 3mm; justify-content: center; margin-bottom: 0.3em; }
+.vt-row figure { margin: 0; text-align: center; font-size: 0.72em; line-height: 1.15; width: 21mm; }
+.vt-row figcaption { color: var(--ink-soft); margin-top: 1mm; }
+.vt-orn.small { width: 9mm; height: 20mm; margin: 0; }
+.vt-mini { width: 11mm; height: 11mm; display: block; margin: 0 auto; }
+.vt-mini.tall { width: 9mm; height: 14mm; }
+.vt-mini.wide { width: 24mm; height: 7mm; margin: 0; }
+.vt-socles { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5mm 4mm; font-size: 0.8em; }
+.vt-socles div { display: flex; align-items: center; gap: 2mm; }
+.legend-grid .vt-mini { margin: 0; }

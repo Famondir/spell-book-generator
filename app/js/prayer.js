@@ -51,6 +51,35 @@ window.PRAYER = (function () {
     necromancy: ["Wacht", "Schwelle", "Ruhe", "Totenwache", "Heimkehr"], transmutation: ["Wandlung", "Stärkung", "Weihe", "Härtung", "Gestalt"],
     universal: ["Segen", "Gnade", "Wille", "Wort", "Zeichen"],
   };
+  // Thema aus dem Zaubernamen (englisch) → deutscher Nachsatz des Titels („Weihe der Waffe“).
+  // Erstes Stichwort im Namen gewinnt; ohne Treffer trägt eine Essenz den Titel.
+  const THEME = [
+    [/weapon/, "der Waffe"], [/blade|sword|edge/, "der Klinge"], [/fist|hand|palm/, "der Faust"], [/shield|aegis/, "des Schildes"],
+    [/armou?r|vestment|mail/, "des Harnischs"], [/arrow|bolt|missile/, "des Pfeils"], [/lance|spear/, "der Lanze"], [/hammer/, "des Hammers"],
+    [/light|radian|brigh|glow|shin/, "des Lichts"], [/sun|dawn|day\b/, "der Sonne"], [/fire|flame|burn|sear/, "des Feuers"],
+    [/cure|heal|mend|wound/, "der Heilung"], [/restor|renew|refresh/, "der Erneuerung"], [/life|vigor|vital/, "des Lebens"],
+    [/death|dead|grave|corpse/, "der Toten"], [/undead|ghost|spirit/, "wider die Untoten"], [/evil|fiend|demon|devil|abomination/, "wider das Böse"],
+    [/poison|venom/, "wider das Gift"], [/disease|plague|addiction/, "wider die Seuche"], [/curse|hex/, "wider den Fluch"], [/fear|dread|terror/, "wider die Furcht"],
+    [/truth|honest|lie/, "der Wahrheit"], [/courage|valor|brave|hero/, "des Mutes"], [/honor|oath|vow|pledge/, "des Eides"], [/justice|judg|law|verdict/, "des Gerichts"],
+    [/smite|strike|blow|punish/, "des Streiches"], [/mount|steed|horse|ride/, "des Rosses"], [/companion|ally|friend|bond/, "des Gefährten"],
+    [/aura|halo/, "des Glanzes"], [/ward|protect|guard|sanctuar/, "der Wacht"], [/resist|endur|stalwart/, "der Standhaftigkeit"],
+    [/water|rain|river/, "des Wassers"], [/bless|holy|sacred|sanct|divine|grace|favor/, "der Gnade"], [/word|command|speech|tongue|voice/, "des Wortes"],
+    [/litany|prayer|hymn|chant|song/, "der Litanei"], [/mind|thought|dream/, "des Geistes"], [/soul|heart/, "der Seele"], [/eye|sight|see|vision|detect|discern/, "des Blicks"],
+    [/path|road|way|travel|step/, "des Weges"], [/speed|swift|haste|fleet/, "der Eile"], [/strength|bull|might|power/, "der Stärke"], [/wing|fly|feather/, "der Schwingen"],
+    [/stone|earth|iron|metal/, "des Eisens"], [/bed|rest|sleep|calm/, "der Rast"], [/food|feast|meal|nourish/, "des Mahls"], [/beast|animal|creature/, "der Tiere"],
+    [/chain|bind|hold|paralyz/, "der Fessel"], [/gate|door|portal|wall/, "der Pforte"], [/break|shatter|sunder/, "des Bruchs"], [/crown|king|lord|noble/, "der Krone"],
+    [/tactic|battle|war|martial|crusad/, "der Schlacht"], [/martyr|sacrific|bargain/, "des Opfers"], [/watch|vigil|sentinel/, "der Wache"], [/companion/, "des Gefährten"],
+  ];
+  function theme(name) {
+    const n = name.toLowerCase();
+    let best = null;
+    for (const [re, de] of THEME) {
+      const i = n.search(re);
+      if (i >= 0 && (!best || i < best.i)) best = { i, de };
+    }
+    return best && best.de;
+  }
+
   // Bitten je Schule (E = „die Kraft der Flamme“ o. Ä., Z = Ziel)
   const PLEA = {
     abjuration: ["Stell dich zwischen uns und das Unrecht, {Z}.", "Halte fern, was schaden will, {Z}.", "Versiegle, was nicht berührt werden darf."],
@@ -116,8 +145,8 @@ window.PRAYER = (function () {
     const E = T.ESS[m.primary];
     // Titel: Gabe + Genitiv einer tragenden Essenz (ab 20 %), damit ähnliche Gebete nicht gleich heißen
     const strong = m.essences.filter((x) => x.pct >= 20).map((x) => T.ESS[x.id]);
-    const gen = r.pick(strong.length ? strong : [E]).gen;
-    const stem = (w) => w.replace(/^(der|des|die) /, "").slice(0, 4).toLowerCase();
+    const gen = theme(m.name) || r.pick(strong.length ? strong : [E]).gen;
+    const stem = (w) => w.replace(/^(der|des|die|wider die|wider das|wider den) /, "").slice(0, 4).toLowerCase();
     const gifts = GIFT[school].filter((g) => stem(g) !== stem(gen)); // kein „Wandlung des Wandels“
     const title = `${r.pick(gifts)} ${gen}`;
     const kraft = /Kraft/.test(E.gen) ? "deine Kraft" : `die Kraft ${E.gen}`;
