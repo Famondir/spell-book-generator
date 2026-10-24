@@ -454,7 +454,9 @@
           chapter.page = pageNo;
           body.push({ no: pageNo++, running: "", cls: "chapter-page", html: chapterHTML(key, chapters.length) });
           // Formelliste mit Namen; lange Kapitel bekommen mehrere Listenseiten
-          chapter.listPages = Array.from({ length: Math.ceil(perChapter.get(key) / CH_LIST_ROWS) }, () => ({ no: pageNo++, running: chapter.name, cls: "chapter-list", html: "" }));
+          const n = perChapter.get(key);
+          chapter.listPages = Array.from({ length: Math.ceil(n / CH_LIST_MAX) }, () => ({ no: pageNo++, running: chapter.name, cls: "chapter-list", html: "" }));
+          chapter.perList = Math.ceil(n / chapter.listPages.length); // gleichmäßig auf die Listenseiten verteilen
           body.push(...chapter.listPages);
         }
         last = null;
@@ -489,7 +491,7 @@
     // Kapitellisten erst jetzt füllen: die Seitenzahlen stehen fest
     for (const c of chapters) {
       (c.listPages || []).forEach((lp, i) => {
-        const part = c.items.slice(i * CH_LIST_ROWS, (i + 1) * CH_LIST_ROWS);
+        const part = c.items.slice(i * c.perList, (i + 1) * c.perList);
         lp.html = `<h3>Formeln dieses Kapitels${i ? " (Forts.)" : ""}</h3><div class="ch-list">${part.map((x) => `<div class="ch-row"><span class="tq">${quickGlyph(x.m)}</span><span class="ch-nm">${e(x.t.title)}<i>${e(x.m.name)}</i></span><span class="tp">${x.page}</span></div>`).join("")}</div>`;
       });
     }
@@ -512,7 +514,9 @@
   }
 
   // --- Kapitel ---------------------------------------------------------------------
-  const CH_LIST_ROWS = 40;
+  // Einträge je Listenseite: 50 passen in voller Schriftgröße, bis 52 mit leicht kleinerer Schrift;
+  // die Einträge werden gleichmäßig auf die nötigen Seiten verteilt (86 → 2 × 43)
+  const CH_LIST_MAX = 52;
   const chapterKey = (m) => (m.spell.everyday ? "everyday" : m.level === 0 ? "cantrip" : String(m.level));
   const chapterName = (k) => (k === "everyday" ? "Alltagszauber" : k === "cantrip" ? "Zaubertricks" : U.ROMAN[+k] + ". Grad");
   const ORDINAL = ["", "erste", "zweite", "dritte", "vierte", "fünfte", "sechste", "siebte", "achte", "neunte"];
