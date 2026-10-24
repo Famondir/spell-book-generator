@@ -443,7 +443,49 @@
       const id = h.closest("[data-spell]")?.dataset.spell;
       if (!id || h.querySelector(".rules-i")) return;
       h.insertAdjacentHTML("beforeend", `<button class="rules-i" data-spell="${e(id)}" title="Regeltext anzeigen">i</button>`);
+      tintToPage(h.querySelector(".rules-i"));
     });
+  }
+
+  // Hinterlegung des (i) mit gleichem Farbabstand zur Umgebung, egal wo auf der Seite:
+  // lokale Pergamentfarbe aus dem Verlauf berechnen und einen festen Versatz im Lab-Raum addieren.
+  const hex = (c) => (c = c.trim().replace("#", ""), [0, 2, 4].map((i) => parseInt(c.slice(i, i + 2), 16)));
+  const lin = (v) => ((v /= 255) <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+  const unlin = (v) => 255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055);
+  const WHITE = [0.95047, 1, 1.08883];
+  function toLab(rgb) {
+    const [r, g, b] = rgb.map(lin);
+    const xyz = [0.4124 * r + 0.3576 * g + 0.1805 * b, 0.2126 * r + 0.7152 * g + 0.0722 * b, 0.0193 * r + 0.1192 * g + 0.9505 * b];
+    const [fx, fy, fz] = xyz.map((v, i) => ((v /= WHITE[i]) > 216 / 24389 ? Math.cbrt(v) : (24389 / 27 * v + 16) / 116));
+    return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
+  }
+  function fromLab([L, a, bb]) {
+    const fy = (L + 16) / 116, fx = fy + a / 500, fz = fy - bb / 200;
+    const [x, y, z] = [fx, fy, fz].map((f, i) => (f ** 3 > 216 / 24389 ? f ** 3 : (116 * f - 16) / (24389 / 27)) * WHITE[i]);
+    const rgb = [3.2406 * x - 1.5372 * y - 0.4986 * z, -0.9689 * x + 1.8758 * y + 0.0415 * z, 0.0557 * x - 0.204 * y + 1.057 * z];
+    return rgb.map((v) => Math.round(Math.max(0, Math.min(255, unlin(v)))));
+  }
+  // Farbe des Seitenhintergrunds an Position (u, v) ∈ [0,1]²: radial-gradient(ellipse at center, transparent 60%, edge 100%)
+  function parchAt(page, u, v) {
+    const cs = getComputedStyle(page);
+    const base = hex(cs.getPropertyValue("--parch")), edge = hex(cs.getPropertyValue("--parch-edge"));
+    const t = Math.hypot((u - 0.5) / (0.5 * Math.SQRT2), (v - 0.5) / (0.5 * Math.SQRT2)); // Ellipse „farthest-corner“
+    const f = Math.max(0, Math.min(1, (t - 0.6) / 0.4));
+    return base.map((c, i) => c + f * (edge[i] - c));
+  }
+  let tintOffset = null;
+  function tintToPage(btn) {
+    const page = btn.closest(".page");
+    if (!page) return;
+    if (!tintOffset) {
+      // Vorbild: das (i) oben links auf einer ganzen Seite mit der Pergamentfarbe als Hintergrund
+      const ref = toLab(parchAt(page, 15.4 / 148, 14.6 / 210)), want = toLab(hex(getComputedStyle(page).getPropertyValue("--parch")));
+      tintOffset = want.map((x, i) => x - ref[i]);
+    }
+    const pr = page.getBoundingClientRect(), br = btn.getBoundingClientRect();
+    if (!pr.width || !br.width) return;
+    const local = toLab(parchAt(page, (br.left + br.width / 2 - pr.left) / pr.width, (br.top + br.height / 2 - pr.top) / pr.height));
+    btn.style.background = `rgb(${fromLab(local.map((x, i) => x + tintOffset[i])).join(",")})`;
   }
   document.addEventListener("click", (ev) => {
     const b = ev.target.closest(".rules-i");
