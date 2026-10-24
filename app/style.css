@@ -306,6 +306,7 @@ table.aff td { text-align: center; font-size: 0.8em; background: color-mix(in sr
 .related { margin: 0 0 0.4em; padding-left: 1.1em; }
 .related span { color: var(--ink-soft); font-size: 0.85em; }
 .annotated-box { width: 92mm; }
+.mythic-box { width: 62mm; }
 .annot-list { font-size: 0.9em; padding-left: 1.6em; margin: 0.3em 0; }
 .annot-list li { margin-bottom: 0.15em; }
 .annot-list li::marker { color: var(--rubric); font-weight: 700; }

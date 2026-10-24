@@ -65,10 +65,19 @@
       .join("")}</div>`;
   const learningBlock = (t) => `<h4>Herkunft und Abschrift</h4><p>${e(t.learning)}</p>`;
   // short: nur die deutsche Einordnung; der englische Mythic-Regeltext steht im Regelkasten/-anhang
-  function mythicBlock(m, short) {
+  // Die mythische Variante als In-Game-Text. Der englische Mythic-Text ist Regeltext und steht nur
+  // im Regelkasten bzw. Regelanhang.
+  function mythicBlock(m, t, short) {
     if (!m.mythic) return "";
-    if (short) return `<h4>Mythische Resonanz</h4><p>Wer den Funken der Mythen trägt, kann diese Formel mit einem Zug aus eigener Mythenkraft überladen: äußerer Ring doppelt gezogen, ein Mythenpunkt im Kern. Die genaue Wirkung steht bei den Regeln.</p>`;
-    return `<h4>Mythische Resonanz</h4><p>Wer den Funken der Mythen trägt, kann diese Formel mit einem Zug aus eigener Mythenkraft überladen. Der Kreis bleibt derselbe; nur der äußere Ring wird doppelt gezogen und ein Mythenpunkt in den Kern gesetzt.</p><p class="rules-en">${e(m.spell.mythic)}</p>`;
+    const txt = m.spell.mythic;
+    const aug = [...txt.matchAll(/Augmented \((\d+)(?:st|nd|rd|th)\)/g)].map((x) => +x[1]);
+    const two = /(two|2) uses of mythic power/i.test(txt);
+    if (short)
+      return `<h4>Mythische Resonanz</h4><p>Mit Mythenkraft überladbar: äußerer Ring doppelt, Mythenpunkt im Kern${aug.length ? `; ab dem ${aug[0]}. Mythenrang ein dritter Ring${two ? " für einen zweiten Zug Mythenkraft" : ""}` : ""}.</p>`;
+    let p = "Wer den Funken der Mythen trägt, kann diese Formel mit eigener Mythenkraft überladen. Der Kreis bleibt derselbe; nur der äußere Ring wird doppelt gezogen, mit neun Mythenpunkten besetzt, und ein Mythenpunkt in den Kern gesetzt.";
+    if (aug.length) p += ` Ab dem ${aug.join(". bzw. ")}. Mythenrang lässt sich die Überladung weiter steigern: Dann wird ein dritter, gestrichelter Ring gezogen${two ? ", und die Formel verlangt einen zweiten Zug Mythenkraft" : ""}.`;
+    const fig = short ? "" : `<figure class="circle-box mythic-box">${renderCircle(m, { text: t.formula.band, mythic: aug.length ? "augmented" : true, zoom: 275 })}<figcaption>Mythisch überladener Kreis</figcaption></figure>`;
+    return `<h4>Mythische Resonanz</h4><p>${e(p)}</p>${fig}`;
   }
   function annotatedBlock(m, t, h = "Beschrifteter Kreis") {
     const list = circleAnnotations(m);
@@ -148,7 +157,7 @@
       steps: () => stepsBlock(t),
       stepsC: () => stepsBlock(t, true),
       learning: () => learningBlock(t),
-      mythic: () => mythicBlock(m, !opts.detail && m.level < 5),
+      mythic: () => mythicBlock(m, t, !opts.detail && m.level < 5),
       failure: () => failureBlock(t),
       counter: () => counterBlock(m, t),
       essence: () => essenceBlock(m),
@@ -163,7 +172,10 @@
       sketch: () => sketchBlock(m, t),
       related: () => relatedBlock(m),
     };
-    n.forEach((x, i) => (B["note" + i] = () => note(x)));
+    // je zwei Notizen zu einer längeren zusammenfassen (höchstens eine Randnotiz pro Seite, siehe autofit)
+    const notePairs = [];
+    for (let i = 0; i < n.length; i += 2) notePairs.push(n.slice(i, i + 2).join(" "));
+    notePairs.forEach((x, i) => (B["note" + i] = () => note(x)));
     const used = new Set();
     // Pflichtblöcke werden als .blk verpackt, damit autofit() sie zwischen den Seiten verschieben kann.
     // Randnotizen sind nie Pflicht – sie füllen nur freien Platz (siehe Füller unten).
@@ -222,7 +234,7 @@
     }
     // Füller
     const opt = OPT_ORDER.filter((k) => !isUsed(k) && B[k]() !== "");
-    const notesLeft = n.map((_, i) => "note" + i).filter((k) => !used.has(k));
+    const notesLeft = notePairs.map((_, i) => "note" + i).filter((k) => !used.has(k));
     for (const p of pages) {
       const keys = p.first || p.half ? notesLeft : [...opt, ...notesLeft];
       p.html += keys.map((k) => `<div class="opt off" data-k="${k}">${B[k]()}</div>`).join("");
@@ -549,14 +561,22 @@
       if (!groups.has(spell)) groups.set(spell, []);
       groups.get(spell).push(inner);
     }
-    // Füller jeweils auf die Seite mit dem meisten freien Platz setzen
+    // Alle Seiten eines Zaubers nach der ersten in derselben Schriftgröße (der kleinsten nötigen)
+    for (const inners of groups.values()) {
+      const rest = inners.filter((x) => x.classList.contains("page-inner") && !x.parentElement.classList.contains("first-page"));
+      if (rest.length < 2) continue;
+      const min = Math.min(...rest.map((x) => +(x.style.getPropertyValue("--fit") || 1)));
+      rest.forEach((x) => x.style.setProperty("--fit", min));
+    }
+    // Füller jeweils auf die Seite mit dem meisten freien Platz setzen; höchstens eine Randnotiz pro Seite
+    const hasNote = new Set();
     for (const inners of groups.values()) {
       const keys = [];
       for (const inner of inners) for (const o of inner.querySelectorAll(":scope > .opt")) if (!keys.includes(o.dataset.k)) keys.push(o.dataset.k);
       for (const k of keys) {
         const cands = inners
           .map((inner) => ({ inner, o: inner.querySelector(`:scope > .opt[data-k="${k}"]`) }))
-          .filter((c) => c.o)
+          .filter((c) => c.o && !(k.startsWith("note") && hasNote.has(c.inner)))
           .sort((a, b) => free(b.inner) - free(a.inner));
         let placed = null;
         // gleichlautende Randnotizen nur einmal im ganzen Buch
@@ -564,10 +584,14 @@
         if (text && seenNotes.has(text)) cands.length = 0;
         for (const c of cands) {
           c.o.classList.remove("off");
-          if (!over(c.inner)) { placed = c; if (text) seenNotes.add(text); break; }
+          if (!over(c.inner)) {
+            placed = c;
+            if (text) seenNotes.add(text), hasNote.add(c.inner);
+            break;
+          }
           c.o.classList.add("off");
         }
-        for (const c of cands) if (c !== placed) c.o.remove();
+        inners.forEach((inner) => inner.querySelectorAll(`:scope > .opt[data-k="${k}"]`).forEach((o) => o !== placed?.o && o.remove()));
       }
     }
   }

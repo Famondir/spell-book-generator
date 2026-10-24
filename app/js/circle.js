@@ -394,7 +394,15 @@
     return `<g class="layer-family">${out.join("")}</g>`;
   }
 
-  // opts: { text, layers: [...], zoom: Radius des sichtbaren Ausschnitts, cls }
+  // Mythische Überladung: doppelter Außenring (bei „Augmented“ ein dritter) und Mythenpunkt im Kern
+  function mythicLayer(m, level) {
+    const out = [S.circle(0, 0, R.outer + 7, "accent"), S.circle(0, 0, 7, "accent fill")];
+    if (level === "augmented") out.push(S.circle(0, 0, R.outer + 13, "accent dash"));
+    for (let i = 0; i < 9; i++) out.push(S.dot(...polar(0, 0, R.outer + 7, i * 40), 2.4));
+    return `<g class="layer-mythic accent">${out.join("")}</g>`;
+  }
+
+  // opts: { text, layers: [...], zoom: Radius des sichtbaren Ausschnitts, cls, mythic: true|"augmented" }
   function circle(m, opts = {}) {
     const layers = new Set(opts.layers || ALL);
     const id = "band" + ++uid;
@@ -411,6 +419,7 @@
     if (has("core")) parts.push(coreLayer(m));
     if (has("gates")) parts.push(gatesLayer(m));
     if (has("family")) parts.push(familyLayer(m));
+    if (opts.mythic) parts.push(mythicLayer(m, opts.mythic));
     if (has("casting")) parts.push(castingLayer(m));
     if (has("components")) parts.push(componentsLayer(m));
     if (opts.annotate) parts.push(annotationLayer(m));
