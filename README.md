@@ -30,7 +30,7 @@ Ist ein Charakter Paladin, wird aus dem Zauberbuch ein **Brevier**. Das Verzeich
 - Vorspann mit Gottheitsseite, „Vom Lesen der Fenster“ und „Vom Gebet“, Kapitel „Gebete des I.–IV. Grades“; Zauber außerhalb der Paladinliste stehen am Ende unter „Fremde Gebete“.
 - Tagesvorbereitung mit Graden I–IV, ohne Joker; „Gebetsstunde“ statt „Neuer Tag“.
 
-**Steinintarsie für Zwerge**: Statt Bleiglas kann das Andachtsbild als eingelegter Stein erscheinen – Giebel statt Spitzbogen, Quaderrahmen, feine Fugen, Sechseck-Basalt, gemusterte Steine (Marmor, Granit, Malachit, Lapislazuli …) und Gold- oder Silbereinlagen; jede Essenz hat ihren Stein. Einstellung „Andachtsbild“: automatisch (Stein bei Torag und den zwergischen Gottheiten), Bleiglas oder Steinintarsie. Die Bedeutung aller Elemente bleibt gleich.
+**Steinintarsie für Zwerge**: Statt Bleiglas kann das Andachtsbild als eingelegter Stein erscheinen – gestufter Tafelberg statt Spitzbogen, der Grad als waagerechte Schichten mit Flechtbandbalken, Sechseckfeld mit Rauten, Knotensteine, feine Fugen, Sechseck-Basalt, gemusterte Steine (Marmor, Granit, Malachit, Lapislazuli …) und Gold- oder Silbereinlagen; jede Essenz hat ihren Stein. Einstellung „Andachtsbild“: automatisch (Stein bei Torag und den zwergischen Gottheiten), Bleiglas oder Steinintarsie. Die Bedeutung aller Elemente bleibt gleich.
 
 Die Gottheiten (461, Daten in `data/deities.js`) lassen sich nach Name suchen; vorgeschlagen werden passende Gesinnungen (LG, LN, NG), „alle Gottheiten“ hebt das auf.
 
