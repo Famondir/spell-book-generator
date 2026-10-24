@@ -456,7 +456,9 @@
           // Formelliste mit Namen; lange Kapitel bekommen mehrere Listenseiten
           const n = perChapter.get(key);
           chapter.listPages = Array.from({ length: Math.ceil(n / CH_LIST_MAX) }, () => ({ no: pageNo++, running: chapter.name, cls: "chapter-list", html: "" }));
-          chapter.perList = Math.ceil(n / chapter.listPages.length); // gleichmäßig auf die Listenseiten verteilen
+          // gleichmäßig verteilen, mit gerader Zahl je Seite (beide Spalten gleich lang); Rest auf die letzte Seite
+          const per = Math.ceil(n / chapter.listPages.length);
+          chapter.perList = per + (per % 2);
           body.push(...chapter.listPages);
         }
         last = null;
@@ -515,7 +517,7 @@
 
   // --- Kapitel ---------------------------------------------------------------------
   // Einträge je Listenseite: 50 passen in voller Schriftgröße, bis 52 mit leicht kleinerer Schrift;
-  // die Einträge werden gleichmäßig auf die nötigen Seiten verteilt (86 → 2 × 43)
+  // die Einträge werden gleichmäßig und paarweise auf die nötigen Seiten verteilt (86 → 44 + 42)
   const CH_LIST_MAX = 52;
   const chapterKey = (m) => (m.spell.everyday ? "everyday" : m.level === 0 ? "cantrip" : String(m.level));
   const chapterName = (k) => (k === "everyday" ? "Alltagszauber" : k === "cantrip" ? "Zaubertricks" : U.ROMAN[+k] + ". Grad");
