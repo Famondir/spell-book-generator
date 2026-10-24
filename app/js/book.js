@@ -465,8 +465,9 @@
       window.SPELLS.find(own) || window.SPELLS[0];
     const sample = analyze(pick);
     const legend = VITRAIL.legend(sample, d);
-    const name = d ? d.name : "die Gottheit";
-    return [
+    const stone = VITRAIL.materialFor(d) === "stone";
+    // Musterbilder und Wörter im Material der Gottheit (Bleiglas oder Steinintarsie)
+    return VITRAIL.withMaterial(d, (Wd) => [
       {
         cls: "title-page",
         html: `<div class="tp"><div class="tp-sigil tp-vitrail">${VITRAIL.render(sample, d)}</div>
@@ -474,7 +475,7 @@
       },
       { html: deityPage(d) },
       {
-        html: `<h3>Vom Lesen der Fenster</h3><p>Zu jedem Gebet gehört ein Fenster. Es wird nicht gezeichnet, um verstanden zu werden, sondern um davor zu knien. Wer es dennoch lesen will, findet darin alles, worum das Gebet bittet:</p>
+        html: `<h3>${Wd.read}</h3><p>Zu jedem Gebet gehört ein ${Wd.item}. Es wird nicht ${stone ? "gemeißelt" : "gezeichnet"}, um verstanden zu werden, sondern um davor zu knien. Wer es dennoch lesen will, findet darin alles, worum das Gebet bittet:</p>
           <div class="pr-grid"><figure class="vt-box">${VITRAIL.render(sample, d, { annotate: true })}</figure>
           <ol class="annot-list vt-legend">${legend.map((l) => `<li value="${l.n}"><b>${e(l.k)}:</b> ${e(l.t)}</li>`).join("")}</ol></div>
           <p class="hint">Beispiel: ${e(PRAYER.texts(sample, d).title)} (${e(sample.name)}). Die folgenden Seiten zeigen alle Farben und Formen.</p>`,
@@ -488,16 +489,23 @@
           <p>Jedes Gebet in diesem Brevier hat zwei Teile. Der <b>Kanon der Kirche</b> ist überliefert: Alle Gläubigen sprechen ihn gleich, und sein Kehrvers kehrt in jedem Gebet wieder. Die <b>Eigenen Worte</b> gehören dem Betenden allein. Wo noch keine stehen, bleiben Linien frei.</p>
           <p>Ein heiliges Symbol in der Hand genügt als Fokus. Rüstung behindert das Gebet nicht.</p>`,
       },
-    ];
+    ]);
   }
 
 
   // Legendenseiten des Breviers: alle Gläser und Formen, die ein Fenster tragen kann
   function glassPage(d) {
     const base = VITRAIL.palette(d);
-    return `<h3>Die Gläser</h3><p class="hint">Jede Essenz hat ihr eigenes Glas. Es erscheint als Akzentscheibe, so oft wie ihr Anteil am Zauber, und im Medaillon, wenn sie die Hauptessenz ist.</p>
-      <div class="legend-grid vt-glass">${T.ESSENCES.map((x) => `<div class="lg">${VITRAIL.glassSwatch(VITRAIL.ESS_GLASS[x.id])}<div><b>${x.latin}</b> – ${e(x.de.replace(/ \(.*\)$/, ""))}<br><span>Gegenpol: ${T.ESS[x.opp].latin}</span></div></div>`).join("")}</div>
-      <h4>Grundscheiben</h4><p>Die übrigen Scheiben tragen die heiligen Farben der Gottheit${d ? ` – bei ${e(d.name)}: ` : ""}${d && d.colors.length ? d.colors.map((c) => `<span class="swatch" style="background:${c.hex}"></span>${e(c.name)}`).join(" ") : d ? "keine überliefert, daher eine Palette nach Gesinnung: " + base.map((c) => `<span class="swatch" style="background:${c}"></span>`).join("") : ""}. Die erste Farbe fasst auch das Medaillon und färbt den Grund des Bogenfelds.</p>`;
+    const stone = VITRAIL.materialFor(d) === "stone";
+    const intro = stone
+      ? "Jede Essenz hat ihren eigenen Stein. Er erscheint als Akzentstein, so oft wie ihr Anteil am Zauber, und im Medaillon, wenn sie die Hauptessenz ist."
+      : "Jede Essenz hat ihr eigenes Glas. Es erscheint als Akzentscheibe, so oft wie ihr Anteil am Zauber, und im Medaillon, wenn sie die Hauptessenz ist.";
+    const colors = d && d.colors.length
+      ? d.colors.map((c, i) => `<span class="swatch" style="background:${stone ? base[i] : c.hex}"></span>${e(c.name)}${stone ? ` (${e(VITRAIL.colorStoneName(c.name))})` : ""}`).join(" ")
+      : d ? "keine überliefert, daher eine Palette nach Gesinnung: " + base.map((c) => `<span class="swatch" style="background:${c}"></span>`).join("") : "";
+    return `<h3>${stone ? "Die Steine" : "Die Gläser"}</h3><p class="hint">${intro}</p>
+      <div class="legend-grid vt-glass">${T.ESSENCES.map((x) => `<div class="lg">${VITRAIL.essSwatch(x.id)}<div><b>${x.latin}</b> – ${e(x.de.replace(/ \(.*\)$/, ""))}${stone ? ` · <i>${e(VITRAIL.essStoneName(x.id))}</i>` : ""}<br><span>Gegenpol: ${T.ESS[x.opp].latin}</span></div></div>`).join("")}</div>
+      <h4>${stone ? "Grundsteine" : "Grundscheiben"}</h4><p>Die übrigen ${stone ? "Steine" : "Scheiben"} tragen die heiligen Farben der Gottheit${d ? ` – bei ${e(d.name)}: ` : ""}${colors}. Die erste Farbe fasst auch das Medaillon und färbt den Grund des Bogenfelds.</p>`;
   }
   function formsPage(d) {
     const base = VITRAIL.palette(d);
@@ -538,9 +546,10 @@
   function divineChapterHTML(k, no) {
     const g = /^\d$/.test(k) ? +k : 0;
     const own = (window.PROFILE && PROFILE.chapters && PROFILE.chapters[k]) || null;
-    const [sub, ...paras] = own || DIVINE_TEXT[k] || [`${g} Bahnen`, "Gebete höheren Grades."];
+    let [sub, ...paras] = own || DIVINE_TEXT[k] || [`${g} Bahnen`, "Gebete höheren Grades."];
+    if (!own && VITRAIL.materialFor(window.DEITY) === "stone") sub = { 1: "Ein Stein, ein Licht", 3: "Drei Bahnen unter einem Giebel", 4: "Die volle Tafel" }[k] || sub;
     const title = k === "foreign" ? "Fremde Gebete" : CLASS.chapter ? CLASS.chapter(g) : `Gebete des ${U.ROMAN[g]}. Grades`;
-    return `<div class="chapter"><div class="ch-kicker">Kapitel ${U.ROMAN[no] || no}</div><h1 class="ch-title">${e(title)}</h1>${VITRAIL.ornament(Math.max(1, g || 1))}<div class="ch-sub">${e(sub)}</div>${paras.map((p) => `<p>${e(p)}</p>`).join("")}</div>`;
+    return `<div class="chapter"><div class="ch-kicker">Kapitel ${U.ROMAN[no] || no}</div><h1 class="ch-title">${e(title)}</h1>${VITRAIL.withMaterial(window.DEITY, () => VITRAIL.ornament(Math.max(1, g || 1)))}<div class="ch-sub">${e(sub)}</div>${paras.map((p) => `<p>${e(p)}</p>`).join("")}</div>`;
   }
 
   // ---------------------------------------------------------------------------

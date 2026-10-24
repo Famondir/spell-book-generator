@@ -16,6 +16,7 @@
     refSource: false,
     frontMatter: true,
     onlyClass: true,
+    material: "auto", // Andachtsbild: auto (nach Gottheit), glass, stone
     paper: "a5",
     scrollPaper: "a4",
     printBackground: true,
@@ -53,6 +54,7 @@
     prayers: store.get("prayers", {}), // eigene Gebete je Zauber (göttliche Klassen)
   };
   const DIVINE = CLASS.tradition === "divine";
+  VITRAIL.setMaterial(state.settings.material);
   document.body.classList.add(DIVINE ? "divine" : "arcane");
   const save = () => {
     store.set("settings", state.settings);
@@ -244,7 +246,7 @@
           <div class="facts">
             <div><b>Gottheit</b> ${window.DEITY ? e(window.DEITY.name) : "keine gewählt"}</div>
             <div><b>Essenzen</b></div>
-            ${m.essences.map((y) => `<div class="essrow"><span class="swatch" style="background:${VITRAIL.ESS_GLASS[y.id]}"></span><span class="essname">${T.ESS[y.id].latin}</span><span class="essbar"><i style="width:${y.pct}%"></i></span><span class="esspct">${y.pct} %</span></div>`).join("")}
+            ${m.essences.map((y) => `<div class="essrow"><span class="swatch" style="background:${VITRAIL.withMaterial(window.DEITY, () => VITRAIL.essColor(y.id))}"></span><span class="essname">${T.ESS[y.id].latin}</span><span class="essbar"><i style="width:${y.pct}%"></i></span><span class="esspct">${y.pct} %</span></div>`).join("")}
           </div>
           <label class="own-edit"><b>Eigene Worte</b> <span class="muted">(dein eigenes Gebet zu diesem Zauber; leer = Linien zum Hineinschreiben)</span>
             <textarea id="d-own" rows="6" placeholder="Herrin, gib mir …">${e(own)}</textarea></label>
@@ -323,7 +325,7 @@
     const lvKey = (m) => (BOOK.chapterKey(m) === "foreign" ? "F" : m.spell.everyday ? "A" : m.level);
     d.entries.forEach(({ m }) => (byLevel[lvKey(m)] = (byLevel[lvKey(m)] || 0) + 1));
     $("#book-stats").innerHTML = d.entries.length
-      ? `<b>${d.entries.length}</b> ${DIVINE ? "Gebete" : "Formeln"} · <b>${d.spellPagesCount}</b> Seiten ${DIVINE ? "Gebete" : "Formeln"}${d.chapterPages ? ` · ${d.chapterPages} Kapitelseiten` : ""}${d.fillers ? ` · ${d.fillers} Notizseiten` : ""}${d.expanded ? ` · ${d.expanded} Zauber im Umfang des nächsthöheren Grades` : ""} · <b>${d.pages.length}</b> Seiten gesamt
+      ? `<b>${d.entries.length}</b> ${DIVINE ? "Gebete" : "Formeln"} · <b>${d.spellPagesCount}</b> Seiten ${DIVINE ? "Gebete" : "Formeln"}${d.chapterPages ? ` · ${d.chapterPages} Kapitelseiten` : ""}${d.fillers ? ` · ${d.fillers} Notizseite${d.fillers > 1 ? "n" : ""}` : ""}${d.expanded ? ` · ${d.expanded} Zauber im Umfang des nächsthöheren Grades` : ""} · <b>${d.pages.length}</b> Seiten gesamt
          ${DIVINE ? "" : `<span class="muted">(Gesegnetes Buch: 1000 Seiten · gewöhnliches Zauberbuch: 100 Seiten)</span>`}
          <div class="muted">${Object.entries(byLevel).map(([l, n]) => (l === "A" ? "Alltag" : l === "F" ? "Fremde Gebete" : "Grad " + l) + ": " + n).join(" · ")}</div>`
       : `${DIVINE ? "Das Brevier" : "Das Buch"} ist leer. Nimm im Verzeichnis Zauber mit <b>+</b> auf.`;
@@ -686,6 +688,7 @@
       state.settings[k] = el.type === "checkbox" ? el.checked : el.value;
     }
     save();
+    VITRAIL.setMaterial(state.settings.material);
     if (state.settings.owner !== owner) ALL.forEach((x) => (x.t = null)); // Besitzername steckt in den Randnotizen; Titel bleiben gleich
     if (state.settings.onlyClass !== only || state.settings.owner !== owner) renderList();
     if (state.selected) renderDetail();
@@ -963,7 +966,7 @@
   // --- Start ----------------------------------------------------------------------
   PREP.init({ byId, model, book: () => state.book, select, show, printPages, owner: () => state.settings.owner });
   document.querySelectorAll(".cls-label").forEach((el) => (el.textContent = CLASS.label));
-  document.querySelectorAll(".front-label").forEach((el) => (el.textContent = DIVINE ? "Gottheit, Vom Lesen der Fenster, Vom Gebet" : "Lehre der Kreise"));
+  document.querySelectorAll(".front-label").forEach((el) => (el.textContent = DIVINE ? "Gottheit, Legende der Andachtsbilder, Vom Gebet" : "Lehre der Kreise"));
   if (DIVINE) {
     $('.tabs [data-view="book"]').firstChild.textContent = "Mein Brevier ";
     $('.tabs [data-view="theory"]').textContent = "Vom Gebet";

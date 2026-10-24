@@ -1,4 +1,4 @@
-// Andachtsbild: Zauber als Lanzettfenster in Bleiglas (für göttliche Klassen).
+// Andachtsbild: Zauber als Lanzettfenster in Bleiglas oder als Steinintarsie (für göttliche Klassen).
 // Aus derselben Analyse wie die Magierkreise, aber in eigener Bildsprache:
 //   Grad → Bahnen · Schule → Maßwerk im Bogenfeld · Hauptessenz → Medaillon · Essenzanteile → Akzentscheiben
 //   heilige Farben → Grundscheiben · Gestalt → Zellrichtung · Dauer → Sockel · Rettungswurf → Bordüre
@@ -21,6 +21,75 @@ window.VITRAIL = (function () {
     LG: ["#d4a21c", "#f2ecdc", "#2552a3"], NG: ["#2f7d3b", "#f2ecdc", "#d4a21c"], CG: ["#2f7d3b", "#d9701c", "#6ea6d8"],
     LN: ["#5c5f63", "#2552a3", "#c7cbd0"], N: ["#6e4524", "#2f7d3b", "#c09a68"], CN: ["#6a2c8c", "#d9701c", "#2f7d3b"],
     LE: ["#26201c", "#9e1030", "#5c5f63"], NE: ["#26201c", "#3b3346", "#6e4524"], CE: ["#9e1030", "#26201c", "#d9701c"],
+  };
+
+  // --- Steinintarsie (Pietra dura) -----------------------------------------------------
+  // Steinsorten: Grundfarbe c, Musterung tex (vein = Adern, speck = Sprenkel, band = Bänder, metal = Glanz), Musterfarbe tc
+  const STONES = {
+    marble: { de: "Marmor", c: "#e9e3d6", tex: "vein", tc: "#a39b8f" },
+    granite: { de: "Granit", c: "#8b8883", tex: "speck", tc: "#3e3b38" },
+    slate: { de: "Schiefer", c: "#4a4f59", tex: "band", tc: "#5f6571" },
+    basalt: { de: "Basalt", c: "#33302e", tex: "speck", tc: "#4d4945" },
+    obsidian: { de: "Obsidian", c: "#221f23", tex: "metal", tc: "#6a6470" },
+    jasper: { de: "roter Jaspis", c: "#933329", tex: "band", tc: "#b25a4c" },
+    porphyry: { de: "Porphyr", c: "#6a2430", tex: "speck", tc: "#c9a49a" },
+    bloodjasper: { de: "Blutjaspis", c: "#5a1d1f", tex: "speck", tc: "#1f1414" },
+    carnelian: { de: "Karneol", c: "#b8482c", tex: "vein", tc: "#dc8a66" },
+    brownjasper: { de: "brauner Jaspis", c: "#7d4f2e", tex: "band", tc: "#a06e48" },
+    sandstone: { de: "Sandstein", c: "#b88a5a", tex: "speck", tc: "#8a6440" },
+    amber: { de: "Bernstein", c: "#c07a26", tex: "vein", tc: "#e6b260" },
+    tigereye: { de: "Tigerauge", c: "#9c7130", tex: "band", tc: "#d1a75a" },
+    citrine: { de: "Citrin", c: "#d9b13d", tex: "vein", tc: "#f1dd8a" },
+    gold: { de: "Goldeinlage", c: "#c99a32", tex: "metal", tc: "#f3dc93" },
+    silver: { de: "Silbereinlage", c: "#b8bcc1", tex: "metal", tc: "#f2f4f6" },
+    bronze: { de: "Bronzeeinlage", c: "#a8693a", tex: "metal", tc: "#e3ab7c" },
+    malachite: { de: "Malachit", c: "#2e7a52", tex: "band", tc: "#6fbf8f" },
+    jade: { de: "Jade", c: "#8cbf95", tex: "vein", tc: "#c4e2c9" },
+    aquamarine: { de: "Aquamarin", c: "#5f9ea6", tex: "vein", tc: "#a9d3d6" },
+    chalcedony: { de: "Chalcedon", c: "#9db6c4", tex: "vein", tc: "#d4e2ea" },
+    lapis: { de: "Lapislazuli", c: "#29438a", tex: "speck", tc: "#d9b24a" },
+    sodalite: { de: "Sodalith", c: "#2e3f7a", tex: "vein", tc: "#c9d0e6" },
+    amethyst: { de: "Amethyst", c: "#6f4a8e", tex: "band", tc: "#a483c2" },
+    rhodonite: { de: "Rhodonit", c: "#b45a78", tex: "speck", tc: "#3a2a2e" },
+    rosequartz: { de: "Rosenquarz", c: "#d7a3a8", tex: "vein", tc: "#efd0d2" },
+    ivory: { de: "Bein", c: "#eadfc4", tex: "band", tc: "#d3c5a4" },
+  };
+  const ESS_STONE = {
+    ignis: "carnelian", aqua: "aquamarine", aer: "chalcedony", terra: "brownjasper", vita: "malachite", mors: "obsidian",
+    lux: "citrine", umbra: "slate", mens: "amethyst", vis: "amber", ordo: "granite", fluxus: "rhodonite",
+    bonum: "marble", malum: "bloodjasper", spatium: "lapis", tempus: "tigereye",
+  };
+  // heilige Farben (Namen aus data/deities.js) → Stein
+  const COLOR_STONE = {
+    red: "jasper", crimson: "porphyry", black: "basalt", green: "malachite", "dark green": "malachite", "pale green": "jade", greed: "malachite",
+    white: "marble", ivory: "ivory", blue: "lapis", "dark blue": "sodalite", "midnight blue": "sodalite", "light blue": "chalcedony",
+    "icy blue": "chalcedony", "ice blue": "chalcedony", crystal: "chalcedony", brown: "brownjasper", tan: "sandstone", gold: "gold",
+    bronze: "bronze", gray: "granite", grey: "granite", "light gray": "granite", "iron gray": "slate", "lead gray": "slate", "dark gray": "slate",
+    yellow: "citrine", "pale yellow": "citrine", orange: "carnelian", silver: "silver", pink: "rosequartz", purple: "amethyst", violet: "amethyst",
+  };
+  const ALIGN_STONE = {
+    LG: ["gold", "marble", "lapis"], NG: ["malachite", "marble", "gold"], CG: ["malachite", "carnelian", "chalcedony"],
+    LN: ["slate", "lapis", "silver"], N: ["brownjasper", "malachite", "sandstone"], CN: ["amethyst", "carnelian", "malachite"],
+    LE: ["basalt", "porphyry", "slate"], NE: ["basalt", "obsidian", "brownjasper"], CE: ["porphyry", "basalt", "carnelian"],
+  };
+  const STONE_BY_HEX = new Map(Object.values(STONES).map((x) => [x.c, x]));
+
+  // Material: Bleiglas oder Steinintarsie. Die Hilfsfunktionen lesen die Farben aus MAT; render() setzt es je Bild.
+  const MATS = {
+    glass: { id: "glass", ink: LEAD, frame: STONE, edge: STONE_EDGE, inlay: "#f4e8c6", red: "#b3202a", symbol: "#f4e8c6" },
+    stone: { id: "stone", ink: "#3a322b", frame: "#a39c90", edge: "#5f584f", inlay: "#e9e3d6", red: "#933329", symbol: "#c99a32" },
+  };
+  let MAT = MATS.glass;
+  let SETTING = "auto"; // „auto“, „glass“ oder „stone“ (Einstellung des Charakters)
+  const isDwarven = (d) => !!d && (d.id === "torag" || /dwarven/i.test(d.pantheon || ""));
+  const materialFor = (d) => (SETTING === "stone" || (SETTING === "auto" && isDwarven(d)) ? "stone" : "glass");
+  const use = (id) => (MAT = MATS[id] || MATS.glass);
+  const stoneOf = (key) => STONES[key] || STONES.granite;
+  const essColor = (id) => (MAT.id === "stone" ? stoneOf(ESS_STONE[id]).c : ESS_GLASS[id]);
+  // Wörter je Material (Legende, Vorspann)
+  const WORDS = {
+    glass: { item: "Fenster", items: "Fenster", piece: "Scheibe", pieces: "Scheiben", accent: "Akzentscheiben", base: "Grundscheiben", tym: "Rundfenster", read: "Vom Lesen der Fenster", stones: "Die Gläser", border: "Rote und helle Gläser am Rand" },
+    stone: { item: "Steinbild", items: "Steinbilder", piece: "Stein", pieces: "Steine", accent: "Akzentsteine", base: "Grundsteine", tym: "Rundfeld", read: "Vom Lesen der Steinbilder", stones: "Die Steine", border: "Rote und weiße Steine am Rand" },
   };
 
   // --- Geometrie ---------------------------------------------------------------------
@@ -46,6 +115,22 @@ window.VITRAIL = (function () {
     }
     pts.push([x0 + w, yb]);
     return { pts, apex: ys - h };
+  }
+  // Giebel (Steinintarsie): gerade Schrägen bis zur gleichen Scheitelhöhe wie der Spitzbogen
+  function gable(x0, w, ys, yb) {
+    const h = w * Math.sqrt(0.55);
+    return { pts: [[x0, yb], [x0, ys], [x0 + w / 2, ys - h], [x0 + w, ys], [x0 + w, yb]], apex: ys - h };
+  }
+  const archOf = () => (MAT.id === "stone" ? gable : arch);
+  // Abstand eines Punkts zum Rand eines konvexen Polygons
+  function edgeDist(pts, x, y) {
+    let d = Infinity;
+    for (let i = 0; i < pts.length; i++) {
+      const [ax, ay] = pts[i], [bx, by] = pts[(i + 1) % pts.length];
+      const len = Math.hypot(bx - ax, by - ay) || 1;
+      d = Math.min(d, Math.abs((bx - ax) * (ay - y) - (ax - x) * (by - ay)) / len);
+    }
+    return d;
   }
   // konvexes Polygon an Halbebene a·p ≤ c beschneiden (Sutherland-Hodgman)
   function clipHalf(pts, ax, ay, c) {
@@ -102,6 +187,10 @@ window.VITRAIL = (function () {
   const hex = (c) => "#" + c.map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("");
   const shade = (h, f) => hex(rgb(h).map((v) => (f >= 1 ? v + (255 - v) * (f - 1) : v * f)));
   function palette(deity) {
+    if (MAT.id === "stone") {
+      const keys = (deity && deity.colors || []).map((c) => COLOR_STONE[c.name] || "granite");
+      return (keys.length ? keys : ALIGN_STONE[(deity && deity.align) || "LG"] || ALIGN_STONE.LG).map((k) => stoneOf(k).c);
+    }
     const own = (deity && deity.colors || []).map((c) => c.hex);
     return own.length ? own : ALIGN_GLASS[(deity && deity.align) || "LG"] || ALIGN_GLASS.LG;
   }
@@ -160,37 +249,60 @@ window.VITRAIL = (function () {
   function symbolSVG(text, cx, cy, size, tint) {
     const { front, back } = symbolMotifs(text);
     const s = size / 10;
-    const g = (k, sc, fill) => `<path transform="translate(${f1(cx)} ${f1(cy)}) scale(${(s * sc).toFixed(3)})" d="${MOTIFS[k]}" fill="${fill}" stroke="${LEAD}" stroke-width="${(1 / (s * sc)).toFixed(2)}" fill-rule="nonzero"/>`;
-    return (back ? g(back, 1.05, shade(tint, 1.35)) : "") + g(front, back ? 0.8 : 0.95, "#f4e8c6");
+    const g = (k, sc, fill) => `<path transform="translate(${f1(cx)} ${f1(cy)}) scale(${(s * sc).toFixed(3)})" d="${MOTIFS[k]}" fill="${fill}" stroke="${MAT.ink}" stroke-width="${(1 / (s * sc)).toFixed(2)}" fill-rule="nonzero"/>`;
+    return (back ? g(back, 1.05, shade(tint, 1.35)) : "") + g(front, back ? 0.8 : 0.95, MAT.symbol);
   }
 
   // --- Fenster -----------------------------------------------------------------------
   function render(m, deity, opts = {}) {
+    const prev = MAT;
+    use(opts.material || materialFor(deity));
+    try {
+      return draw(m, deity, opts);
+    } finally {
+      MAT = prev;
+    }
+  }
+  function draw(m, deity, opts) {
+    const stone = MAT.id === "stone";
+    const arc = archOf();
     const r = U.rng(U.hash(m.id + "|" + ((deity && deity.id) || "")));
+    const tr = U.rng(U.hash(m.id + "|tex"));
     const base = palette(deity);
     const baseW = base.map((c, i) => ({ c, w: [0.55, 0.3, 0.15][i] || 0.1 }));
-    const ess = m.essences.map((x) => ({ c: ESS_GLASS[x.id] || "#888888", w: x.pct }));
+    const ess = m.essences.map((x) => ({ c: essColor(x.id) || "#888888", w: x.pct }));
     const n = Math.max(1, Math.min(9, m.level || 1));
     const out = [];
     const A = {}; // Ankerpunkte für die Beschriftung (opts.annotate)
     const groups = new Map(); // Farbe → Pfaddaten (eine <path> je Farbe hält das SVG klein)
-    const addCell = (pts, color) => groups.set(color, (groups.get(color) || "") + poly(pts));
+    const tex = new Map(); // Musterung der Steine: "fill|Farbe" oder "stroke|Farbe" → Pfaddaten
+    const addTex = (k, d) => tex.set(k, (tex.get(k) || "") + d);
+    const addCell = (pts, color, raw) => {
+      groups.set(color, (groups.get(color) || "") + poly(pts));
+      if (stone) texture(pts, STONE_BY_HEX.get(raw), tr, addTex);
+    };
     const flush = (width) => {
-      for (const [c, d] of groups) out.push(`<path d="${d}" fill="${c}" stroke="${LEAD}" stroke-width="${width}" stroke-linejoin="round"/>`);
+      for (const [c, d] of groups) out.push(`<path d="${d}" fill="${c}" stroke="${MAT.ink}" stroke-width="${stone ? 0.55 : width}" stroke-linejoin="round"/>`);
+      for (const [k, d] of tex) {
+        const [mode, c] = k.split("|");
+        out.push(mode === "fill" ? `<path d="${d}" fill="${c}" stroke="none"/>` : `<path d="${d}" fill="none" stroke="${c}" stroke-width=".5" stroke-linecap="round"/>`);
+      }
       groups.clear();
+      tex.clear();
     };
     // Licht: Mitte heller, Ränder dunkler (ohne Verlauf-Definitionen)
     const light = (x, y) => 1.08 - 0.25 * Math.min(1, Math.hypot(x / (W / 2), (y - H * 0.45) / (H * 0.6)));
     const glass = (c, x, y) => {
-      const f = light(x, y) * (0.88 + 0.24 * r());
+      const f = stone ? 0.9 + 0.16 * r() : light(x, y) * (0.88 + 0.24 * r()); // Stein: kein Durchlicht
       const q = Math.round(f * 8) / 8; // auf Stufen runden, damit wenige Pfade entstehen
       return shade(c, q);
     };
 
     // Rahmen aus Stein und Fensteröffnung
-    const outer = arch(-W / 2 - 7, W + 14, YS, YB + 6).pts;
-    const inner = arch(-W / 2, W, YS, YB).pts;
-    out.push(`<path d="${poly(outer)}" fill="${STONE}" stroke="${STONE_EDGE}" stroke-width="1.2"/>`);
+    const outer = arc(-W / 2 - 7, W + 14, YS, YB + 6).pts;
+    const inner = arc(-W / 2, W, YS, YB).pts;
+    out.push(`<path d="${poly(outer)}" fill="${MAT.frame}" stroke="${MAT.edge}" stroke-width="1.2"/>`);
+    if (stone) out.push(ashlar(inner, 7));
 
     // Bahnen
     const mw = n > 1 ? 5 : 0;
@@ -198,7 +310,7 @@ window.VITRAIL = (function () {
     const yl = n === 1 ? YS + 52 : YS + 10;
     const lanes = Array.from({ length: n }, (_, i) => {
       const x0 = -W / 2 + i * (lw + mw);
-      return n === 1 ? { x0, w: W, pts: inner, apex: Y0 } : { x0, w: lw, ...arch(x0, lw, yl, YB) };
+      return n === 1 ? { x0, w: W, pts: inner, apex: Y0 } : { x0, w: lw, ...arc(x0, lw, yl, YB) };
     });
     const laneTop = Math.min(...lanes.map((l) => l.apex));
 
@@ -206,14 +318,18 @@ window.VITRAIL = (function () {
     const limitY = n === 1 ? YS + 28 : laneTop;
     let oc = { y: 0, r: 0 };
     for (let y = Y0 + 12; y < limitY - 8; y += 1) {
-      const rr = Math.min(R - Math.hypot(R - W / 2, YS - y) - 3, limitY - 4 - y, 34);
+      const rr = Math.min(stone ? edgeDist(inner, 0, y) - 3 : R - Math.hypot(R - W / 2, YS - y) - 3, limitY - 4 - y, 34);
       if (rr > oc.r) oc = { y, r: rr };
     }
 
     // Glas des Bogenfelds (größere Scheiben)
     const tymPts = [];
-    for (let y = Y0; y < limitY + 6; y += 12) for (let x = -W / 2; x <= W / 2; x += 12) tymPts.push([x + (r() - 0.5) * 8, y + (r() - 0.5) * 8]);
-    for (const c of voronoi(tymPts, clipPoly(inner, [[-W, Y0 - 5], [W, Y0 - 5], [W, limitY + 8], [-W, limitY + 8]]), 30)) addCell(c.cell, glass(weighted(r, baseW.slice().reverse()), c.p[0], c.p[1]));
+    if (stone) hexGrid(tymPts, -W / 2, Y0 - 6, W / 2, limitY + 8, 12, r);
+    else for (let y = Y0; y < limitY + 6; y += 12) for (let x = -W / 2; x <= W / 2; x += 12) tymPts.push([x + (r() - 0.5) * 8, y + (r() - 0.5) * 8]);
+    for (const c of voronoi(tymPts, clipPoly(inner, [[-W, Y0 - 5], [W, Y0 - 5], [W, limitY + 8], [-W, limitY + 8]]), 30)) {
+      const raw = weighted(r, baseW.slice().reverse());
+      addCell(c.cell, glass(raw, c.p[0], c.p[1]), raw);
+    }
     flush(1.1);
 
     // Scheiben der Bahnen; Gestalt bestimmt die Anordnung der Zellen
@@ -236,13 +352,16 @@ window.VITRAIL = (function () {
             if (x > ln.x0 - s && x < ln.x0 + ln.w + s && y > ln.apex - s && y < YB) pts.push([x, y]);
           }
         }
+      } else if (stone && !stretched) {
+        hexGrid(pts, ln.x0 - s, ln.apex - s, ln.x0 + ln.w + s, YB - hz + s, s, r); // Basaltsäulen: fast regelmäßige Sechsecke
       } else {
         const sx = stretched ? s * 0.75 : s, sy = stretched ? s * 1.7 : s;
         for (let y = ln.apex - sy / 2; y < YB - hz + sy; y += sy) for (let x = ln.x0 - sx / 2; x < ln.x0 + ln.w + sx; x += sx) pts.push([x + (r() - 0.5) * sx * 0.8, y + (r() - 0.5) * sy * 0.8]);
       }
       for (const c of voronoi(pts, region, s * 3.2)) {
         const acc = r() < 0.32;
-        addCell(c.cell, glass(acc ? weighted(r, ess) : weighted(r, baseW), c.p[0], c.p[1]));
+        const raw = acc ? weighted(r, ess) : weighted(r, baseW);
+        addCell(c.cell, glass(raw, c.p[0], c.p[1]), raw);
         // Beispielzellen für die Beschriftung: in der letzten Bahn, abseits des Medaillons
         const [px, py] = c.p;
         if (Math.hypot(px - md.x, py - md.y) > md.r + 9 && py > md.y - md.r && py < YB - hz - 6) cand.push({ p: c.p, acc });
@@ -253,26 +372,27 @@ window.VITRAIL = (function () {
       out.push(socle(m.duration && m.duration.kind, ln.x0, ln.w, YB - hz, hz, base));
       // Bordüre bei Rettungswurf: rote und helle Gläser am Rand
       if (m.save && m.save.type && m.save.type !== "none") {
-        const b = arch(ln.x0 + 2, ln.w - 4, n === 1 ? YS : yl, YB - hz).pts;
-        out.push(`<path d="${poly(b)}" fill="none" stroke="#f4e8c6" stroke-width="3"/><path d="${poly(b)}" fill="none" stroke="#b3202a" stroke-width="3" stroke-dasharray="3 3"/>`);
+        const b = arc(ln.x0 + 2, ln.w - 4, n === 1 ? YS : yl, YB - hz).pts;
+        out.push(`<path d="${poly(b)}" fill="none" stroke="${MAT.inlay}" stroke-width="3"/><path d="${poly(b)}" fill="none" stroke="${MAT.red}" stroke-width="3" stroke-dasharray="3 3"/>`);
       }
-      out.push(`<path d="${poly(ln.pts)}" fill="none" stroke="${LEAD}" stroke-width="2"/>`);
+      out.push(`<path d="${poly(ln.pts)}" fill="none" stroke="${MAT.ink}" stroke-width="${stone ? 1.2 : 2}"/>`);
     }
     const tracery = [];
     // Pfosten zwischen den Bahnen
     for (let i = 1; i < n; i++) {
       const x = -W / 2 + i * (lw + mw) - mw;
-      out.push(`<path d="M${f1(x)} ${f1(YB)}V${f1(yl)}H${f1(x + mw)}V${f1(YB)}Z" fill="${STONE}" stroke="${STONE_EDGE}" stroke-width=".8"/>`);
+      out.push(`<path d="M${f1(x)} ${f1(YB)}V${f1(yl)}H${f1(x + mw)}V${f1(YB)}Z" fill="${MAT.frame}" stroke="${MAT.edge}" stroke-width=".8"/>`);
+      if (stone) for (let y = YB - 14; y > yl + 4; y -= 14) out.push(`<path d="M${f1(x)} ${f1(y)}h${mw}" stroke="${MAT.edge}" stroke-width=".6"/>`);
     }
     // Maßwerk im Bogenfeld: Pässe nach der Zahl der Schule
     const foils = foilCount(m.school);
     const ocBg = shade(base[0], 0.42);
-    tracery.push(`<circle cx="0" cy="${f1(oc.y)}" r="${f1(oc.r + 2.5)}" fill="${STONE}" stroke="${STONE_EDGE}" stroke-width="1"/>`);
-    tracery.push(`<circle cx="0" cy="${f1(oc.y)}" r="${f1(oc.r)}" fill="${ocBg}" stroke="${LEAD}" stroke-width="1.3"/>`);
+    tracery.push(`<circle cx="0" cy="${f1(oc.y)}" r="${f1(oc.r + 2.5)}" fill="${MAT.frame}" stroke="${MAT.edge}" stroke-width="1"/>`);
+    tracery.push(`<circle cx="0" cy="${f1(oc.y)}" r="${f1(oc.r)}" fill="${ocBg}" stroke="${MAT.ink}" stroke-width="1.3"/>`);
     const [fd, fr] = foilGeom(foils, oc.r);
     for (let i = 0; i < foils; i++) {
       const a = (2 * Math.PI * i) / foils - Math.PI / 2;
-      tracery.push(`<circle cx="${f1(fd * Math.cos(a))}" cy="${f1(oc.y + fd * Math.sin(a))}" r="${f1(fr)}" fill="${shade(ocBg, 1.25)}" stroke="${STONE}" stroke-width="1.6"/>`);
+      tracery.push(`<circle cx="${f1(fd * Math.cos(a))}" cy="${f1(oc.y + fd * Math.sin(a))}" r="${f1(fr)}" fill="${shade(ocBg, 1.25)}" stroke="${MAT.frame}" stroke-width="1.6"/>`);
     }
     tracery.push(symbolSVG(deity && deity.symbol, 0, oc.y, oc.r * 0.78, base[0]));
 
@@ -287,9 +407,9 @@ window.VITRAIL = (function () {
     A.socle = [lanes[lanes.length - 1].x0 + lanes[lanes.length - 1].w / 2, YB - hz / 2];
     if (m.save && m.save.type && m.save.type !== "none") A.border = [lanes[0].x0 + 2, (md.y + YB - hz) / 2];
     // Medaillon der Hauptessenz: Farben aus Haupt- und zweiter Essenz, Form aus Reichweite, Komponenten, Zeitaufwand, Zauberresistenz
-    const e1 = ESS_GLASS[m.primary] || base[0], e2 = ESS_GLASS[(m.essences[1] || {}).id] || shade(e1, 1.4);
+    const e1 = essColor(m.primary) || base[0], e2 = essColor((m.essences[1] || {}).id) || shade(e1, 1.4);
     out.push(medallion(md.x, md.y, md.r, medallionSpec(m), e1, e2, base[0]));
-    out.push(`<path d="${poly(inner)}" fill="none" stroke="${LEAD}" stroke-width="2.4"/>`);
+    out.push(`<path d="${poly(inner)}" fill="none" stroke="${MAT.ink}" stroke-width="${stone ? 1.4 : 2.4}"/>`);
     // Beschriftung: rote Nummern wie bei den Magierkreisen (Reihenfolge = legend())
     if (opts.annotate)
       ANNOT_ORDER.forEach((k, i) => {
@@ -300,6 +420,49 @@ window.VITRAIL = (function () {
 
     const cls = "vitrail" + (opts.cls ? " " + opts.cls : "");
     return `<svg class="${cls}" viewBox="${-W / 2 - 9} 0 ${W + 18} ${H + 2}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Andachtsbild">${out.join("")}</svg>`;
+  }
+
+  // Sechseckgitter mit wenig Versatz (Steinintarsie)
+  function hexGrid(pts, x0, y0, x1, y1, s, r) {
+    const dy = s * 0.866;
+    for (let y = y0, row = 0; y < y1; y += dy, row++)
+      for (let x = x0 + (row % 2) * (s / 2); x < x1; x += s) pts.push([x + (r() - 0.5) * s * 0.18, y + (r() - 0.5) * s * 0.18]);
+  }
+  // Musterung einer Steinzelle; alle Punkte liegen innerhalb der (konvexen) Zelle
+  function texture(pts, st, r, add) {
+    if (!st || !st.tex) return;
+    const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length, cy = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+    const at = (p, t) => [cx + (p[0] - cx) * t, cy + (p[1] - cy) * t];
+    const pick = () => pts[Math.floor(r() * pts.length)];
+    if (st.tex === "vein") {
+      const a = at(pick(), 0.85), b = at(pts[(pts.indexOf(pick()) + Math.floor(pts.length / 2)) % pts.length], 0.85), m = at([cx + (r() - 0.5) * 6, cy + (r() - 0.5) * 6], 1);
+      add("stroke|" + st.tc, `M${f1(a[0])} ${f1(a[1])}Q${f1(m[0])} ${f1(m[1])} ${f1(b[0])} ${f1(b[1])}`);
+    } else if (st.tex === "band") {
+      for (const t of [0.68, 0.38]) add("stroke|" + st.tc, poly(pts.map((p) => at(p, t))));
+    } else if (st.tex === "speck") {
+      for (let i = 0; i < 4; i++) {
+        const q = at(pick(), 0.15 + 0.55 * r()), rad = 0.35 + 0.35 * r();
+        add("fill|" + st.tc, `M${f1(q[0] - rad)} ${f1(q[1])}a${f1(rad)} ${f1(rad)} 0 1 0 ${f1(2 * rad)} 0a${f1(rad)} ${f1(rad)} 0 1 0 ${f1(-2 * rad)} 0Z`);
+      }
+    } else if (st.tex === "metal") {
+      const a = at(pick(), 0.6);
+      add("stroke|" + st.tc, `M${f1(a[0])} ${f1(a[1])}L${f1(cx)} ${f1(cy)}`);
+    }
+  }
+  // Quaderfugen im Rahmen: kurze Fugen quer zum Rand, etwa alle 15 Einheiten
+  function ashlar(inner, w) {
+    let d = "";
+    for (let i = 0; i < inner.length; i++) {
+      const [ax, ay] = inner[i], [bx, by] = inner[(i + 1) % inner.length];
+      const len = Math.hypot(bx - ax, by - ay);
+      if (ay >= YB - 0.1 && by >= YB - 0.1) continue; // keine Fugen an der Unterkante
+      const nx = (by - ay) / len, ny = -(bx - ax) / len; // Normale nach außen
+      for (let t = 15; t < len - 4; t += 15) {
+        const px = ax + ((bx - ax) * t) / len, py = ay + ((by - ay) * t) / len;
+        d += `M${f1(px)} ${f1(py)}l${f1(nx * w * 0.95)} ${f1(ny * w * 0.95)}`;
+      }
+    }
+    return `<path d="${d}" stroke="${MAT.edge}" stroke-width=".7" fill="none"/>`;
   }
 
 
@@ -329,17 +492,17 @@ window.VITRAIL = (function () {
     const rr = Math.min(r, inr - 1.6);
     if (spec.unlimited) for (let i = 0; i < 16; i++) {
       const a = (2 * Math.PI * i) / 16 - Math.PI / 2;
-      o.push(`<path d="M${P(a - 0.09, R0 - 1)}L${P(a, R0 + 7)}L${P(a + 0.09, R0 - 1)}Z" fill="#f4e8c6" stroke="${LEAD}" stroke-width=".8"/>`);
+      o.push(`<path d="M${P(a - 0.09, R0 - 1)}L${P(a, R0 + 7)}L${P(a + 0.09, R0 - 1)}Z" fill="${MAT.inlay}" stroke="${MAT.ink}" stroke-width=".8"/>`);
     }
     // Zauberresistenz: zweiter Rahmen aus hellem Glas hinter der Fassung (einfarbig, damit kein Glas durchscheint)
-    const RING = "#f4e8c6", rw = 3.6;
-    if (spec.sr) o.push(k ? `<path d="M${Array.from({ length: k }, (_, i) => P((2 * Math.PI * i) / k - Math.PI / 2, R0 + rw / Math.cos(Math.PI / k))).join("L")}Z" fill="${RING}" stroke="${LEAD}" stroke-width="1.2" stroke-linejoin="round"/>` : `<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(fr + rw)}" fill="${RING}" stroke="${LEAD}" stroke-width="1.2"/>`);
-    o.push(k ? `<path d="M${Array.from({ length: k }, (_, i) => P((2 * Math.PI * i) / k - Math.PI / 2, R0)).join("L")}Z" fill="${frame}" stroke="${LEAD}" stroke-width="1.6" stroke-linejoin="round"/>` : `<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(fr)}" fill="${frame}" stroke="${LEAD}" stroke-width="1.6"/>`);
+    const RING = MAT.inlay, rw = 3.6;
+    if (spec.sr) o.push(k ? `<path d="M${Array.from({ length: k }, (_, i) => P((2 * Math.PI * i) / k - Math.PI / 2, R0 + rw / Math.cos(Math.PI / k))).join("L")}Z" fill="${RING}" stroke="${MAT.ink}" stroke-width="1.2" stroke-linejoin="round"/>` : `<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(fr + rw)}" fill="${RING}" stroke="${MAT.ink}" stroke-width="1.2"/>`);
+    o.push(k ? `<path d="M${Array.from({ length: k }, (_, i) => P((2 * Math.PI * i) / k - Math.PI / 2, R0)).join("L")}Z" fill="${frame}" stroke="${MAT.ink}" stroke-width="1.6" stroke-linejoin="round"/>` : `<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(fr)}" fill="${frame}" stroke="${MAT.ink}" stroke-width="1.6"/>`);
     const n = spec.petals, ri = rr * 0.32;
     if (!n) {
       // persönlich: geschlossene Scheibe, innen die zweite Essenz
-      o.push(`<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(rr)}" fill="${shade(e1, 1.05)}" stroke="${LEAD}" stroke-width="1"/>`);
-      o.push(`<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(rr * 0.55)}" fill="${shade(e2, 1.05)}" stroke="${LEAD}" stroke-width="1"/>`);
+      o.push(`<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(rr)}" fill="${shade(e1, 1.05)}" stroke="${MAT.ink}" stroke-width="1"/>`);
+      o.push(`<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(rr * 0.55)}" fill="${shade(e2, 1.05)}" stroke="${MAT.ink}" stroke-width="1"/>`);
     } else {
       const ring = (n2, rIn, rOut, off, shape) => {
         for (let i = 0; i < n2; i++) {
@@ -347,26 +510,26 @@ window.VITRAIL = (function () {
           const d = shape === "pointed"
             ? `M${P(a0, rIn)}L${P(a0, rIn + (rOut - rIn) * 0.55)}L${P(am, rOut)}L${P(a1, rIn + (rOut - rIn) * 0.55)}L${P(a1, rIn)}Z`
             : `M${P(a0, rIn)}L${P(a0, rOut * 0.86)}Q${P(am, rOut * 1.12)} ${P(a1, rOut * 0.86)}L${P(a1, rIn)}Z`;
-          o.push(`<path d="${d}" fill="${shade(i % 2 ? e2 : e1, 1.02 + 0.06 * (i % 3))}" stroke="${LEAD}" stroke-width="1" stroke-linejoin="round"/>`);
+          o.push(`<path d="${d}" fill="${shade(i % 2 ? e2 : e1, 1.02 + 0.06 * (i % 3))}" stroke="${MAT.ink}" stroke-width="1" stroke-linejoin="round"/>`);
         }
       };
       ring(n, ri, rr, 0, spec.tip === "pointed" ? "pointed" : "round");
       // lange Gebete: ein zweiter, innerer Blattkranz, um ein halbes Blatt versetzt
       if (spec.tip === "double") ring(n, ri, rr * 0.62, 0.5, "round");
     }
-    o.push(`<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(ri)}" fill="#f6eed3" stroke="${LEAD}" stroke-width="1"/>`);
+    o.push(`<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(ri)}" fill="#f6eed3" stroke="${MAT.ink}" stroke-width="1"/>`);
     return o.join("");
   }
   // Musterbild eines Medaillons für die Legende
   function medallionMini(spec, base) {
-    const e1 = ESS_GLASS.lux, e2 = ESS_GLASS.bonum;
+    const e1 = essColor("lux"), e2 = essColor("bonum");
     return `<svg class="vt-mini" viewBox="-24 -24 48 48" xmlns="http://www.w3.org/2000/svg">${medallion(0, 0, 14, { petals: 8, corners: 0, tip: "round", sr: false, ...spec }, e1, e2, base[0])}</svg>`;
   }
 
   // Sockel: ein Band unter den Scheiben, Muster nach Wirkungsdauer
   function socle(kind, x0, w, y, h, base) {
     const c1 = shade(base[0], 0.8), c2 = base[1] ? base[1] : shade(base[0], 1.4);
-    const st = `stroke="${LEAD}" stroke-width=".9"`;
+    const st = `stroke="${MAT.ink}" stroke-width=".9"`;
     const rect = (x, yy, ww, hh, c) => `<path d="M${f1(x)} ${f1(yy)}h${f1(ww)}v${f1(hh)}h${f1(-ww)}Z" fill="${c}" ${st}/>`;
     let o = rect(x0, y, w, h, c1);
     const k = Math.max(3, Math.round(w / 9));
@@ -389,25 +552,38 @@ window.VITRAIL = (function () {
   // Kapitelornament: leeres Fenster mit n Bahnen (nur Stein und Blei)
   function ornament(n) {
     const out = [];
-    out.push(`<path d="${poly(arch(-W / 2 - 7, W + 14, YS, YB + 6).pts)}" fill="none" stroke="currentColor" stroke-width="2"/>`);
-    out.push(`<path d="${poly(arch(-W / 2, W, YS, YB).pts)}" fill="none" stroke="currentColor" stroke-width="1"/>`);
+    const arc = archOf();
+    out.push(`<path d="${poly(arc(-W / 2 - 7, W + 14, YS, YB + 6).pts)}" fill="none" stroke="currentColor" stroke-width="2"/>`);
+    out.push(`<path d="${poly(arc(-W / 2, W, YS, YB).pts)}" fill="none" stroke="currentColor" stroke-width="1"/>`);
     const mw = n > 1 ? 5 : 0, lw = (W - (n - 1) * mw) / n, yl = n === 1 ? YS + 52 : YS + 10;
-    for (let i = 0; i < n && n > 1; i++) out.push(`<path d="${poly(arch(-W / 2 + i * (lw + mw), lw, yl, YB).pts)}" fill="none" stroke="currentColor" stroke-width="1"/>`);
+    for (let i = 0; i < n && n > 1; i++) out.push(`<path d="${poly(arc(-W / 2 + i * (lw + mw), lw, yl, YB).pts)}" fill="none" stroke="currentColor" stroke-width="1"/>`);
     out.push(`<circle cx="0" cy="${f1(Y0 + HB * 0.55)}" r="${f1(Math.min(24, HB * 0.3))}" fill="none" stroke="currentColor" stroke-width="1"/>`);
     return `<svg class="vt-orn" viewBox="${-W / 2 - 9} 0 ${W + 18} ${H + 2}">${out.join("")}</svg>`;
   }
 
   // Kleine Musterbilder für die Legendenseiten im Vorspann
   const mini = (vb, body, cls = "vt-mini") => `<svg class="${cls}" viewBox="${vb}" xmlns="http://www.w3.org/2000/svg">${body}</svg>`;
+  // Muster einer Essenz im aktuellen Material (Glasstück oder gemusterter Stein)
+  function essSwatch(id) {
+    if (MAT.id !== "stone") return glassSwatch(ESS_GLASS[id]);
+    const st = stoneOf(ESS_STONE[id]);
+    const cells = [[[1, 1], [14, 1], [11, 12], [1, 9]], [[14, 1], [23, 1], [23, 14], [11, 12]], [[1, 9], [11, 12], [9, 23], [1, 23]], [[11, 12], [23, 14], [23, 23], [9, 23]]];
+    const r = U.rng("swatch|" + id), t = new Map();
+    let o = "";
+    cells.forEach((c, i) => { o += `<path d="${poly(c)}" fill="${shade(st.c, 0.92 + 0.05 * i)}" stroke="${MAT.ink}" stroke-width=".5"/>`; texture(c, st, r, (k, d) => t.set(k, (t.get(k) || "") + d)); });
+    for (const [k, d] of t) { const [mode, c] = k.split("|"); o += mode === "fill" ? `<path d="${d}" fill="${c}"/>` : `<path d="${d}" fill="none" stroke="${c}" stroke-width=".5"/>`; }
+    return mini("0 0 24 24", o + `<path d="M1 1H23V23H1Z" fill="none" stroke="${MAT.ink}" stroke-width="1"/>`);
+  }
+  const essStoneName = (id) => stoneOf(ESS_STONE[id]).de;
   function glassSwatch(c) {
-    return mini("0 0 24 24", `<path d="M1 1H23V23H1Z" fill="${c}" stroke="${LEAD}" stroke-width="1.6"/><path d="M1 9L12 13L23 6M12 13L9 23" fill="none" stroke="${LEAD}" stroke-width="1.2"/><path d="M3 3H10L5 7Z" fill="#fff" opacity=".25"/>`);
+    return mini("0 0 24 24", `<path d="M1 1H23V23H1Z" fill="${c}" stroke="${MAT.ink}" stroke-width="1.6"/><path d="M1 9L12 13L23 6M12 13L9 23" fill="none" stroke="${MAT.ink}" stroke-width="1.2"/><path d="M3 3H10L5 7Z" fill="#fff" opacity=".25"/>`);
   }
   function foilsMini(count, tint) {
     const bg = shade(tint, 0.42), rr = 20, [fd, fr] = foilGeom(count, rr);
-    let o = `<circle r="${rr + 2.5}" fill="${STONE}" stroke="${STONE_EDGE}"/><circle r="${rr}" fill="${bg}" stroke="${LEAD}" stroke-width="1.3"/>`;
+    let o = `<circle r="${rr + 2.5}" fill="${MAT.frame}" stroke="${MAT.edge}"/><circle r="${rr}" fill="${bg}" stroke="${MAT.ink}" stroke-width="1.3"/>`;
     for (let i = 0; i < count; i++) {
       const a = (2 * Math.PI * i) / count - Math.PI / 2;
-      o += `<circle cx="${f1(fd * Math.cos(a))}" cy="${f1(fd * Math.sin(a))}" r="${f1(fr)}" fill="${shade(bg, 1.25)}" stroke="${STONE}" stroke-width="1.6"/>`;
+      o += `<circle cx="${f1(fd * Math.cos(a))}" cy="${f1(fd * Math.sin(a))}" r="${f1(fr)}" fill="${shade(bg, 1.25)}" stroke="${MAT.frame}" stroke-width="1.6"/>`;
     }
     return mini("-25 -25 50 50", o);
   }
@@ -416,21 +592,23 @@ window.VITRAIL = (function () {
   }
   // Zellmuster: gleichmäßig, gestreckt oder strahlenförmig
   function cellsMini(mode, base) {
+    // Muster nach aktuellem Material
     const r = U.rng("cells|" + mode), w = 40, h = 60, s = 8;
     const region = [[0, 0], [w, 0], [w, h], [0, h]], pts = [];
     if (mode === "radial") for (let rad = s * 0.8; rad < 50; rad += s) {
       const k = Math.max(6, Math.round((2 * Math.PI * rad) / s));
       for (let i = 0; i < k; i++) { const a = (2 * Math.PI * (i + (r() - 0.5) * 0.3)) / k; pts.push([w / 2 + Math.cos(a) * rad, h / 2 + Math.sin(a) * rad]); }
-    } else {
+    } else if (mode === "even" && MAT.id === "stone") hexGrid(pts, -s, -s, w + s, h + s, s, r);
+    else {
       const sx = mode === "stretched" ? s * 0.75 : s, sy = mode === "stretched" ? s * 1.7 : s;
       for (let y = -sy / 2; y < h + sy; y += sy) for (let x = -sx / 2; x < w + sx; x += sx) pts.push([x + (r() - 0.5) * sx * 0.8, y + (r() - 0.5) * sy * 0.8]);
     }
-    const body = voronoi(pts, region, s * 3.2).map((c, i) => `<path d="${poly(c.cell)}" fill="${shade(base[i % base.length], 0.85 + 0.3 * r())}" stroke="${LEAD}" stroke-width="1"/>`).join("");
-    return mini("-1 -1 42 62", body + `<path d="M0 0H40V60H0Z" fill="none" stroke="${LEAD}" stroke-width="2"/>`, "vt-mini tall");
+    const body = voronoi(pts, region, s * 3.2).map((c, i) => `<path d="${poly(c.cell)}" fill="${shade(base[i % base.length], 0.85 + 0.3 * r())}" stroke="${MAT.ink}" stroke-width="1"/>`).join("");
+    return mini("-1 -1 42 62", body + `<path d="M0 0H40V60H0Z" fill="none" stroke="${MAT.ink}" stroke-width="2"/>`, "vt-mini tall");
   }
   function borderMini(on, base) {
-    const a = arch(0, 30, 22, 66).pts, b = arch(2, 26, 22, 66).pts;
-    return mini("-2 -2 34 70", `<path d="${poly(a)}" fill="${shade(base[0], 0.9)}" stroke="${LEAD}" stroke-width="1"/>` + (on ? `<path d="${poly(b)}" fill="none" stroke="#f4e8c6" stroke-width="3"/><path d="${poly(b)}" fill="none" stroke="#b3202a" stroke-width="3" stroke-dasharray="3 3"/>` : "") + `<path d="${poly(a)}" fill="none" stroke="${LEAD}" stroke-width="2"/>`, "vt-mini tall");
+    const a = archOf()(0, 30, 22, 66).pts, b = archOf()(2, 26, 22, 66).pts;
+    return mini("-2 -2 34 70", `<path d="${poly(a)}" fill="${shade(base[0], 0.9)}" stroke="${MAT.ink}" stroke-width="1"/>` + (on ? `<path d="${poly(b)}" fill="none" stroke="${MAT.inlay}" stroke-width="3"/><path d="${poly(b)}" fill="none" stroke="${MAT.red}" stroke-width="3" stroke-dasharray="3 3"/>` : "") + `<path d="${poly(a)}" fill="none" stroke="${MAT.ink}" stroke-width="2"/>`, "vt-mini tall");
   }
   // Zahl der Pässe = Zahl der Schule (Nekromantie 2 … Verwandlung 12), Universalmagie 10 – jede Schule eindeutig
   function foilCount(school) {
@@ -444,29 +622,52 @@ window.VITRAIL = (function () {
   const CORNER_DE = { 3: "Dreieck", 4: "Viereck", 5: "Fünfeck", 6: "Sechseck", 7: "Siebeneck" };
   const ANNOT_ORDER = ["lanes", "tym", "md", "accent", "base", "cells", "socle", "border"];
   function legend(m, deity) {
+    const prev = MAT;
+    use(materialFor(deity));
+    try {
+      return legendItems(m, deity);
+    } finally {
+      MAT = prev;
+    }
+  }
+  function legendItems(m, deity) {
     const T = window.THEORY;
+    const Wd = WORDS[MAT.id];
+    const stoneNames = (keys) => (MAT.id === "stone" ? ` (${keys.map((k) => stoneOf(k).de).join(", ")})` : "");
     const { front, back } = symbolMotifs(deity && deity.symbol);
     const MOT = { sword: "Schwert", sun: "Sonne", hammer: "Hammer", anvil: "Amboss", flame: "Flamme", shield: "Schild", scales: "Waage", eye: "Auge", star: "Stern", crown: "Krone", moon: "Mond", key: "Schlüssel", tree: "Baum", feather: "Feder", rose: "Rose", rosette: "Rosette" };
     const ed = (id) => T.ESS[id].de.replace(/ \(.*\)$/, "");
     const kind = m.shape && m.shape.kind;
-    const cellMode = ["ray", "line", "cone"].includes(kind) ? "senkrecht gestreckt" : ["burst", "spread", "emanation", "sphere", "cylinder"].includes(kind) ? "in Ringen um das Medaillon" : "gleichmäßig";
+    const cellMode = ["ray", "line", "cone"].includes(kind) ? "senkrecht gestreckt" : ["burst", "spread", "emanation", "sphere", "cylinder"].includes(kind) ? "in Ringen um das Medaillon" : MAT.id === "stone" ? "gleichmäßige Sechsecke" : "gleichmäßig";
     const items = [
       { k: "Bahnen", key: "lanes", t: `${Math.max(1, m.level)} Bahn${m.level > 1 ? "en" : ""} – ${m.level ? U.ROMAN[m.level] + ". Grad" : "ohne Grad"}. Je höher der Grad, desto mehr Bahnen nebeneinander.` },
-      { k: "Bogenfeld", key: "tym", t: `Rundfenster oben mit dem heiligen Symbol (${deity ? deity.symbol + " → " : ""}${MOT[front]}${back ? " vor " + MOT[back] : ""}). Die ${foilCount(m.school)} Kreise darum sind die Pässe des Maßwerks; ihre Zahl zeigt die Schule (${m.schoolInfo.de}).` },
+      { k: "Bogenfeld", key: "tym", t: `${Wd.tym} oben mit dem heiligen Symbol (${deity ? deity.symbol + " → " : ""}${MOT[front]}${back ? " vor " + MOT[back] : ""}). Die ${foilCount(m.school)} Kreise darum sind die Pässe des Maßwerks; ihre Zahl zeigt die Schule (${m.schoolInfo.de}).` },
       { k: "Medaillon", key: "md", t: (() => {
         const sp = medallionSpec(m);
         const comps = COMP_KEYS.filter((c) => m.components && m.components[c]).map((c) => (c === "DF" ? "GF" : c)).join(", ");
         const blatt = sp.petals ? `${sp.petals} Blätter für die Reichweite (${m.range.de})${sp.unlimited ? " mit Strahlen" : ""}, ${sp.tip === "pointed" ? "spitz: ein schnelles Gebet" : sp.tip === "double" ? "zwei Blattkränze: ein langes Gebet" : "rund: Standard-Aktion"}` : `eine geschlossene Scheibe für die Reichweite ${m.range.de}`;
         return `Rosette in der Mitte der Bahnen, abwechselnd in der Farbe der Hauptessenz ${T.ESS[m.primary].latin} (${ed(m.primary)})${m.essences[1] ? " und der zweiten Essenz " + T.ESS[m.essences[1].id].latin : ""}: ${blatt}. Die Fassung ist ${sp.corners ? `ein ${CORNER_DE[sp.corners]} für ${comps.split(", ").length} Komponenten (${comps})` : "rund: keine Komponenten"}${sp.sr ? "; der zweite Ring zeigt Zauberresistenz" : ""}.`;
       })() },
-      { k: "Akzentscheiben", key: "accent", t: `Etwa jede dritte Scheibe trägt eine Essenzfarbe, so oft wie ihr Anteil: ${m.essences.map((x) => `${T.ESS[x.id].latin} ${x.pct} %`).join(", ")}.` },
-      { k: "Grundscheiben", key: "base", t: deity && deity.colors.length ? `Die übrigen Scheiben in den heiligen Farben ${deity.name}s: ${deity.colors.map((c) => c.name).join(", ")}.` : "Die übrigen Scheiben in einer Palette nach Gesinnung (die Gottheit hat keine heiligen Farben)." },
-      { k: "Zellen", key: "cells", t: `Form der Scheiben nach der Gestalt (${kind && T.SHAPES[kind] ? T.SHAPES[kind].de : "frei"}): ${cellMode}.` },
+      { k: Wd.accent, key: "accent", t: `Etwa jede dritte ${Wd.piece} trägt eine Essenzfarbe, so oft wie ihr Anteil: ${m.essences.map((x) => `${T.ESS[x.id].latin}${MAT.id === "stone" ? " (" + essStoneName(x.id) + ")" : ""} ${x.pct} %`).join(", ")}.` },
+      { k: Wd.base, key: "base", t: deity && deity.colors.length ? `Die übrigen ${Wd.pieces} in den heiligen Farben ${deity.name}s: ${deity.colors.map((c) => c.name).join(", ")}${stoneNames(deity.colors.map((c) => COLOR_STONE[c.name] || "granite"))}.` : `Die übrigen ${Wd.pieces} in einer Palette nach Gesinnung (die Gottheit hat keine heiligen Farben)${stoneNames(ALIGN_STONE[(deity && deity.align) || "LG"] || ALIGN_STONE.LG)}.` },
+      { k: "Zellen", key: "cells", t: `Form der ${Wd.pieces} nach der Gestalt (${kind && T.SHAPES[kind] ? T.SHAPES[kind].de : "frei"}): ${cellMode}.` },
       { k: "Sockel", key: "socle", t: `Band am Fuß jeder Bahn nach der Wirkungsdauer: ${m.duration ? m.duration.de : "–"}.` },
-      { k: "Bordüre", key: "border", t: m.save && m.save.type !== "none" ? `Rote und helle Gläser am Rand: Das Ziel kann sich wehren (${m.save.de}).` : "Keine Bordüre: kein Rettungswurf." },
+      { k: "Bordüre", key: "border", t: m.save && m.save.type !== "none" ? `${Wd.border}: Das Ziel kann sich wehren (${m.save.de}).` : "Keine Bordüre: kein Rettungswurf." },
     ];
     return items.map((x, i) => ({ ...x, n: i + 1 }));
   }
 
-  return { render, ornament, legend, symbolMotifs, symbolSVG, palette, glassSwatch, medallionMini, foilsMini, socleMini, cellsMini, borderMini, foilCount, ESS_GLASS, MOTIFS };
+  // Einstellung des Charakters und Material für eine Gottheit; withMaterial setzt MAT für Musterbilder im Vorspann
+  const setMaterial = (v) => (SETTING = ["glass", "stone"].includes(v) ? v : "auto");
+  const withMaterial = (d, fn) => {
+    const prev = MAT;
+    use(materialFor(d));
+    try {
+      return fn(WORDS[MAT.id]);
+    } finally {
+      MAT = prev;
+    }
+  };
+  const colorStoneName = (name) => stoneOf(COLOR_STONE[name] || "granite").de;
+  return { render, ornament, legend, setMaterial, materialFor, withMaterial, isDwarven, essSwatch, essStoneName, essColor, colorStoneName, symbolMotifs, symbolSVG, palette, glassSwatch, medallionMini, foilsMini, socleMini, cellsMini, borderMini, foilCount, ESS_GLASS, MOTIFS };
 })();
