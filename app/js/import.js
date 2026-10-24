@@ -48,20 +48,27 @@
     const shared = ssText ? [...xml(ssText).getElementsByTagName("si")].map((si) => [...si.getElementsByTagName("t")].map((t) => t.textContent).join("")) : [];
     const sheetName = zip.names.find((n) => /^xl\/worksheets\/sheet1\.xml$/.test(n)) || zip.names.find((n) => /^xl\/worksheets\/.*\.xml$/.test(n));
     const sheet = xml(await zip.text(sheetName));
+    // Zellen nach Adresse sammeln; einfache Formelverweise (=A2) ohne gespeichertes Ergebnis selbst auflösen,
+    // z. B. wenn die Datei von einem Skript statt von Excel/LibreOffice gespeichert wurde
+    const byRef = {}, refs = [];
     const rows = [...sheet.getElementsByTagName("row")].map((row) => {
       const cells = {};
       for (const c of row.getElementsByTagName("c")) {
-        const col = (c.getAttribute("r") || "").replace(/\d+/g, "");
+        const ref = c.getAttribute("r") || "";
+        const col = ref.replace(/\d+/g, "");
         const t = c.getAttribute("t");
         const v = c.getElementsByTagName("v")[0];
+        const f = c.getElementsByTagName("f")[0];
         let val = null;
         if (t === "s" && v) val = shared[+v.textContent];
         else if (t === "inlineStr") val = [...c.getElementsByTagName("t")].map((x) => x.textContent).join("");
         else if (v) val = v.textContent;
-        if (val != null && String(val).trim()) cells[col] = String(val).trim();
+        if (val != null && String(val).trim()) cells[col] = byRef[ref] = String(val).trim();
+        else if (f && /^\$?[A-Z]+\$?\d+$/.test(f.textContent.trim())) refs.push([cells, col, f.textContent.trim().replace(/\$/g, "")]);
       }
       return cells;
     });
+    for (const [cells, col, target] of refs) if (byRef[target]) cells[col] = byRef[target];
     // Spalte mit Überschrift „Name“ suchen, sonst alle Textzellen nehmen
     const headerRow = rows.findIndex((r) => Object.values(r).some((v) => /^(name|zauber|spell)$/i.test(v)));
     if (headerRow >= 0) {

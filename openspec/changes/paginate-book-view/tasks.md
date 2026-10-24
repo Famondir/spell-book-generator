@@ -8,6 +8,10 @@
 - [x] 2.1 Liste in Zeilenform des Verzeichnisses mit dessen Filtern (Suche, Grad, Schule, Essenz, Herkunft), Seitenzahl, Klick zum Springen, − zum Entfernen; Pillen entfernen
 
 - [x] 2.2 Filterleisten links einklappbar (Verzeichnis und Buch), Inhaltsverzeichnis rechts ausklappbar, Zustand gespeichert
+- [x] 2.3 Angedockte Laschen statt runder Knöpfe; eingeklappt bleibt nur die Lasche
+- [x] 2.4 Inhaltsverzeichnis mit Vorspann (Titelblatt, Einführungsseiten, Verzeichnis der Formeln) und getrennten Gruppen für Zaubertricks und Alltagszauber
+- [x] 2.5 Seitenfeld zeigt den sichtbaren Bereich (z. B. „5–6“)
+- [x] 2.6 xlsx-Import löst einfache Formelverweise (=A2) ohne gespeichertes Ergebnis auf
 
 ## 3. Weitere Bremsen
 

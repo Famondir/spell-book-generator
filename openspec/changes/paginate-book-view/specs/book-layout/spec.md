@@ -23,11 +23,15 @@ Neben der Vorschau SHALL eine Liste aller Buchzauber mit Schnellglyphe, Grad, Na
 - **DANN** zeigt die Vorschau den Ausschnitt mit den Seiten von Fireball
 
 ### Requirement: Einklappbare Seitenleisten
-Die Filterleiste im Verzeichnis und in der Buchansicht SHALL sich nach links einklappen lassen; das Inhaltsverzeichnis der Buchansicht SHALL rechts ein- und ausklappbar sein. Der Zustand MUST erhalten bleiben.
+Die Filterleiste im Verzeichnis und in der Buchansicht SHALL sich nach links einklappen lassen; das Inhaltsverzeichnis der Buchansicht SHALL rechts ein- und ausklappbar sein. Der Zustand MUST erhalten bleiben; eingeklappt MUST nur eine angedockte Lasche sichtbar bleiben, ohne dass sich der Inhalt verschiebt.
 
 #### Scenario: Filterleiste einklappen
 - **WENN** die Filterleiste eingeklappt wird
 - **DANN** bleibt nur ein schmaler Streifen mit Ausklapp-Knopf, und die Vorschau nutzt die Breite
+
+#### Scenario: Vorspann im Inhaltsverzeichnis
+- **WENN** das Buch einen Vorspann hat
+- **DANN** listet das Inhaltsverzeichnis Titelblatt, Einführungsseiten und Verzeichnis der Formeln mit Seitenzahl vor den Zaubern, Zaubertricks und Alltagszauber als eigene Gruppen
 
 #### Scenario: Inhaltsverzeichnis ausklappen
 - **WENN** rechts das Inhaltsverzeichnis ausgeklappt und ein Eintrag angeklickt wird

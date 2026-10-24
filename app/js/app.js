@@ -231,7 +231,16 @@
       else units.push({ spell: p.spell || null, start: i, n: 1, flow: /\bflow\b/.test(p.cls || "") });
     });
     const pageBySpell = new Map(r.toc.map((x) => [x.m.id, x.page]));
-    bookCache = { key, entries, ...r, units, pageBySpell, flowPages: null };
+    // Vorspann fürs Inhaltsverzeichnis: Titel jeder Seite bis zur ersten Formel (Fortsetzungsseiten zusammengefasst)
+    const front = [];
+    const strip = (h) => h.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+    for (const p of r.pages) {
+      if (p.spell || p.halves) break;
+      const h = /<h[123][^>]*>([\s\S]*?)<\/h[123]>/.exec(p.html);
+      const title = /title-page/.test(p.cls || "") ? "Titelblatt" : h ? strip(h[1]) : null;
+      if (title && title !== front[front.length - 1]?.title) front.push({ title, page: p.no });
+    }
+    bookCache = { key, entries, ...r, units, pageBySpell, front, flowPages: null };
     view.rendered = null;
     return bookCache;
   }
@@ -331,7 +340,7 @@
     $("#book-pager").innerHTML = `
       <button data-go="first" title="Anfang" ${g === 0 ? "disabled" : ""}>⏮</button>
       <button data-go="prev" title="Zurückblättern" ${g === 0 ? "disabled" : ""}>‹</button>
-      <span class="pager-pos">Seite <input type="number" id="book-goto" min="1" value="${from || 1}">${to ? `–${to}` : ""} <span class="muted">von ${(d.pages[0]?.no || 1) + total - 1}${flowLast ? "+" : ""}</span></span>
+      <span class="pager-pos">Seite <input type="text" inputmode="numeric" id="book-goto" title="Seitenzahl eingeben und Enter drücken" value="${from || 1}${to ? `–${to}` : ""}" size="${String(from || 1).length + (to ? String(to).length + 1 : 0) + 1}"> <span class="muted">von ${(d.pages[0]?.no || 1) + total - 1}${flowLast ? "+" : ""}</span></span>
       <button data-go="next" title="Weiterblättern" ${g + s >= total ? "disabled" : ""}>›</button>
       <button data-go="last" title="Ende" ${g + s >= total ? "disabled" : ""}>⏭</button>
       <button id="book-toc-toggle" class="${state.ui.toc ? "on" : ""}" title="Inhaltsverzeichnis rechts ein-/ausklappen">Inhalt</button>`;
@@ -348,9 +357,11 @@
     if (b.dataset.go === "last") (view.g = total - 1), (view.toEnd = true);
     showSpread();
   });
+  $("#book-pager").addEventListener("focusin", (ev) => ev.target.id === "book-goto" && ev.target.select());
   $("#book-pager").addEventListener("change", (ev) => {
     if (ev.target.id !== "book-goto") return;
-    gotoPageNo(+ev.target.value);
+    const no = parseInt(ev.target.value, 10);
+    if (no > 0) gotoPageNo(no);
   });
   document.addEventListener("keydown", (ev) => {
     if (state.view !== "book" || /INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName) || document.querySelector("dialog[open]")) return;
@@ -398,7 +409,9 @@
   function renderBookToc() {
     const d = bookData();
     let lastGrade = null;
-    $("#book-toc-list").innerHTML = d.toc.map((x) => {
+    $("#book-toc-list").innerHTML = (d.front.length ? `<li class="toc-grade">Vorspann</li>` : "") +
+      d.front.map((x) => `<li data-page="${x.page}"><span class="q"></span><span class="nm"><b>${e(x.title)}</b></span><span class="pg">${x.page}</span></li>`).join("") +
+      d.toc.map((x) => {
       const gr = x.m.spell.everyday ? "Alltagszauber" : x.m.level === 0 ? "Zaubertricks" : U.ROMAN[x.m.level] + ". Grad";
       const head = gr !== lastGrade ? `<li class="toc-grade">${gr}</li>` : "";
       lastGrade = gr;
