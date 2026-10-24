@@ -1,0 +1,20 @@
+# Private Daten: Charakterbogen, eigene Zauberlisten
+character/
+
+# Kopien fremder Webseiten (nur als Ideenquelle, nicht zur Weitergabe)
+data/websites/
+
+# Rohdaten (Archives of Nethys, d20pfsrd-Export) – nur für tools/parse_spells.py nötig
+spells/
+data/spell_full*.tsv
+data/spells.json
+
+# Persönliches Profil (eigene Backstory, Setting-Namen)
+data/profile.local.js
+
+# Editor / System
+.vscode/
+.idea/
+*.swp
+.DS_Store
+gemini_talk.md

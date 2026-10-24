@@ -1,0 +1,523 @@
+// Seitenplanung und HTML der Buchseiten.
+// Umfang: Grad 0 = halbe Seite, Grad n = n Seiten. Jede Seite ist ein festes A5-Blatt.
+(function () {
+  const T = window.THEORY;
+  const e = U.esc;
+  const SCHOOL_DE = (m) => m.schoolInfo.de;
+
+  // ---------------------------------------------------------------------------
+  // Bausteine
+  // ---------------------------------------------------------------------------
+  function head(m, t, small) {
+    return `<header class="sp-head ${small ? "small" : ""}">${quickGlyph(m, { cls: "sp-quick" })}
+      <div class="sp-meta">${m.spell.everyday ? "Alltagszauber" : m.level === 0 ? "Fingerübung" : U.ROMAN[m.level] + ". Ordnung"} · ${e(SCHOOL_DE(m))}${m.subschools.length ? " (" + m.subschools.map((s) => T.SUBSCHOOLS[s].de).join(", ") + ")" : ""}</div>
+      <h2 class="sp-title">${e(t.title)}</h2>
+      <div class="sp-epithet">${e(t.epithet)}</div>
+      <div class="sp-rulename">${e(m.name)}${m.spell.everyday ? ` · nach ${e(m.spell.base)}` : ""}</div>
+    </header>`;
+  }
+  const circleBox = (m, t, cls, opts = {}) => `<figure class="circle-box ${cls}">${renderCircle(m, { text: t.formula.band, ...opts })}</figure>`;
+  function formulaBlock(t, withTone = true) {
+    return `<div class="formula">${t.formula.lines.map((l) => `<div class="fl">${e(l)}</div>`).join("")}${withTone ? `<div class="tone">Vortrag: ${e(t.formula.tone)}.</div>` : ""}</div>`;
+  }
+  function componentsBlock(m, t) {
+    const c = m.components;
+    const tags = [c.V && "V", c.S && "S", c.M && "M", c.F && "F", c.DF && "GF"].filter(Boolean).join(" · ");
+    return `<div class="comp"><span class="comp-tags">${tags || "—"}</span> <span class="comp-time">${e(m.casting.de)}</span>
+      ${t.materials.map((x) => `<div class="mat"><b>${e(x.k)}:</b> ${e(x.t)}${x.orig ? ` <i class="orig">„${e(x.orig)}“</i>` : ""}</div>`).join("")}</div>`;
+  }
+  const gesturesBlock = (t, n) => `<h4>Gesten</h4><ol class="gest">${t.gestures.slice(0, n || 99).map((g) => `<li>${e(g.replace(/\.?$/, "."))}</li>`).join("")}</ol>`;
+  const theoryBlock = (t, heads) =>
+    t.theory.filter((p) => !heads || heads.includes(p.h)).map((p) => `<h4>${e(p.h)}</h4><p>${e(p.t)}</p>`).join("");
+  const structureBlock = (t) => `<h4>Aufbau des Kreises</h4><dl class="struct">${t.structure.map((s) => `<dt>${e(s.k)}</dt><dd>${e(s.t)}</dd>`).join("")}</dl>`;
+  const stepsBlock = (t, compact) =>
+    `<h4>Ausführung</h4><div class="steps ${compact ? "compact" : ""}">${t.steps
+      .map((p, i) => `<div class="phase"><div class="ph">${U.ROMAN[i + 1]}. ${e(p.h)}</div><ol>${p.items.map((x) => `<li>${e(x.replace(/\.?$/, "."))}</li>`).join("")}</ol></div>`)
+      .join("")}</div>`;
+  const note = (txt) => (txt ? `<aside class="note">${e(txt)}</aside>` : "");
+  function calibrationBlock(t) {
+    if (!t.calibration) return "";
+    const c = t.calibration;
+    return `<h4>Kalibrierung nach Zauberstufe</h4><table class="calib"><tr>${c.cols.map(([, h]) => `<th>${e(h)}</th>`).join("")}</tr>${c.rows
+      .map((r) => `<tr>${c.cols.map(([k]) => `<td>${e(r[k] ?? "")}</td>`).join("")}</tr>`)
+      .join("")}</table>`;
+  }
+  function essenceBlock(m) {
+    return `<h4>Essenzanalyse</h4><div class="essbars">${m.essences
+      .map((x) => {
+        const E = T.ESS[x.id];
+        return `<div class="essrow">${glyphSVG("essence", x.id, { s: 8, cls: x.id === m.primary ? "accent" : "" })}<span class="essname">${E.latin}</span><span class="essbar"><i style="width:${x.pct}%"></i></span><span class="esspct">${x.pct} %</span></div><p class="esstext">${e(E.text)}</p>`;
+      })
+      .join("")}</div>`;
+  }
+  function correspondBlock(t) {
+    const c = t.correspond;
+    return `<h4>Entsprechungen</h4><table class="corr"><tr><th>Stunde</th><td>${e(c.hour)}</td><th>Gestirn</th><td>${e(c.planet)}</td></tr><tr><th>Farbe</th><td>${e(c.color)}</td><th>Metall</th><td>${e(c.metal)}</td></tr><tr><th>Richtung</th><td>${e(c.dir)}</td><th>Himmel</th><td>${e(c.body)}</td></tr></table>`;
+  }
+  const failureBlock = (t) => `<h4>Fehlerbilder und Rückschlag</h4><dl class="struct">${t.failure.map((f) => `<dt>${e(f.k)}</dt><dd>${e(f.t)}</dd>`).join("")}</dl>`;
+  const counterBlock = (m, t) =>
+    `<h4>Gegenformel</h4><div class="counter">${`<figure class="circle-box mini mirror">${renderCircle(m, { layers: ["outer", "signs", "essence", "duration", "core"], zoom: 250 })}</figure>`}<p>${e(t.counter.t)}</p></div>`;
+  const practiceBlock = (t) =>
+    `<h4>Übungsprotokoll</h4><table class="calib"><tr><th>Datum</th><th>Ort</th><th>Ergebnis</th></tr>${t.practice.map((p) => `<tr><td>${e(p.date)}</td><td>${e(p.place)}</td><td>${e(p.result)}</td></tr>`).join("")}</table>`;
+  const longFormulaBlock = (t) =>
+    `<h4>Die Formel in Langform</h4><p class="hint">Für das Wirken unter erschwerten Umständen: Anrufung (A) und Antwort (R) wechseln sich ab; die Antwort darf auch gedacht werden.</p><div class="longf">${t.longFormula
+      .map((l) => `<div class="lf ${l.k}"><span>${l.k}</span>${e(l.t)}</div>`)
+      .join("")}</div>`;
+  const learningBlock = (t) => `<h4>Herkunft und Abschrift</h4><p>${e(t.learning)}</p>`;
+  function mythicBlock(m) {
+    if (!m.mythic) return "";
+    return `<h4>Mythische Resonanz</h4><p>Wer den Funken der Mythen trägt, kann diese Formel mit einem Zug aus eigener Mythenkraft überladen. Der Kreis bleibt derselbe; nur der äußere Ring wird doppelt gezogen und ein Mythenpunkt in den Kern gesetzt.</p><p class="rules-en">${e(m.spell.mythic)}</p>`;
+  }
+  function annotatedBlock(m, t, h = "Beschrifteter Kreis") {
+    const list = circleAnnotations(m);
+    return `<h4>${e(h)}</h4><figure class="circle-box annotated-box">${renderCircle(m, { text: t.formula.band, annotate: true })}</figure>
+      <ol class="annot-list">${list.map((a) => `<li value="${a.n}"><b>${e(a.k)}:</b> ${e(a.t)}</li>`).join("")}</ol>`;
+  }
+  function quickBlock(m) {
+    return `<h4>Schnellglyphe</h4><div class="quick-row">${quickGlyph(m)}<p>Für das Zeichnen in Eile: ${m.duration.kind === "instant" ? "offener" : "geschlossener"} Kreis, darin ${m.schoolInfo.de === "Universalmagie" ? "das Kreuz" : "die Kurzfigur der " + e(m.schoolInfo.de)} und ${THEORY.ESS[m.primary].latin} im Zentrum${m.level ? `, ${m.level} Punkt${m.level > 1 ? "e" : ""} für die Ordnung` : ""}. Wirkt nur für den, der den vollen Kreis schon einmal gezeichnet hat.</p></div>`;
+  }
+  function submatricesBlock(m, t) {
+    const parts = [
+      ["Kern", ["core"], 80],
+      ["Essenz & Zeichen", ["essence", "signs"], 150],
+      ["Weite & Ordnung", ["range", "order"], 205],
+      ["Band & Schwellen", ["outer", "gates", "sr"], 255],
+    ];
+    return `<h4>Teilmatrizen</h4><p class="hint">Zum Üben werden die Schichten einzeln gezeichnet, bevor der vollständige Kreis gelingt.</p><div class="subm">${parts
+      .map(([h, layers, z]) => `<figure class="circle-box sub">${renderCircle(m, { layers, zoom: z + 15, text: t.formula.band })}<figcaption>${e(h)}</figcaption></figure>`)
+      .join("")}</div>`;
+  }
+
+  function glossaryBlock(t) {
+    const words = [];
+    for (const l of t.formula.lines) for (const w of l.toLowerCase().replace(/[!,.]/g, "").split(/\s+/)) if (w && !words.includes(w)) words.push(w);
+    const rows = words.filter((w) => T.GLOSSARY[w]);
+    if (rows.length < 3) return "";
+    return `<h4>Wortglossar der Formel</h4><div class="gloss">${rows.map((w) => `<div><b>${e(w)}</b> – ${e(T.GLOSSARY[w])}</div>`).join("")}</div>`;
+  }
+  function sketchBlock(m, t) {
+    const r = U.rng(m.seed ^ 0x9e37);
+    const drafts = [
+      [["core", "essence", "signs", "outer"], "Dauerring vergessen – die Ladung lief aus."],
+      [["core", "duration", "signs", "outer", "range"], "Ohne Essenzring: Der Kern blieb stumm."],
+      [["essence", "duration", "signs", "outer", "order"], "Kernsiegel ausgelassen – keine Richtung, kein Verb."],
+      [["core", "essence", "duration", "range"], "Schriftband nicht gezogen. Nichts geschah."],
+    ];
+    const pick = r.sample(drafts, 2);
+    return `<h4>Verworfene Entwürfe</h4><div class="sketches">${pick
+      .map(([layers, cap]) => `<figure class="circle-box sketch">${renderCircle(m, { layers, zoom: 260, text: t.formula.band })}<figcaption>${e(cap)}</figcaption></figure>`)
+      .join("")}</div>`;
+  }
+  // Verwandte Formeln (gleiche Hauptessenz und Schule, oder gleiche Verbindung)
+  let relIndex = null;
+  function relatedBlock(m) {
+    if (!relIndex) relIndex = window.SPELLS.filter((s) => s.levels.wizard != null).map((s) => analyze(s));
+    const rel = relIndex
+      .filter((o) => o.id !== m.id && ((o.primary === m.primary && o.school === m.school) || (m.combo && o.combo === m.combo)))
+      .sort((a, b) => Math.abs(a.level - m.level) - Math.abs(b.level - m.level))
+      .slice(0, 6);
+    if (!rel.length) return "";
+    return `<h4>Verwandte Formeln</h4><ul class="related">${rel.map((o) => `<li>${e(generateTexts(o).title)} <span>(${e(o.name)}, ${o.level === 0 ? "Fingerübung" : U.ROMAN[o.level] + ". Ordnung"})</span></li>`).join("")}</ul>`;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Seitenplanung pro Zauber
+  // ---------------------------------------------------------------------------
+  // Seiten werden aus benannten Blöcken gebaut. Pflichtblöcke stehen fest; alle übrigen Blöcke
+  // werden als optionale Füller (.opt) angehängt und von autofit() nur eingeblendet, solange Platz ist.
+  // Jeder Block erscheint pro Zauber höchstens einmal.
+  const OPT_ORDER = ["correspond", "gloss", "quick", "learning", "failure", "calib", "related", "essence", "sketch", "practice", "counter", "gest", "struct"];
+
+  // opts.detail: ausführliche Fassung (wie Grad 9 plus beschrifteter Kreis), unabhängig vom Grad
+  function spellPages(m, t, opts = {}) {
+    const L = opts.detail ? 10 : m.level;
+    const n = t.notes;
+    const B = {
+      head: () => head(m, t),
+      circle: () => circleBox(m, t, "big"),
+      formula: () => formulaBlock(t),
+      comp: () => componentsBlock(m, t),
+      theory: () => theoryBlock(t),
+      theory2: () => theoryBlock(t, ["Grundsatz der Schule", "Essenzen", "Weite und Dauer"]),
+      wirk: () => theoryBlock(t, ["Grundsatz der Schule"]).replace(/<h4>.*?<\/h4>/, "<h4>Wirkprinzip</h4>"),
+      struct: () => structureBlock(t),
+      detail: () => `<figure class="circle-box detail">${renderCircle(m, { layers: ["core", "essence", "duration", "signs"], zoom: 150 })}<figcaption>Kern, Essenz- und Zeichenring vergrößert</figcaption></figure>`,
+      gest: () => gesturesBlock(t),
+      steps: () => stepsBlock(t),
+      stepsC: () => stepsBlock(t, true),
+      learning: () => learningBlock(t),
+      mythic: () => mythicBlock(m),
+      failure: () => failureBlock(t),
+      counter: () => counterBlock(m, t),
+      essence: () => essenceBlock(m),
+      correspond: () => correspondBlock(t),
+      calib: () => calibrationBlock(t),
+      practice: () => practiceBlock(t),
+      subm: () => submatricesBlock(m, t),
+      annot: () => annotatedBlock(m, t),
+      quick: () => quickBlock(m),
+      longf: () => longFormulaBlock(t),
+      gloss: () => glossaryBlock(t),
+      sketch: () => sketchBlock(m, t),
+      related: () => relatedBlock(m),
+    };
+    n.forEach((x, i) => (B["note" + i] = () => note(x)));
+    const used = new Set();
+    const use = (...keys) => keys.map((k) => (used.add(k), B[k] ? B[k]() : "")).join("");
+    // „steps“ und „stepsC“ sowie „theory“ und „theory2“ sind Varianten desselben Inhalts
+    const alias = { stepsC: "steps", theory2: "theory", wirk: "theory" };
+    const isUsed = (k) => used.has(k) || [...used].some((u) => alias[u] === k);
+
+    let pages;
+    if (opts.detail) {
+      pages = [{ html: use("head", "circle", "formula", "comp", "note0"), first: true }];
+      pages.push({ html: use("annot") });
+      pages.push({ html: use("theory", "note1") });
+      pages.push({ html: use("struct", "detail", "note2") });
+      pages.push({ html: use("gest", "steps", "learning", "quick", "note3") });
+      const extras = [["essence", "correspond"], ["calib", "practice"], ["failure", "counter"], ["subm"], ["longf", "gloss"], ["related", "sketch"]];
+      if (m.mythic) extras.splice(1, 0, ["mythic"]);
+      extras.forEach((x, i) => pages.push({ html: use(...x, "note" + (4 + i)) }));
+    } else if (L === 0) {
+      pages = [{
+        half: true,
+        html: `${use("head")}<div class="half-grid">${circleBox(m, t, "small")}<div>${use("formula")}<p class="summary">${e(t.summary)}</p>${gesturesBlock(t, 3)}${use("comp")}</div></div>${use("note0")}`,
+      }];
+      used.add("gest");
+    } else if (L === 1) {
+      pages = [{ html: use("head") + `<div class="l1-grid">${circleBox(m, t, "medium")}<div>${use("formula", "comp")}</div></div>` + use("wirk", "stepsC", "note0") }];
+    } else {
+      pages = [{ html: use("head", "circle", "formula", "comp", "note0"), first: true }];
+      if (L === 2) pages.push({ html: use("theory2", "gest", "stepsC", "note1") });
+      else if (L === 3) {
+        pages.push({ html: use("theory", "note1") });
+        pages.push({ html: use("struct", "gest", "steps", m.mythic ? "mythic" : "failure", "note2") });
+      } else {
+        pages.push({ html: use("theory", "note1") });
+        pages.push({ html: use("struct", "detail", "note2") });
+        pages.push({ html: use("gest", "steps", "learning", ...(L === 4 && m.mythic ? ["mythic"] : []), "note3") });
+        const extras = [
+          ["essence", "correspond"],
+          m.mythic ? ["mythic"] : ["calib", "practice"],
+          ["failure", "counter"],
+          ["subm"],
+          m.mythic ? ["longf", "calib"] : ["longf"],
+        ];
+        for (let i = 0; pages.length < L; i++) pages.push({ html: use(...extras[i % extras.length], "note" + (4 + i)) });
+      }
+    }
+    // Füller
+    const opt = OPT_ORDER.filter((k) => !isUsed(k) && B[k]() !== "");
+    const notesLeft = n.map((_, i) => "note" + i).filter((k) => !used.has(k));
+    for (const p of pages) {
+      const keys = p.first || p.half ? notesLeft : [...opt, ...notesLeft];
+      p.html += keys.map((k) => `<div class="opt off" data-k="${k}">${B[k]()}</div>`).join("");
+      p.spell = m.id;
+    }
+    return pages;
+  }
+
+  // Schriftrolle: Vorderseite Name + großer Kreis, Rückseite Formel, Komponenten, Gesten und Regeln
+  // opts.paper = "a4": Rückseite nativ in A4 mit zweispaltigem Regeltext (Vorderseite wird beim Druck skaliert)
+  function scrollPages(m, t, opts = {}) {
+    const a4 = opts.paper === "a4";
+    const front = `<div class="scroll-front">
+        <div class="sp-meta">${m.spell.everyday ? "Alltagszauber" : m.level === 0 ? "Fingerübung" : U.ROMAN[m.level] + ". Ordnung"} · ${e(m.schoolInfo.de)}</div>
+        <h2 class="sp-title">${e(t.title)}</h2>
+        <div class="sp-epithet">${e(t.epithet)}</div>
+        <figure class="circle-box scroll-circle">${renderCircle(m, { text: t.formula.band })}</figure>
+        <div class="sp-rulename">${e(m.name)}</div>
+      </div>`;
+    const back = `${head(m, t, true)}${formulaBlock(t)}${componentsBlock(m, t)}${gesturesBlock(t, 4)}
+      ${rulesBox(m)}`;
+    return [
+      { html: front, spell: m.id, cls: "scroll-page", running: "Schriftrolle" },
+      { html: back, spell: m.id, cls: "scroll-page scroll-back flow" + (a4 ? " a4native" : ""), running: "Schriftrolle · Rückseite" },
+    ];
+  }
+
+  // Quellenangabe unter dem Regeltext
+  function sourceBox(s) {
+    const via = s.origin === "tsv" ? "d20pfsrd.com" : "Archives of Nethys (aonprd.com)";
+    if (s.everyday) {
+      const insp = s.inspiration
+        ? `<div><b>Idee</b> ${e(s.inspiration.title)}<br><a href="${e(s.inspiration.url)}" target="_blank" rel="noopener">${e(s.inspiration.url)}</a></div>`
+        : `<div><b>Idee</b> eigene Erfindung</div>`;
+      return `<div class="rules-source"><div><b>Quelle</b> Alltagszauber (Hausregel, eigene Formulierung) · Grundlage: ${e(s.base)} – ${e(s.baseSource || "")} (Open Game Content, OGL 1.0a)</div>${insp}</div>`;
+    }
+    return `<div class="rules-source"><div><b>Quelle</b> ${e(s.source || "unbekannt")}</div><div><b>Regeltext</b> Open Game Content (OGL 1.0a), übernommen über ${via}</div></div>`;
+  }
+
+  function rulesBox(m) {
+    const s = m.spell;
+    const row = (k, v) => (v ? `<div class="rr"><b>${k}</b> ${e(v)}</div>` : "");
+    return `<div class="rules splittable">
+      <div class="rules-title">${e(s.name)}</div>
+      ${row("Schule", s.school_raw)}
+      ${s.everyday ? row("Grad", "Alltagszauber (Grad 0)") + row("Basiszauber", s.base + " – " + Object.entries(s.baseLevels).map(([k, v]) => k + " " + v).join(", ")) : row("Grad", Object.entries(s.levels).map(([k, v]) => k + " " + v).join(", "))}
+      ${row("Zeitaufwand", s.casting_time)}${row("Komponenten", s.components)}${row("Reichweite", s.range)}
+      ${row("Bereich", s.area)}${row("Ziel", s.target)}${row("Effekt", s.effect)}${row("Wirkungsdauer", s.duration)}
+      ${row("Rettungswurf", s.saving_throw)}${row("Zauberresistenz", s.spell_resistance)}
+      ${e(s.description).split(/\n\n+/).map((para) => `<p class="rules-p">${para.replace(/\n/g, "<br>")}</p>`).join("")}
+      ${s.mythic ? `<p class="rules-p"><b>Mythic:</b> ${e(s.mythic)}</p>` : ""}
+      ${sourceBox(s)}
+    </div>`;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Vorspann: Titel, Lesart der Kreise, Affinitäten
+  // ---------------------------------------------------------------------------
+  function frontMatter(settings, allModels) {
+    const pages = [];
+    pages.push({
+      cls: "title-page",
+      html: `<div class="tp"><div class="tp-sigil">${renderCircle(analyze(window.SPELLS.find((s) => s.name === "Arcane Mark") || window.SPELLS[0]), { layers: ["outer", "signs", "essence", "duration", "core", "order"], text: "", zoom: 260 })}</div>
+        <h1>${e(settings.bookTitle)}</h1><div class="tp-owner">${e(settings.owner)}</div><div class="tp-sub">${e(settings.subtitle || "")}</div></div>`,
+    });
+    // Anatomie eines Kreises (Beispiel: Feuerball oder erster Zauber)
+    const sample = analyze(window.SPELLS.find((s) => s.name === "Fireball"));
+    const st = generateTexts(sample, { name: settings.owner });
+    pages.push({
+      html: `<h3>Von der Lesart der Kreise</h3><p>Jede Formel in diesem Buch ist als Kreis notiert. Ein Kreis wird von außen nach innen gelesen und von innen nach außen gezeichnet. Die Lehre folgt drei Sätzen:</p>
+      <ol class="laws"><li><b>Der Kreis ist ein Fluss.</b> Was in ihm kreist, bleibt erhalten; was ihn verlässt, wirkt. Geschlossene Ringe halten eine Wirkung über die Zeit, eine offene Matrix gibt sie augenblicklich frei.</li>
+      <li><b>Nichts entsteht aus nichts.</b> Jede Wirkung wird bezahlt – mit vorbereiteter Kraft, mit Stoff oder mit dem Wirker selbst.</li>
+      <li><b>Erfassen, Lösen, Fügen.</b> Wer eine Formel nicht verstanden hat, kann sie nicht lösen; wer sie nicht löst, kann nichts Neues fügen.</li></ol>
+      <figure class="circle-box anatomy">${renderCircle(sample, { text: st.formula.band, annotate: true })}</figure>
+      <p class="hint">Beispiel: ${e(st.title)} (Fireball). Die Ziffern werden auf der folgenden Seite erklärt.</p>`,
+    });
+    pages.push({
+      html: `<h3>Erweitertes Beispiel: ${e(st.title)}</h3>
+      <p>Der Feuerball ist eine Hervorrufung der III. Ordnung. So liest man seinen Kreis, Schicht für Schicht von außen nach innen:</p>
+      <ol class="annot-list">${circleAnnotations(sample).map((a) => `<li value="${a.n}"><b>${e(a.k)}:</b> ${e(a.t)}</li>`).join("")}</ol>
+      <p>Zusammen gelesen: <i>Eine gesprochene, gestische Formel mit Schwefel als Preis, in einer Standard-Aktion gewirkt. Sie trägt weit (vier Ringe), entlädt sich augenblicklich (offene Matrix) als Ausbreitung von Ignis, gestützt von Vis. Ein Ziel kann ihr durch Reflex zur Hälfte ausweichen; Zauberresistenz wirkt.</i></p>`,
+    });
+    pages.push({
+      html: `<h3>Die Schichten</h3><dl class="struct">
+        <dt>Ecksteine</dt><dd>Komponenten: Stimme (V), Geste (S), Stoff (M, mit alchemistischem Zeichen), Fokus (F) und göttlicher Fokus (GF).</dd>
+        <dt>Zeitmarke</dt><dd>Über dem Kreis: wie lange das Wirken dauert – Punkt (Standard), Blitz (schnell), Bogen (volle Aktion), Stundenglas (Ritual).</dd>
+        <dt>Schriftband</dt><dd>Die gesprochene Formel. Fehlt die Stimme, stehen dort stumme Runen.</dd>
+        <dt>Schwellentore</dt><dd>Rote Tore im Band: Hier kann sich das Ziel wehren. Auge = Willen, Quader = Zähigkeit, Pfeil = Reflex. Zwei Tore: Halbierung oder Teilwirkung. Gestrichelt: harmlos.</dd>
+        <dt>Siegelband</dt><dd>Schraffur unter dem Band: Die Formel muss gegen Zauberresistenz bestehen.</dd>
+        <dt>Ordnungsknoten</dt><dd>Ein Knoten je Grad. Ab der dritten Ordnung werden sie zu einem Stern verbunden, der die Last trägt.</dd>
+        <dt>Weitenringe</dt><dd>Keiner (persönlich) bis fünf (unbegrenzt).</dd>
+        <dt>Zeichenring</dt><dd>Modifikatoren, die der Essenz Bewegung geben. Gehäuft im Norden: gerichtete Wirkung. Gleichmäßig verteilt: Wirkung nach allen Seiten.</dd>
+        <dt>Essenzring</dt><dd>Die Essenzen der Formel, jede mit ihrem Anteil am Umfang. Die rote ist die Hauptessenz.</dd>
+        <dt>Dauerring</dt><dd>Gebrochen (augenblicklich), mit Zeitmarken (Runden), gestrichelt (Minuten), doppelt (Stunden), dreifach (Tage), geschlossene Schlange (permanent), mit Faden (Konzentration). Kerbe: jederzeit lösbar.</dd>
+        <dt>Kernsiegel</dt><dd>Die Schule als Figur, darin die Hauptessenz.</dd>
+        <dt>Gestaltvektoren</dt><dd>Blass unter allem: Kegel, Linie, Strahl, Explosion, Ausströmung, Wand, Berührung, Selbst, Ziele.</dd></dl>`,
+    });
+    // Schulen
+    pages.push({
+      html: `<h3>Die Schulen – das Verb</h3><div class="legend-grid schools">${Object.entries(T.SCHOOLS)
+        .map(([k, s]) => `<div class="lg">${glyphSVG("school", k, { s: 14 })}<div><b>${e(s.de)}</b> <i>${e(s.latin)}</i><br><span>${e(s.figure)} · ${e(s.verb)}</span></div></div>`)
+        .join("")}</div>`,
+    });
+    // Essenzen
+    pages.push({
+      html: `<h3>Die sechzehn Essenzen – das Substantiv</h3><p class="hint">Acht Gegensatzpaare, abgeleitet aus den Ebenen der Großen Ordnung. Jede Formel trägt einen Anteil mehrerer Essenzen.</p><div class="legend-grid ess">${T.ESSENCES.map(
+        (x) => `<div class="lg">${glyphSVG("essence", x.id, { s: 9 })}<div><b>${x.latin}</b> – ${e(x.de)}<br><span>${e(x.plane)} · Gegenpol: ${T.ESS[x.opp].latin}</span></div></div>`
+      ).join("")}</div>`,
+    });
+    // Zeichen + Alchemie
+    pages.push({
+      html: `<h3>Die Zeichen – das Wie</h3><div class="legend-grid signs">${Object.entries(T.SIGNS)
+        .map(([k, s]) => `<div class="lg">${glyphSVG("sign", k, { s: 8 })}<div><b>${e(s.de)}</b><br><span>${e(s.text)}</span></div></div>`)
+        .join("")}</div>`,
+    });
+    const ex = ["Fireball", "Shield", "Charm Person", "Magic Missile", "Teleport", "Animate Dead"].map((n) => window.SPELLS.find((s) => s.name === n)).filter(Boolean).map(analyze);
+    pages.push({
+      html: `<h3>Schnellglyphen</h3><p>Am Spieltisch bleibt keine Zeit für den vollen Kreis. Wer eine Formel einmal vollständig gezeichnet hat, kann sie mit ihrer Schnellglyphe abrufen – fünf Striche statt fünfzig:</p>
+      <ol class="laws"><li><b>Kreis:</b> geschlossen; oben offen, wenn die Formel augenblicklich wirkt.</li><li><b>Kurzfigur der Schule</b> im Kreis.</li><li><b>Hauptessenz</b> in der Mitte.</li><li><b>Ein Gestaltstrich</b> außen: Pfeil (Strahl, Ziel), Keil (Kegel), Doppelstrich (Linie), vier Striche (Fläche), Bogen (Ausströmung), Kerben (Berührung), Schleife (selbst).</li><li><b>Punkte</b> unten: einer je Ordnung.</li></ol>
+      <div class="legend-grid quick-schools">${Object.entries(T.SCHOOLS).map(([k, s]) => `<div class="lg"><svg class="quick" viewBox="-40 -40 80 80">${(QUICK_SCHOOL[k] || QUICK_SCHOOL.universal)()}</svg><div><b>${e(s.de)}</b></div></div>`).join("")}</div>
+      <div class="quick-ex">${ex.map((m) => `<figure>${quickGlyph(m)}<figcaption>${e(generateTexts(m).title)}<br><span>${e(m.name)}</span></figcaption></figure>`).join("")}</div>`,
+    });
+    pages.push({
+      html: `<h3>Stoffe und Zeichen der Alchemie</h3><div class="legend-grid alch">${Object.entries(T.ALCHEMY)
+        .map(([k, s]) => `<div class="lg">${glyphSVG("alch", k, { s: 8 })}<div>${e(s)}</div></div>`)
+        .join("")}</div>
+        <h3>Benannte Verbindungen</h3><p class="combos">${Object.entries(T.COMBOS).map(([k, v]) => `<span><b>${e(v)}</b> ${k.split("+").map((x) => T.ESS[x].latin).join(" + ")}</span>`).join(" · ")}</p>`,
+    });
+    // Affinitäten (aus allen Zaubern errechnet)
+    const aff = schoolAffinities(allModels);
+    const order = T.ESSENCES.map((x) => x.id);
+    pages.push({
+      html: `<h3>Affinitäten der Schulen</h3><p class="hint">Durchschnittlicher Anteil jeder Essenz in allen ${allModels.length} bekannten Formeln einer Schule, in Prozent.</p>
+      <table class="aff"><tr><th></th>${order.map((id) => `<th title="${T.ESS[id].de}">${glyphSVG("essence", id, { s: 6 })}</th>`).join("")}</tr>
+      ${Object.entries(aff)
+        .sort((a, b) => b[1].n - a[1].n)
+        .map(([sc, a]) => `<tr><th>${e((T.SCHOOLS[sc] || T.SCHOOLS.universal).de)}</th>${order.map((id) => {
+          const v = Math.round(a.ess[id] || 0);
+          return `<td style="--v:${Math.min(v, 60) / 60}">${v || ""}</td>`;
+        }).join("")}</tr>`)
+        .join("")}</table>`,
+    });
+    return pages;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Ganzes Buch zusammensetzen
+  // ---------------------------------------------------------------------------
+  function assemble(entries, settings, allModels) {
+    // entries: [{ m, t }] – sortiert nach Grad, dann Name
+    const pages = [];
+    const front = settings.frontMatter ? frontMatter(settings, allModels) : [];
+    const toc = []; // [{ title, name, level, page }]
+    const PER_TOC = 22;
+    const tocPageCount = settings.frontMatter ? Math.max(1, Math.ceil(entries.length / PER_TOC)) : 0;
+    let pageNo = front.length + tocPageCount + 1;
+    const body = [];
+    let pendingHalf = null;
+    for (const { m, t } of entries) {
+      const sp = spellPages(m, t, { detail: settings.detailPrint });
+      if (sp.length === 1 && sp[0].half) {
+        const block = `<div class="half" data-spell="${e(m.id)}">${sp[0].html}</div>`;
+        if (pendingHalf) {
+          pendingHalf.html += block;
+          toc.push({ t, m, page: pendingHalf.no });
+          pendingHalf = null;
+        } else {
+          pendingHalf = { html: block, no: pageNo, running: m.spell.everyday ? "Alltagszauber" : "Fingerübungen", halves: true };
+          body.push(pendingHalf);
+          toc.push({ t, m, page: pageNo });
+          pageNo++;
+        }
+        continue;
+      }
+      pendingHalf = null;
+      toc.push({ t, m, page: pageNo });
+      sp.forEach((p, i) => {
+        body.push({ html: p.html, spell: m.id, no: pageNo++, running: t.title + (sp.length > 1 ? ` · ${i + 1}/${sp.length}` : "") });
+      });
+    }
+    front.forEach((p, i) => pages.push({ ...p, no: i + 1, running: "" }));
+    if (settings.frontMatter) {
+      for (let i = 0; i < tocPageCount; i++) {
+        const chunk = toc.slice(i * PER_TOC, (i + 1) * PER_TOC);
+        pages.push({
+          no: front.length + i + 1,
+          running: "Verzeichnis",
+          html: (i === 0 ? "<h3>Verzeichnis der Formeln</h3>" : "") +
+            `<table class="toc">${chunk.map((x) => `<tr><td class="tq">${quickGlyph(x.m)}</td><td class="tg">${x.m.spell.everyday ? "A" : x.m.level === 0 ? "0" : U.ROMAN[x.m.level]}</td><td>${e(x.t.title)}<span class="tn">${e(x.m.name)}</span></td><td class="tp">${x.page}</td></tr>`).join("")}</table>`,
+        });
+      }
+    }
+    pages.push(...body);
+    if (settings.rules === "appendix" && entries.length) {
+      // Regelanhang: alle Regeltexte auf einer fließenden Seite; autofit() verteilt sie auf Folgeseiten
+      pages.push({ no: pageNo, running: "Regelanhang", html: "<h3>Regelanhang</h3>" + entries.map(({ m }) => rulesBox(m)).join(""), cls: "rules-page flow" });
+    }
+    const spellPagesCount = body.length;
+    return { pages, toc, spellPagesCount };
+  }
+
+  function pageHTML(p) {
+    return `<section class="page ${p.cls || ""} ${p.halves ? "halves" : ""}"${pageHTMLAttr(p)}><div class="page-inner">${p.html}</div><footer class="page-foot"><span>${e(p.running || "")}</span><span>${p.no || ""}</span></footer></section>`;
+  }
+
+  // Autofit: Schrift verkleinern, bis die Pflichtblöcke aufs Blatt passen; danach optionale
+  // Füller einblenden, solange Platz ist (jeder Füller nur einmal pro Zauber).
+  // Fließende Seiten (.flow): Überstehendes wandert auf Fortsetzungsseiten. Blöcke mit .splittable
+  // dürfen in sich umbrechen; ihre Kinder werden einzeln verschoben.
+  let splitSeq = 0;
+  function flow(root) {
+    const over = (el) => el.scrollHeight > el.clientHeight + 1;
+    let page = root.querySelector(".page.flow");
+    let guard = 0;
+    while (page && guard++ < 2000) {
+      const inner = page.querySelector(".page-inner");
+      inner.style.setProperty("--fit", "0.95");
+      let moves = 0;
+      while (over(inner) && moves++ < 400) {
+        let next = page.nextElementSibling;
+        if (!next || !next.classList.contains("flow-cont")) {
+          next = page.cloneNode(false);
+          next.classList.add("flow-cont");
+          next.innerHTML = `<div class="page-inner"></div>${page.querySelector(".page-foot").outerHTML}`;
+          next.querySelector(".page-foot span").textContent = (page.querySelector(".page-foot span").textContent.replace(/ \(Forts\.\)$/, "")) + " (Forts.)";
+          page.after(next);
+        }
+        const nextInner = next.querySelector(".page-inner");
+        const last = inner.lastElementChild;
+        if (!last) break;
+        if (last.classList.contains("splittable") && last.children.length > 1) {
+          last.dataset.splitId = last.dataset.splitId || "s" + ++splitSeq;
+          let cont = nextInner.firstElementChild;
+          if (!cont || cont.dataset.splitOf !== last.dataset.splitId) {
+            cont = last.cloneNode(false);
+            delete cont.dataset.splitId;
+            cont.dataset.splitOf = last.dataset.splitId;
+            nextInner.prepend(cont);
+          }
+          cont.prepend(last.lastElementChild);
+        } else if (inner.children.length > 1) nextInner.prepend(last);
+        else break;
+      }
+      // nächste fließende Seite (auch eben erzeugte Fortsetzungen)
+      let n = page.nextElementSibling;
+      while (n && !n.classList.contains("flow")) n = n.nextElementSibling;
+      page = n;
+    }
+    // Seitenzahlen neu durchzählen, falls Seiten hinzugekommen sind
+    const feet = [...root.querySelectorAll(".page > .page-foot span:last-child")];
+    const first = feet.find((f) => /^\d+$/.test(f.textContent));
+    if (first) {
+      let no = +first.textContent;
+      for (const f of feet.slice(feet.indexOf(first))) f.textContent = no++;
+    }
+  }
+
+  function fit(root) {
+    flow(root);
+    const over = (el) => el.scrollHeight > el.clientHeight + 1;
+    const free = (el) => {
+      const kids = [...el.children].filter((c) => !c.classList.contains("off"));
+      const last = kids[kids.length - 1];
+      return last ? el.clientHeight - (last.offsetTop + last.offsetHeight - el.offsetTop) : el.clientHeight;
+    };
+    const groups = new Map();
+    const seenNotes = new Set([...root.querySelectorAll(".note")].filter((n) => !n.closest(".opt")).map((n) => n.textContent.trim()));
+    for (const inner of root.querySelectorAll(".page-inner, .half")) {
+      if (inner.classList.contains("page-inner") && inner.querySelector(".half")) continue;
+      if (inner.closest(".page.flow")) continue;
+      inner.querySelectorAll(":scope > .opt").forEach((o) => o.classList.add("off"));
+      let scale = 1, guard = 0;
+      inner.style.setProperty("--fit", scale);
+      while (over(inner) && scale > 0.62 && guard++ < 30) {
+        scale -= 0.03;
+        inner.style.setProperty("--fit", scale.toFixed(2));
+      }
+      inner.classList.toggle("overflow", over(inner));
+      const spell = inner.closest("[data-spell]")?.dataset.spell || "";
+      if (!groups.has(spell)) groups.set(spell, []);
+      groups.get(spell).push(inner);
+    }
+    // Füller jeweils auf die Seite mit dem meisten freien Platz setzen
+    for (const inners of groups.values()) {
+      const keys = [];
+      for (const inner of inners) for (const o of inner.querySelectorAll(":scope > .opt")) if (!keys.includes(o.dataset.k)) keys.push(o.dataset.k);
+      for (const k of keys) {
+        const cands = inners
+          .map((inner) => ({ inner, o: inner.querySelector(`:scope > .opt[data-k="${k}"]`) }))
+          .filter((c) => c.o)
+          .sort((a, b) => free(b.inner) - free(a.inner));
+        let placed = null;
+        // gleichlautende Randnotizen nur einmal im ganzen Buch
+        const text = k.startsWith("note") && cands[0] ? cands[0].o.textContent.trim() : null;
+        if (text && seenNotes.has(text)) cands.length = 0;
+        for (const c of cands) {
+          c.o.classList.remove("off");
+          if (!over(c.inner)) { placed = c; if (text) seenNotes.add(text); break; }
+          c.o.classList.add("off");
+        }
+        for (const c of cands) if (c !== placed) c.o.remove();
+      }
+    }
+  }
+  const autofit = (root) => (document.fonts ? document.fonts.ready.then(() => fit(root)) : Promise.resolve(fit(root)));
+
+  function pageHTMLAttr(p) {
+    return p.spell ? ` data-spell="${e(p.spell)}"` : "";
+  }
+
+  window.BOOK = { spellPages, scrollPages, assemble, pageHTML, autofit, rulesBox, frontMatter };
+})();

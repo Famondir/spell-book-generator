@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Zauberbuch-Generator</title>
+  <link rel="stylesheet" href="app/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Zauberbuch-Generator <span>Pathfinder 1e</span></div>
+    <nav class="tabs">
+      <button data-view="browse" class="active">Verzeichnis</button>
+      <button data-view="book">Mein Buch <span id="book-count"></span></button>
+      <button data-view="theory">Lehre der Kreise</button>
+    </nav>
+    <div class="actions">
+      <button id="btn-settings" title="Buch-Einstellungen">Einstellungen</button>
+    </div>
+  </header>
+
+  <dialog id="settings">
+    <form method="dialog">
+      <h3>Buch-Einstellungen</h3>
+      <label>Besitzer <input name="owner"></label>
+      <label>Buchtitel <input name="bookTitle"></label>
+      <label>Untertitel <input name="subtitle"></label>
+      <label>Regelwerte im Druck
+        <select name="rules"><option value="appendix">als Anhang am Buchende</option><option value="none">nicht drucken</option></select>
+      </label>
+      <label>Papierformat
+        <select name="paper"><option value="a5">A5 (eine Buchseite pro Blatt)</option><option value="a4">A4 (A5-Seite hochskaliert)</option><option value="a4-2up">A4 quer (zwei A5-Seiten nebeneinander)</option></select>
+      </label>
+      <label>Format für Schriftrollen
+        <select name="scrollPaper"><option value="a4">A4 (große Rolle)</option><option value="a5">A5</option></select>
+      </label>
+      <label class="check"><input type="checkbox" name="printBackground"> Pergament-Hintergrund drucken (aus: spart Tinte, z. B. für eigenes braunes Papier)</label>
+      <label class="check"><input type="checkbox" name="frontMatter"> Vorspann drucken (Titelblatt, Lehre der Kreise, Verzeichnis)</label>
+      <label class="check"><input type="checkbox" name="detailPrint"> Ausführliche Fassung drucken (jeder Zauber ~10 Seiten, unabhängig vom Grad)</label>
+      <label class="check"><input type="checkbox" name="onlyWizard"> Nur Zauber der Magierliste anzeigen</label>
+      <h4>Buchbestand</h4>
+      <div class="row">
+        <button type="button" id="btn-export">Liste exportieren</button>
+        <label class="filebtn">Liste importieren (xlsx, csv, txt, json) <input type="file" id="file-import" accept=".json,.xlsx,.csv,.txt,application/json" hidden></label>
+        <button type="button" id="btn-clear" class="danger">Buch leeren</button>
+      </div>
+      <div class="row end"><button value="ok" class="primary">Fertig</button></div>
+    </form>
+  </dialog>
+
+  <main>
+    <!-- Verzeichnis -->
+    <section id="view-browse" class="view active">
+      <aside class="filters">
+        <input id="q" type="search" placeholder="Suchen (Name, Titel, Essenz …)" autocomplete="off">
+        <div class="frow">
+          <select id="f-level"><option value="">Alle Grade</option></select>
+          <select id="f-school"><option value="">Alle Schulen</option></select>
+        </div>
+        <div class="frow">
+          <select id="f-essence"><option value="">Alle Essenzen</option></select>
+          <select id="f-inbook"><option value="">Alle</option><option value="1">Nur im Buch</option><option value="0">Nicht im Buch</option></select>
+        </div>
+        <div class="frow">
+          <select id="f-origin"><option value="">Regelwerk und Alltagszauber</option><option value="rules">Nur Regelwerk</option><option value="everyday">Nur Alltagszauber</option></select>
+        </div>
+        <div id="list-info" class="muted"></div>
+        <ul id="list" class="spell-list"></ul>
+      </aside>
+      <article id="detail" class="detail">
+        <div class="empty">Wähle links einen Zauber.</div>
+      </article>
+    </section>
+
+    <!-- Buch -->
+    <section id="view-book" class="view">
+      <div class="book-bar">
+        <div id="book-stats"></div>
+        <div class="row">
+          <button id="btn-print-scrolls" title="Pro Zauber zwei Seiten: Kreis vorne, Regeln hinten – beidseitig drucken">Alle als Schriftrollen drucken</button>
+          <button id="btn-print-book" class="primary">Buch drucken / als PDF</button>
+        </div>
+      </div>
+      <div id="book-list" class="book-list"></div>
+      <div id="book-pages" class="pages"></div>
+    </section>
+
+    <!-- Theorie -->
+    <section id="view-theory" class="view">
+      <div id="theory-pages" class="pages"></div>
+    </section>
+  </main>
+
+  <dialog id="circle-modal" class="circle-modal">
+    <div class="cm-body">
+      <div class="cm-figure"></div>
+      <aside class="cm-side">
+        <div class="cm-head"></div>
+        <div class="cm-legend"></div>
+        <div class="row">
+          <button type="button" id="cm-annot">Beschriftung</button>
+          <button type="button" id="cm-save">Als SVG speichern</button>
+          <button type="button" id="cm-close" class="primary">Schließen</button>
+        </div>
+      </aside>
+    </div>
+  </dialog>
+
+  <div id="print-root"></div>
+
+  <script src="data/profile.js"></script>
+  <!-- optional, eigene Backstory (siehe data/profile.local.example.js); fehlt die Datei, gilt das neutrale Profil -->
+  <script src="data/profile.local.js" onerror="this.remove()"></script>
+  <script src="app/js/profile.js"></script>
+  <script src="data/spells.js"></script>
+  <script src="data/everyday_spells.js"></script>
+  <script src="data/custom_texts.js"></script>
+  <script src="app/js/util.js"></script>
+  <script src="app/js/everyday.js"></script>
+  <script src="app/js/theory.js"></script>
+  <script src="app/js/analyze.js"></script>
+  <script src="app/js/glyphs.js"></script>
+  <script src="app/js/circle.js"></script>
+  <script src="app/js/textgen.js"></script>
+  <script src="app/js/book.js"></script>
+  <script src="app/js/import.js"></script>
+  <script src="app/js/app.js"></script>
+</body>
+</html>
