@@ -64,8 +64,10 @@
       .map((l) => `<div class="lf ${l.k}"><span>${l.k}</span>${e(l.t)}</div>`)
       .join("")}</div>`;
   const learningBlock = (t) => `<h4>Herkunft und Abschrift</h4><p>${e(t.learning)}</p>`;
-  function mythicBlock(m) {
+  // short: nur die deutsche Einordnung; der englische Mythic-Regeltext steht im Regelkasten/-anhang
+  function mythicBlock(m, short) {
     if (!m.mythic) return "";
+    if (short) return `<h4>Mythische Resonanz</h4><p>Wer den Funken der Mythen trägt, kann diese Formel mit einem Zug aus eigener Mythenkraft überladen: äußerer Ring doppelt gezogen, ein Mythenpunkt im Kern. Die genaue Wirkung steht bei den Regeln.</p>`;
     return `<h4>Mythische Resonanz</h4><p>Wer den Funken der Mythen trägt, kann diese Formel mit einem Zug aus eigener Mythenkraft überladen. Der Kreis bleibt derselbe; nur der äußere Ring wird doppelt gezogen und ein Mythenpunkt in den Kern gesetzt.</p><p class="rules-en">${e(m.spell.mythic)}</p>`;
   }
   function annotatedBlock(m, t, h = "Beschrifteter Kreis") {
@@ -146,7 +148,7 @@
       steps: () => stepsBlock(t),
       stepsC: () => stepsBlock(t, true),
       learning: () => learningBlock(t),
-      mythic: () => mythicBlock(m),
+      mythic: () => mythicBlock(m, !opts.detail && m.level < 5),
       failure: () => failureBlock(t),
       counter: () => counterBlock(m, t),
       essence: () => essenceBlock(m),
@@ -163,7 +165,17 @@
     };
     n.forEach((x, i) => (B["note" + i] = () => note(x)));
     const used = new Set();
-    const use = (...keys) => keys.map((k) => (used.add(k), B[k] ? B[k]() : "")).join("");
+    // Pflichtblöcke werden als .blk verpackt, damit autofit() sie zwischen den Seiten verschieben kann.
+    // Randnotizen sind nie Pflicht – sie füllen nur freien Platz (siehe Füller unten).
+    const use = (...keys) =>
+      keys
+        .filter((k) => !k.startsWith("note"))
+        .map((k) => {
+          used.add(k);
+          const html = B[k] ? B[k]() : "";
+          return html ? `<div class="blk" data-k="${k}">${html}</div>` : "";
+        })
+        .join("");
     // „steps“ und „stepsC“ sowie „theory“ und „theory2“ sind Varianten desselben Inhalts
     const alias = { stepsC: "steps", theory2: "theory", wirk: "theory" };
     const isUsed = (k) => used.has(k) || [...used].some((u) => alias[u] === k);
@@ -191,7 +203,9 @@
       if (L === 2) pages.push({ html: use("theory2", "gest", "stepsC", "note1") });
       else if (L === 3) {
         pages.push({ html: use("theory", "note1") });
-        pages.push({ html: use("struct", "gest", "steps", m.mythic ? "mythic" : "failure", "note2") });
+        // Fehlerbilder sind bei Grad 3 nur Füller; die mythische Variante steht vorn, damit sie
+        // ans Ende der Theorie-Seite nachrücken kann
+        pages.push({ html: use(...(m.mythic ? ["mythic"] : []), "struct", "gest", "steps") });
       } else {
         pages.push({ html: use("theory", "note1") });
         pages.push({ html: use("struct", "detail", "note2") });
@@ -386,7 +400,7 @@
       pendingHalf = null;
       toc.push({ t, m, page: pageNo });
       sp.forEach((p, i) => {
-        body.push({ html: p.html, spell: m.id, no: pageNo++, running: t.title + (sp.length > 1 ? ` · ${i + 1}/${sp.length}` : "") });
+        body.push({ html: p.html, spell: m.id, cls: p.first ? "first-page" : "", no: pageNo++, running: t.title + (sp.length > 1 ? ` · ${i + 1}/${sp.length}` : "") });
       });
     }
     front.forEach((p, i) => pages.push({ ...p, no: i + 1, running: "" }));
@@ -466,8 +480,52 @@
     }
   }
 
+  // Pflichtblöcke eines Zaubers zwischen seinen Seiten verschieben, bevor verkleinert wird:
+  // letzter Block einer übervollen Seite an den Anfang der nächsten, erster Block ans Ende der vorigen –
+  // jeweils nur, wenn die Zielseite dadurch nicht selbst überläuft. Die Lesereihenfolge bleibt erhalten.
+  function rebalance(root) {
+    const over = (el) => el.scrollHeight > el.clientHeight + 1;
+    const blks = (el) => [...el.children].filter((c) => c.classList.contains("blk"));
+    const beforeOpts = (el, node) => el.insertBefore(node, el.querySelector(":scope > .opt"));
+    const groups = new Map();
+    for (const inner of root.querySelectorAll(".page:not(.flow):not(.halves) > .page-inner")) {
+      const id = inner.closest("[data-spell]")?.dataset.spell;
+      if (!id) continue;
+      inner.querySelectorAll(":scope > .opt").forEach((o) => o.classList.add("off"));
+      inner.style.setProperty("--fit", 1);
+      if (!groups.has(id)) groups.set(id, []);
+      groups.get(id).push(inner);
+    }
+    for (const inners of groups.values()) {
+      if (inners.length < 2) continue;
+      for (let pass = 0, changed = true; changed && pass < 30; pass++) {
+        changed = false;
+        inners.forEach((a, i) => {
+          if (!over(a)) return;
+          const next = inners[i + 1];
+          let bl = blks(a);
+          if (next && bl.length > 1) {
+            const last = bl[bl.length - 1];
+            next.insertBefore(last, next.firstChild);
+            if (!over(next)) return void (changed = true);
+            beforeOpts(a, last);
+          }
+          const prev = inners[i - 1];
+          bl = blks(a);
+          if (prev && !prev.parentElement.classList.contains("first-page") && bl.length > 1) {
+            const first = bl[0];
+            beforeOpts(prev, first);
+            if (!over(prev)) return void (changed = true);
+            a.insertBefore(first, a.firstChild);
+          }
+        });
+      }
+    }
+  }
+
   function fit(root) {
     flow(root);
+    rebalance(root);
     const over = (el) => el.scrollHeight > el.clientHeight + 1;
     const free = (el) => {
       const kids = [...el.children].filter((c) => !c.classList.contains("off"));

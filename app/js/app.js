@@ -147,7 +147,7 @@
     const inBook = state.book.has(x.s.id);
     const sp = BOOK.spellPages(m, t, { detail: state.detailView });
     const pages = sp.map((p, i) =>
-      BOOK.pageHTML({ html: p.half ? `<div class="half">${p.html}</div>` : p.html, spell: m.id, halves: p.half, no: "", running: t.title + (sp.length > 1 ? ` · ${i + 1}/${sp.length}` : "") })
+      BOOK.pageHTML({ html: p.half ? `<div class="half">${p.html}</div>` : p.html, spell: m.id, cls: p.first ? "first-page" : "", halves: p.half, no: "", running: t.title + (sp.length > 1 ? ` · ${i + 1}/${sp.length}` : "") })
     );
     $("#detail").innerHTML = `
       <div class="detail-head">
