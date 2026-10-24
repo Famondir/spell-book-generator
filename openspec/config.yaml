@@ -1,0 +1,19 @@
+schema: spec-driven
+
+context: |
+  Zauberbuch-Generator für Pathfinder 1e: statische Web-App (HTML/CSS/Vanilla-JS, kein Build-Schritt,
+  läuft per Doppelklick über file:// und als GitHub Page). Daten werden per <script> geladen (window.SPELLS).
+  Sprache: In-Game-Texte und Oberfläche Deutsch, Regeltexte Englisch (OGL). Code-Kommentare Deutsch.
+  Alle generierten Texte und Kreise sind deterministisch pro Zauber (Seed aus der Zauber-ID).
+  Persönliches (Charakter, Kampagne) gehört ausschließlich in data/profile.local.js (gitignored);
+  alles im Repository bleibt neutral. Kein Paizo Product Identity in eigenen Texten.
+  Zustand im Browser: localStorage mit Präfix "spellbook.".
+  Test: Chrome headless (Screenshots, print-to-pdf) und Mess-Seiten für Seitenfüllung.
+  Kein Ersatz für einen Charakterbogen oder Charaktergenerator.
+
+rules:
+  specs:
+    - Anforderungen und Szenarien auf Deutsch; das Normwort bleibt englisch (SHALL/MUST), weil der Validator es verlangt
+    - Szenarien mit WENN/DANN
+  tasks:
+    - Jede Aufgabe ist im Browser oder mit einer Mess-Seite prüfbar
