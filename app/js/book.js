@@ -463,6 +463,14 @@
           page.after(next);
         }
         const nextInner = next.querySelector(".page-inner");
+        // alles hinter dem ersten überstehenden Block auf einmal verschieben (sonst quadratisch bei langen Anhängen)
+        const lim = inner.getBoundingClientRect().top + inner.clientHeight + 1;
+        const kids = [...inner.children];
+        const k = kids.findIndex((c) => c.getBoundingClientRect().bottom > lim);
+        if (k >= 0 && k < kids.length - 1) {
+          nextInner.prepend(...kids.slice(k + 1));
+          continue;
+        }
         const last = inner.lastElementChild;
         if (!last) break;
         if (last.classList.contains("splittable") && last.children.length > 1) {

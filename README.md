@@ -9,7 +9,7 @@ Erzeugt ein In-Game-Zauberbuch: Zu jedem Zauber gibt es einen magischen Kreis, d
 - **Verzeichnis**: alle Zauber durchsuchen und filtern (Grad, Schule, Essenz, Regelwerk/Alltagszauber), mit **+** ins Buch aufnehmen
 - **Ausführliche Ansicht** (Schalter in der Zauberansicht): jeder Zauber in voller Länge mit beschriftetem Kreis
 - **Kreis anklicken**: großes Fenster mit Erläuterung aller Schichten, Beschriftung und SVG-Export
-- **Mein Buch**: komplette Buchvorschau, Druck als Buch (A5, A4 skaliert, A4 quer mit 2 Seiten) oder als **Schriftrollen** (vorne Kreis, hinten Formel und Regeln; beidseitig drucken)
+- **Mein Buch**: Buchvorschau zum Blättern (je nach Breite eine oder zwei Seiten, Pfeiltasten), links die Buchzauber mit denselben Filtern wie im Verzeichnis (− entfernt), rechts ein ausklappbares Inhaltsverzeichnis; Druck als Buch (A5, A4 skaliert, A4 quer mit 2 Seiten) oder als **Schriftrollen** (vorne Kreis, hinten Formel und Regeln; beidseitig drucken)
 - **Heute vorbereitet**: Zauberplätze pro Grad von Hand eintragen (die App rechnet nichts aus Klasse oder Stufe), Plätze mit Zaubern aus dem Buch belegen, Gewirktes abstreichen, „Neuer Tag“ nach der Rast. Dazu kommen Sonderplätze mit Bedingung, Joker-Plätze (z. B. Arkane Verbindung), gespeicherte Vorbereitungen und ein druckbarer Tageszettel. Vorbereiten und Wirken werden lokal protokolliert, für eine spätere Statistik.
 - **Lehre der Kreise**: Legende aller Symbole, Schnellglyphen und Affinitätstabelle der Schulen
 - **Einstellungen**: Besitzer, Titel, Regelanhang, Papierformate, Hintergrund drucken ja/nein, Import (xlsx mit Spalte „Name“, csv/txt, json) und Export der Zauberliste (json enthält auch Vorbereitung und Protokoll)

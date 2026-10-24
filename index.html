@@ -52,7 +52,8 @@
   <main>
     <!-- Verzeichnis -->
     <section id="view-browse" class="view active">
-      <aside class="filters">
+      <aside class="filters side">
+        <button class="side-toggle" data-side="browseLeft" title="Filterleiste ein-/ausklappen"></button>
         <input id="q" type="search" placeholder="Suchen (Name, Titel, Essenz …)" autocomplete="off">
         <div class="frow">
           <select id="f-level"><option value="">Alle Grade</option></select>
@@ -75,15 +76,36 @@
 
     <!-- Buch -->
     <section id="view-book" class="view">
-      <div class="book-bar">
-        <div id="book-stats"></div>
-        <div class="row">
-          <button id="btn-print-scrolls" title="Pro Zauber zwei Seiten: Kreis vorne, Regeln hinten – beidseitig drucken">Alle als Schriftrollen drucken</button>
-          <button id="btn-print-book" class="primary">Buch drucken / als PDF</button>
+      <aside id="book-side" class="filters side">
+        <button class="side-toggle" data-side="bookLeft" title="Filterleiste ein-/ausklappen"></button>
+        <input id="bq" type="search" placeholder="Im Buch suchen …" autocomplete="off">
+        <div class="frow">
+          <select id="bf-level"><option value="">Alle Grade</option></select>
+          <select id="bf-school"><option value="">Alle Schulen</option></select>
         </div>
-      </div>
-      <div id="book-list" class="book-list"></div>
-      <div id="book-pages" class="pages"></div>
+        <div class="frow">
+          <select id="bf-essence"><option value="">Alle Essenzen</option></select>
+          <select id="bf-origin"><option value="">Regelwerk und Alltagszauber</option><option value="rules">Nur Regelwerk</option><option value="everyday">Nur Alltagszauber</option></select>
+        </div>
+        <div id="book-list-info" class="muted"></div>
+        <ul id="book-list" class="spell-list"></ul>
+      </aside>
+      <article class="book-main">
+        <div class="book-bar">
+          <div id="book-stats"></div>
+          <div class="row">
+            <button id="btn-print-scrolls" title="Pro Zauber zwei Seiten: Kreis vorne, Regeln hinten – beidseitig drucken">Alle als Schriftrollen drucken</button>
+            <button id="btn-print-book" class="primary">Buch drucken / als PDF</button>
+          </div>
+        </div>
+        <nav id="book-pager" class="pager"></nav>
+        <div id="book-pages" class="pages spread"></div>
+      </article>
+      <aside id="book-toc" class="toc-side side">
+        <button class="side-toggle" data-side="toc" title="Inhaltsverzeichnis ein-/ausklappen"></button>
+        <h3>Inhalt</h3>
+        <ul id="book-toc-list" class="toc-list"></ul>
+      </aside>
     </section>
 
     <!-- Tagesvorbereitung -->
