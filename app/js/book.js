@@ -458,7 +458,12 @@
   }
 
   function prayerFront(settings, d) {
-    const sample = analyze(window.SPELLS.find((s) => s.name === "Bless Weapon") || window.SPELLS.find((s) => s.levels[CLASS.list] != null) || window.SPELLS[0]);
+    // Beispielfenster: zwei Bahnen und eine Bordüre zeigen mehr als ein einbahniges Fenster ohne Rettungswurf
+    const own = (s) => s.levels[CLASS.list] != null;
+    const pick = window.SPELLS.find((s) => s.name === "Litany Of Righteousness" && own(s)) ||
+      window.SPELLS.find((s) => own(s) && s.levels[CLASS.list] === 2 && /^(will|fort|ref)/i.test(s.saving_throw) && !/harmless/i.test(s.saving_throw)) ||
+      window.SPELLS.find(own) || window.SPELLS[0];
+    const sample = analyze(pick);
     const legend = VITRAIL.legend(sample, d);
     const name = d ? d.name : "die Gottheit";
     return [
