@@ -221,7 +221,7 @@
     };
     $("#d-print").onclick = () => printPages(pages.join(""));
     $("#d-scroll").onclick = () => printPages(BOOK.scrollPages(m, t, { paper: state.settings.scrollPaper }).map(BOOK.pageHTML).join(""), state.settings.scrollPaper);
-    BOOK.autofit($("#detail")).then(() => addRulesButtons($("#detail .pages")));
+    BOOK.autofit($("#detail")); // kein (i): der Regelblock steht in der Verzeichnisansicht schon links daneben
   }
 
   // Detailansicht für göttliche Klassen: Brevierseite, Eigene Worte bearbeiten
@@ -267,7 +267,7 @@
       store.set("prayers", state.prayers);
       renderDetail();
     };
-    BOOK.autofit($("#detail")).then(() => addRulesButtons($("#detail .pages")));
+    BOOK.autofit($("#detail")); // kein (i): der Regelblock steht in der Verzeichnisansicht schon links daneben
   }
 
   // --- Buchansicht ----------------------------------------------------------------
