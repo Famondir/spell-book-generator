@@ -247,6 +247,10 @@
             <div><b>Gottheit</b> ${window.DEITY ? e(window.DEITY.name) : "keine gewählt"}</div>
             <div><b>Essenzen</b></div>
             ${m.essences.map((y) => `<div class="essrow"><span class="swatch" style="background:${VITRAIL.withMaterial(window.DEITY, () => VITRAIL.essColor(y.id))}"></span><span class="essname">${T.ESS[y.id].latin}</span><span class="essbar"><i style="width:${y.pct}%"></i></span><span class="esspct">${y.pct} %</span></div>`).join("")}
+            <details class="why"><summary>Woher kommen die Anteile? <span class="muted">(für den Glauben ohne Belang)</span></summary>
+              <p class="muted">${window.DEITY ? e(window.DEITY.name) : "Die Gottheit"} gibt, was gebraucht wird, und fragt nicht nach Zutaten. Wer trotzdem nachrechnen muss – Magier etwa, oder Zweifler –, findet bei den Gelehrten diese Auslegung:</p>
+              ${m.essences.map((y) => `<div><b>${T.ESS[y.id].latin}</b>: ${e(y.sources.join(", "))}</div>`).join("")}
+            </details>
           </div>
           <label class="own-edit"><b>Eigene Worte</b> <span class="muted">(dein eigenes Gebet zu diesem Zauber; leer = Linien zum Hineinschreiben)</span>
             <textarea id="d-own" rows="6" placeholder="Herrin, gib mir …">${e(own)}</textarea></label>
