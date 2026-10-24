@@ -18,3 +18,5 @@ data/profile.local.js
 *.swp
 .DS_Store
 gemini_talk.md
+dieties/
+classes/
