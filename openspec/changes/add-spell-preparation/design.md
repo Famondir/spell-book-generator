@@ -19,6 +19,7 @@ Die App kennt das Buch (Menge von Zauber-IDs, localStorage `spellbook.book`). Si
 - **Plätze von Hand eintragen** statt berechnen: Archetypen (z. B. ohne Schulplatz), Boni durch Gegenstände und Hausregeln würden jede Tabelle sprengen. Zusätzlich je Grad ein optionaler Sonderplatz (Schule/Domäne) mit eigener Schulbedingung als Freitext.
 - **Vorbereitung als Liste von Einträgen** `{grade, spellId, used:boolean, note?}` statt Zähler pro Zauber: so kann derselbe Zauber mehrfach vorbereitet und einzeln abgestrichen werden, und ein Zauber kann in einem höheren Platz liegen (Notiz „mit Metamagie“).
 - **Zaubertricks** werden vorbereitet, aber nie verbraucht.
+- **Joker-Plätze** (optional, standardmäßig 0): ein Platz ohne festen Zauber, der beim Wirken einen beliebigen Buchzauber bis zu einem eingetragenen Höchstgrad verbraucht. Deckt Arkane Verbindung (Gebundener Gegenstand, 1×/Tag) ab; Mythenkraft-Fähigkeiten zählt die App nicht.
 - **Speicher**: localStorage `spellbook.prepSlots`, `spellbook.prepToday`, `spellbook.prepPresets`. Export/Import läuft über die vorhandene json-Liste mit (Feld `preparation`), damit Gerätewechsel möglich ist.
 - **Darstellung** wie das Verzeichnis: Schnellglyphe, Name, Grad; Klick auf den Namen öffnet die Zauberansicht, Klick auf das Kästchen streicht ab. Abgestrichen = durchgestrichen und blass.
 - **Tageszettel** als eine A5-Seite im Buchstil über die vorhandene Druckstrecke (`printPages`).
@@ -30,5 +31,4 @@ Die App kennt das Buch (Menge von Zauber-IDs, localStorage `spellbook.book`). Si
 
 ## Open Questions
 
-- Sollen Zauberplätze für Arkane Verbindung (einmal täglich beliebiger Zauber aus dem Buch) als eigener Platztyp erscheinen?
-- Reicht ein Tageszettel, oder auch eine Wochenübersicht?
+- Statistik: Abstriche könnten nebenbei mitgezählt werden („wie oft gewirkt“), mit Liste der meistgenutzten Zauber. Regeltechnisch nicht nötig; nur umsetzen, wenn gewünscht.

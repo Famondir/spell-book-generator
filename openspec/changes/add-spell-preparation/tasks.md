@@ -9,8 +9,9 @@
 - [ ] 2.2 Platzeditor je Grad 0–9 inkl. optionalem Sonderplatz mit Bedingung
 - [ ] 2.3 Platz belegen: Auswahl aus Buchzaubern mit passendem Grad, Suche, Schnellglyphe
 - [ ] 2.4 Abstreichen per Kästchen, Zaubertricks ohne Verbrauch, Zähler freier Plätze je Grad
-- [ ] 2.5 „Neuer Tag“ und gespeicherte Vorbereitungen (speichern, laden, löschen)
-- [ ] 2.6 Bedienbarkeit auf Handybreite prüfen (Screenshot 390 px)
+- [ ] 2.5 Joker-Plätze mit Höchstgrad (Arkane Verbindung)
+- [ ] 2.6 „Neuer Tag“ und gespeicherte Vorbereitungen (speichern, laden, löschen)
+- [ ] 2.7 Bedienbarkeit auf Handybreite prüfen (Screenshot 390 px)
 
 ## 3. Druck
 

@@ -25,8 +25,15 @@ Ein vorbereiteter Zauber SHALL per Klick als gewirkt markiert und wieder freigeg
 - **WENN** auf das Kästchen eines vorbereiteten Zaubers geklickt wird
 - **DANN** erscheint er durchgestrichen, und die Zahl der freien Plätze seines Grades sinkt um eins
 
+### Requirement: Joker-Platz
+Die App SHALL optional Joker-Plätze mit Höchstgrad anbieten; beim Wirken MUST ein beliebiger Buchzauber bis zu diesem Grad gewählt werden können, der den Joker verbraucht.
+
+#### Scenario: Arkane Verbindung
+- **WENN** ein Joker-Platz mit Höchstgrad 3 frei ist und Fireball gewirkt wird
+- **DANN** ist der Joker verbraucht und Fireball im Tagesverlauf vermerkt
+
 ### Requirement: Neuer Tag
-„Neuer Tag“ SHALL alle Abstriche zurücksetzen und die Vorbereitung behalten.
+„Neuer Tag“ SHALL alle Abstriche und Joker zurücksetzen und die Vorbereitung behalten.
 
 #### Scenario: Rast
 - **WENN** „Neuer Tag“ gewählt wird
