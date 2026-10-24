@@ -6,7 +6,7 @@ window.PREP = (function () {
   const e = U.esc;
   const GRADES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
   // Speicherschlüssel je Charakter (chars.js)
-  const KEY = CHARS.key("prep"), KEY_PRESETS = CHARS.key("prepPresets"), KEY_LOG = CHARS.key("prepLog");
+  const KEY = CHARS.key("prep"), KEY_PRESETS = CHARS.key("prepPresets"), KEY_LOG = CHARS.key("prepLog"), KEY_DAYS = CHARS.key("prepDays");
 
   const load = (k, d) => {
     try {
@@ -34,8 +34,26 @@ window.PREP = (function () {
   let st = normalize(load(KEY, null));
   let presets = load(KEY_PRESETS, []);
   let log = load(KEY_LOG, []);
+  let days = load(KEY_DAYS, {}); // je Spieltag: { ingame: {d, m, y}, test }
   let ctx = null;
   let editing = false;
+  let sub = "heute"; // Reiter: heute | verlauf | statistik
+  assignDays();
+
+  // Jedes Ereignis gehört zu einem Spieltag (d = Startzeitpunkt des Tages). Ältere Einträge ohne d werden
+  // anhand der Tageswechsel zugeordnet; alles nach dem letzten Wechsel gehört zum laufenden Tag.
+  function assignDays() {
+    const lastDay = log.map((x) => x.ev).lastIndexOf("day");
+    let seg = null;
+    log.forEach((x, i) => {
+      if (i > lastDay) x.d = x.d || st.day;
+      else {
+        seg = seg || x.d || x.t;
+        x.d = x.d || seg;
+        if (x.ev === "day") seg = null;
+      }
+    });
+  }
 
   function normalize(s) {
     const f = fresh();
@@ -55,9 +73,78 @@ window.PREP = (function () {
     put(KEY, st);
     put(KEY_PRESETS, presets);
     put(KEY_LOG, log);
+    put(KEY_DAYS, days);
   }
   function record(ev, id, g) {
-    log.push({ t: new Date().toISOString(), ev, id, g });
+    log.push({ t: new Date().toISOString(), ev, id, g, d: st.day });
+  }
+
+  // --- Ingame-Datum -----------------------------------------------------------------
+  const cal = () => PROFILE.calendar || {};
+  const monthLens = () => cal().days || [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  const fmtIngame = (ig) => (ig && ig.d ? `${ig.d}. ${(cal().months || [])[ig.m] || ""} ${ig.y || ""}`.replace(/\s+/g, " ").trim() : "");
+  function nextIngame(ig) {
+    if (!ig || !ig.d) return null;
+    let { d, m, y } = ig;
+    const months = cal().months || [];
+    if (++d > (monthLens()[m] || 30)) {
+      d = 1;
+      if (++m >= (months.length || 12)) {
+        m = 0;
+        y = String(y || "").replace(/\d+/, (n) => +n + 1);
+      }
+    }
+    return { d, m, y };
+  }
+  function ingameFields(id) {
+    const ig = (days[id] && days[id].ingame) || { d: "", m: 0, y: cal().year || "" };
+    return `<span class="ingame" data-day="${e(id)}"><input type="number" min="1" max="31" data-ig="d" value="${ig.d}" placeholder="Tag">
+      <select data-ig="m">${(cal().months || []).map((name, i) => `<option value="${i}" ${+ig.m === i ? "selected" : ""}>${e(name)}</option>`).join("")}</select>
+      <input data-ig="y" value="${e(ig.y || "")}" placeholder="Jahr"></span>`;
+  }
+  function setIngame(id, field, value) {
+    const cur = (days[id] && days[id].ingame) || { d: "", m: 0, y: cal().year || "" };
+    cur[field] = field === "y" ? value : +value;
+    setDayMeta(id, { ingame: cur });
+  }
+
+  // --- Spieltage (für Verlauf und Statistik) ---------------------------------------------
+  function dayList() {
+    const map = new Map();
+    for (const x of log) {
+      if (!map.has(x.d)) map.set(x.d, { id: x.d, events: [] });
+      map.get(x.d).events.push(x);
+    }
+    if (!map.has(st.day)) map.set(st.day, { id: st.day, events: [] });
+    return [...map.values()]
+      .map((dd) => {
+        const close = dd.events.find((x) => x.ev === "day");
+        const current = dd.id === st.day;
+        return {
+          ...dd,
+          current,
+          start: dd.events[0] ? (dd.events[0].t < dd.id ? dd.events[0].t : dd.id) : dd.id,
+          end: dd.events.length ? dd.events[dd.events.length - 1].t : dd.id,
+          prepared: current ? st.items.map((x) => x.id) : close ? close.id : [],
+          meta: days[dd.id] || {},
+          ingameText: fmtIngame((days[dd.id] || {}).ingame),
+        };
+      })
+      .sort((a, b) => (a.start < b.start ? 1 : -1));
+  }
+  function setDayMeta(id, fields) {
+    days[id] = { ...(days[id] || {}), ...fields };
+    save();
+  }
+  function deleteDay(id) {
+    log = log.filter((x) => x.d !== id);
+    if (id === st.day) {
+      // laufender Tag: auch die Abstriche zurücknehmen, die Vorbereitung bleibt
+      st.items.forEach((x) => ((x.used = false), (x.casts = 0)));
+      st.jokers = [];
+      days[id] = { ingame: (days[id] || {}).ingame };
+    } else delete days[id];
+    save();
   }
 
   // --- Daten ------------------------------------------------------------------------
@@ -82,17 +169,25 @@ window.PREP = (function () {
   }
 
   // --- Ansicht ----------------------------------------------------------------------
+  const tabsHTML = () =>
+    `<nav class="prep-tabs">${[["heute", "Heute"], ["verlauf", "Verlauf"], ["statistik", "Statistik"]].map(([k, l]) => `<button data-sub="${k}" class="${sub === k ? "active" : ""}">${l}</button>`).join("")}</nav>`;
   function render() {
     const root = $("#prep");
+    if (sub !== "heute") {
+      root.innerHTML = tabsHTML() + `<div id="stats-root"></div>`;
+      STATS.render($("#stats-root"), sub, api, ctx);
+      return;
+    }
     const hasSlots = st.slots.some((s) => s.n + s.extra > 0) || st.joker.n > 0;
     if (!hasSlots) editing = true;
     const day = new Date(st.day);
     const free = GRADES.filter((g) => g > 0).reduce((a, g) => a + (gradeInfo(g).free || 0), 0) + Math.max(0, st.joker.n - st.jokers.length);
-    root.innerHTML = `
+    root.innerHTML = tabsHTML() + `
       <div class="prep-bar">
         <div>
           <h2>Heute vorbereitet</h2>
           <div class="muted">${hasSlots ? `${free} Zauber übrig · ` : ""}Tag begonnen ${day.toLocaleDateString("de-DE")} ${day.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}</div>
+          <div class="ingame-row">Ingame-Datum ${ingameFields(st.day)}</div>
         </div>
         <div class="row">
           <button id="p-newday" class="primary" title="Alle Abstriche zurücksetzen, Vorbereitung behalten">Neuer Tag</button>
@@ -208,6 +303,12 @@ window.PREP = (function () {
   }
   function onClick(ev) {
     const t = ev.target;
+    const tab = t.closest("[data-sub]");
+    if (tab) {
+      sub = tab.dataset.sub;
+      return render();
+    }
+    if (t.closest("#stats-root")) return; // Verlauf und Statistik haben eigene Klicks (stats.js)
     const li = t.closest("li[data-uid]");
     const it = li && st.items.find((x) => x.uid === li.dataset.uid);
     if (t.closest(".p-fill")) {
@@ -248,7 +349,10 @@ window.PREP = (function () {
       record("day", st.items.map((x) => x.id), null);
       st.items.forEach((x) => ((x.used = false), (x.casts = 0)));
       st.jokers = [];
+      const prevIngame = (days[st.day] || {}).ingame;
       st.day = new Date().toISOString();
+      const ig = nextIngame(prevIngame);
+      if (ig) days[st.day] = { ingame: ig };
       commit();
     } else if (t.id === "p-edit") {
       editing = !editing;
@@ -279,6 +383,10 @@ window.PREP = (function () {
   }
   function onInput(ev) {
     const t = ev.target;
+    if (t.dataset.ig) {
+      setIngame(t.closest("[data-day]").dataset.day, t.dataset.ig, t.value);
+      return;
+    }
     const tr = t.closest("tr[data-g]");
     if (tr && t.dataset.f) {
       const s = st.slots[+tr.dataset.g];
@@ -316,13 +424,15 @@ window.PREP = (function () {
 
   // --- Export / Import --------------------------------------------------------------
   function exportData() {
-    return { state: st, presets, log };
+    return { state: st, presets, log, days };
   }
   function importData(d) {
     if (!d || typeof d !== "object") return;
     if (d.state) st = normalize(d.state);
     if (Array.isArray(d.presets)) presets = d.presets;
     if (Array.isArray(d.log)) log = d.log;
+    if (d.days && typeof d.days === "object") days = d.days;
+    assignDays();
     save();
   }
 
@@ -333,5 +443,6 @@ window.PREP = (function () {
     root.addEventListener("input", onInput);
   }
 
-  return { init, render, exportData, importData };
+  const api = { dayList, setDayMeta, deleteDay, ingameFields, setIngame, refresh: () => render() };
+  return { init, render, exportData, importData, api };
 })();

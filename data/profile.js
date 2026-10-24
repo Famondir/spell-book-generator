@@ -14,6 +14,8 @@ window.PROFILE = {
   calendar: {
     months: ["Eismond", "Taumond", "Lenzmond", "Ostermond", "Wonnemond", "Brachmond", "Heumond", "Erntemond", "Herbstmond", "Weinmond", "Nebelmond", "Julmond"],
     year: "im Jahr 312",
+    // Tage je Monat (für das Ingame-Datum der Tagesvorbereitung)
+    days: [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31],
   },
   places: [
     "die Turmstube", "die Bibliothek der Akademie", "das Feldlager", "ein Gasthaus an der Handelsstraße",

@@ -10,7 +10,7 @@ Erzeugt ein In-Game-Zauberbuch: Zu jedem Zauber gibt es einen magischen Kreis, d
 - **Ausführliche Ansicht** (Schalter in der Zauberansicht): jeder Zauber in voller Länge mit beschriftetem Kreis
 - **Kreis anklicken**: großes Fenster mit Erläuterung aller Schichten, Beschriftung und SVG-Export
 - **Mein Buch**: Buchvorschau zum Blättern (je nach Breite eine Seite oder eine Doppelseite wie im gebundenen Buch, seitenweise oder Zauber für Zauber, Pfeiltasten), (i) zeigt den Regeltext, links die Buchzauber mit denselben Filtern wie im Verzeichnis (− entfernt), rechts ein ausklappbares Inhaltsverzeichnis; Druck mit Fortschrittsanzeige als Buch (A5, A4 skaliert, A4 quer mit 2 Seiten) oder als **Schriftrollen** (vorne Kreis, hinten Formel und Regeln; beidseitig drucken); dazu der **Regelband** (Regeltexte nummeriert wie das Inhaltsverzeichnis, mit eigenem Inhaltsverzeichnis Nummer → Seite)
-- **Heute vorbereitet**: Zauberplätze pro Grad von Hand eintragen (die App rechnet nichts aus Klasse oder Stufe), Plätze mit Zaubern aus dem Buch belegen, Gewirktes abstreichen, „Neuer Tag“ nach der Rast. Dazu kommen Sonderplätze mit Bedingung, Joker-Plätze (z. B. Arkane Verbindung), gespeicherte Vorbereitungen und ein druckbarer Tageszettel. Vorbereiten und Wirken werden lokal protokolliert, für eine spätere Statistik.
+- **Heute vorbereitet**: Zauberplätze pro Grad von Hand eintragen (die App rechnet nichts aus Klasse oder Stufe), Plätze mit Zaubern aus dem Buch belegen, Gewirktes abstreichen, „Neuer Tag“ nach der Rast. Dazu kommen Sonderplätze mit Bedingung, Joker-Plätze (z. B. Arkane Verbindung), gespeicherte Vorbereitungen und ein druckbarer Tageszettel. Jeder Spieltag hat ein Ingame-Datum (Monate aus dem Profilkalender, zählt bei „Neuer Tag“ weiter). Unter **Verlauf** stehen alle Spieltage mit ihren Ereignissen (Testtage als Probe markieren oder löschen), unter **Statistik** die meistgewirkten Zauber, „oft vorbereitet, selten gewirkt“ und die Würfe nach Grad, Schule und Tag.
 - **Lehre der Kreise**: Legende aller Symbole, Schnellglyphen und Affinitätstabelle der Schulen
 - **Einstellungen**: Besitzer, Titel, Regelverweise auf den Zauberseiten (Regelband-Nummer, QR-Code zu Archives of Nethys, Quellenangabe; alle aus), mehrseitige Zauber links beginnen lassen, Papierformate, Hintergrund drucken ja/nein, Import (xlsx mit Spalte „Name“, csv/txt, json) und Export der Zauberliste (json enthält auch Vorbereitung und Protokoll)
 
@@ -33,7 +33,7 @@ Alles, was Besitzer, Welt und Tonfall bestimmt, steht in **Profilen**:
 Vorgehen: Vorlage nach `data/profile.local.js` kopieren, Felder anpassen, Seite neu laden. Für mehrere Charaktere registriert `data/profile.local.js` mehrere Profile unter `window.PROFILES_LOCAL` (siehe Vorlage); jeder Charakter wählt seines in den Einstellungen. Anpassbar sind:
 
 - `owner`, `bookTitle`, `subtitle` – Titelblatt und Randnotizen
-- `calendar` (Monatsnamen, Jahr) und `places` – Übungsprotokoll und Notizen
+- `calendar` (Monatsnamen, Monatslängen `days`, Jahr) und `places` – Übungsprotokoll und Notizen
 - `notes`, `noteOriginalName`, `noteAlignment` – die Stimme der Randnotizen (Platzhalter `{owner}`, `{name}`, `{essence}`, `{school}`)
 - `learningOrigins`, `everydayOrigins` – woher die Formeln stammen
 - `divineFocus` – Text zum göttlichen Fokus
@@ -54,7 +54,8 @@ Vorgehen: Vorlage nach `data/profile.local.js` kopieren, Felder anpassen, Seite 
 | `app/js/book.js` | Seitenplanung, Vorspann, Schriftrollen, Autofit und fließende Seiten |
 | `app/js/everyday.js` | Alltagszauber: erben fehlende Regelfelder vom Basiszauber |
 | `app/js/import.js` | Zauberlisten aus xlsx/csv/txt lesen |
-| `app/js/prepare.js` | Tagesvorbereitung, Abstreichen, Nutzungsprotokoll |
+| `app/js/prepare.js` | Tagesvorbereitung, Abstreichen, Ingame-Datum, Nutzungsprotokoll |
+| `app/js/stats.js` | Verlauf und Statistik der Spieltage |
 | `app/js/chars.js` | Charakter-Slots: getrennter Speicher je Charakter |
 | `app/js/profile.js` | mischt neutrales Profil und das Profil des aktiven Charakters |
 | `data/spells.js` | Zauberdaten (erzeugt) |
