@@ -33,7 +33,7 @@ Alles, was Besitzer, Welt und Tonfall bestimmt, steht in **Profilen**:
 Vorgehen: Vorlage nach `data/profile.local.js` kopieren, Felder anpassen, Seite neu laden. Für mehrere Charaktere registriert `data/profile.local.js` mehrere Profile unter `window.PROFILES_LOCAL` (siehe Vorlage); jeder Charakter wählt seines in den Einstellungen. Anpassbar sind:
 
 - `owner`, `bookTitle`, `subtitle` – Titelblatt und Randnotizen
-- `calendar` (Monatsnamen, Monatslängen `days`, Jahr) und `places` – Übungsprotokoll und Notizen
+- `calendar` (Monatsnamen, irdische Entsprechung `earth`, Monatslängen `days`, Jahr) und `places` – Übungsprotokoll und Notizen
 - `notes`, `noteOriginalName`, `noteAlignment` – die Stimme der Randnotizen (Platzhalter `{owner}`, `{name}`, `{essence}`, `{school}`)
 - `learningOrigins`, `everydayOrigins` – woher die Formeln stammen
 - `divineFocus` – Text zum göttlichen Fokus

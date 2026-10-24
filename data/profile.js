@@ -14,6 +14,8 @@ window.PROFILE = {
   calendar: {
     months: ["Eismond", "Taumond", "Lenzmond", "Ostermond", "Wonnemond", "Brachmond", "Heumond", "Erntemond", "Herbstmond", "Weinmond", "Nebelmond", "Julmond"],
     year: "im Jahr 312",
+    // irdische Entsprechung je Monat (erscheint in Klammern bei der Auswahl des Ingame-Datums; weglassen = keine)
+    earth: ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"],
     // Tage je Monat (für das Ingame-Datum der Tagesvorbereitung)
     days: [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31],
   },

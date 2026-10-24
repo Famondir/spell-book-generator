@@ -16,6 +16,8 @@ window.PROFILE_LOCAL = {
   calendar: {
     months: ["Frostmond", "Schneemond", "Saatmond", "Regenmond", "Blütenmond", "Sonnenmond", "Heumond", "Erntemond", "Apfelmond", "Nebelmond", "Moormond", "Dunkelmond"],
     year: "im 7. Jahr nach der Flut",
+    // optional: irdische Entsprechung und Länge der Monate, z. B. für ein Jahr, das im Sommer beginnt:
+    // earth: ["Juli", "August", …], days: [31, 31, …],
   },
   places: ["die Hütte am Moor", "der Markt in Ellbach", "der alte Steinkreis", "die Mühle", "das Kräuterbeet"],
 

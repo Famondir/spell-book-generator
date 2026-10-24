@@ -99,7 +99,7 @@ window.PREP = (function () {
   function ingameFields(id) {
     const ig = (days[id] && days[id].ingame) || { d: "", m: 0, y: cal().year || "" };
     return `<span class="ingame" data-day="${e(id)}"><input type="number" min="1" max="31" data-ig="d" value="${ig.d}" placeholder="Tag">
-      <select data-ig="m">${(cal().months || []).map((name, i) => `<option value="${i}" ${+ig.m === i ? "selected" : ""}>${e(name)}</option>`).join("")}</select>
+      <select data-ig="m">${(cal().months || []).map((name, i) => `<option value="${i}" ${+ig.m === i ? "selected" : ""}>${e(name)}${cal().earth && cal().earth[i] && cal().earth[i] !== name ? ` (${e(cal().earth[i])})` : ""}</option>`).join("")}</select>
       <input data-ig="y" value="${e(ig.y || "")}" placeholder="Jahr"></span>`;
   }
   function setIngame(id, field, value) {
