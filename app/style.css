@@ -413,6 +413,52 @@ svg .gilded { color: var(--gold); }
 .spell-list svg .knock, .facts svg .knock { fill: var(--ui-panel); }
 
 /* --- Druck ------------------------------------------------------------------ */
+/* --- Tagesvorbereitung -------------------------------------------------------- */
+#view-prepare { overflow-y: auto; }
+.prep { max-width: 900px; width: 100%; margin: 0 auto; padding: 16px 20px; }
+.prep h2 { margin: 0; font-family: var(--font-title); font-weight: 600; }
+.prep-bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+.prep-bar button.on { background: var(--ui-hover); outline: 1px solid var(--ui-line); }
+.prep-presets { width: 100%; }
+.prep-presets select { width: auto; flex: 1; min-width: 180px; }
+.prep-editor { background: var(--ui-panel); border: 1px solid var(--ui-line); border-radius: 8px; padding: 12px; margin-bottom: 16px; }
+.prep-editor table { border-collapse: collapse; width: 100%; margin-bottom: 8px; }
+.prep-editor th { text-align: left; font-weight: 600; font-size: 0.85em; color: var(--ui-muted); padding: 2px 4px; }
+.prep-editor td { padding: 2px 4px; }
+.prep-editor td:first-child { width: 3em; font-weight: 600; text-align: center; }
+.prep-editor input { background: var(--ui-panel); border: 1px solid var(--ui-line); border-radius: 6px; padding: 4px 6px; width: 100%; }
+.prep-editor input[type="number"] { width: 5em; }
+.prep-editor .row label { display: flex; align-items: center; gap: 6px; }
+.prep-grade { margin-bottom: 14px; }
+.prep-grade h3 { font-family: var(--font-title); font-weight: 600; font-size: 1.05em; margin: 0 0 4px; border-bottom: 1px solid var(--ui-line); padding-bottom: 2px; }
+.prep-grade h3 .muted { font-family: system-ui, sans-serif; font-weight: 400; margin-left: 6px; }
+.prep-grade .warn { font-family: system-ui, sans-serif; font-size: 0.8em; font-weight: 400; color: var(--ui-accent); margin-left: 6px; }
+.prep-list { list-style: none; margin: 0; padding: 0; }
+.prep-list li { display: flex; align-items: center; gap: 10px; padding: 4px 6px; border-radius: 6px; min-height: 40px; }
+.prep-list li:hover { background: var(--ui-hover); }
+.prep-list .nm { flex: 1; display: flex; flex-direction: column; min-width: 0; cursor: pointer; }
+.prep-list .nm b { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prep-list .nm i { font-size: 12px; color: var(--ui-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prep-list .q svg { width: 24px; height: 24px; display: block; }
+.p-cast { width: 32px; height: 32px; padding: 0; flex-shrink: 0; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--ui-line); border-radius: 6px; }
+.p-cast.on { background: var(--ui-accent); color: var(--ui-accent-text); border-color: var(--ui-accent); }
+.p-cast0 { flex-shrink: 0; font-size: 0.85em; padding: 4px 8px; }
+.p-rm, .p-unjoker { border: none; background: none; color: var(--ui-muted); font-size: 1.2em; padding: 0 8px; }
+.prep-list li.used .nm b { text-decoration: line-through; color: var(--ui-muted); }
+.prep-list li.used .q { opacity: 0.4; }
+.prep-list li.empty button { width: 100%; text-align: left; border-style: dashed; color: var(--ui-muted); background: none; }
+.prep-foot { margin-top: 24px; }
+.prep-pick { width: min(520px, 94vw); max-height: 80vh; border: 1px solid var(--ui-line); border-radius: 10px; background: var(--ui-panel); color: var(--ui-text); padding: 14px; }
+.prep-pick[open] { display: flex; flex-direction: column; gap: 8px; }
+.prep-pick h3 { margin: 0; font-family: var(--font-title); font-weight: 600; }
+.prep-pick .spell-list { max-height: 55vh; }
+.prep-pick::backdrop { background: rgb(0 0 0 / 0.4); }
+.page table.prep-sheet { table-layout: fixed; }
+.page table.prep-sheet td { padding: 0.35em 0.3em; height: 2.2em; }
+.page table.prep-sheet .tq { width: 2.6em; }
+.page table.prep-sheet .cb { width: 1.6em; font-size: 1.3em; line-height: 1; }
+.page table.prep-sheet .blank { color: var(--ink-soft); font-style: italic; }
+
 #print-root { display: none; }
 /* Während des Druckens messbar, aber außerhalb des Bildschirms – sonst kann autofit() nichts messen */
 body.printing #print-root { display: block; position: absolute; left: -10000px; top: 0; }
@@ -439,5 +485,8 @@ label.toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 1
   #view-browse { flex-direction: column; overflow-y: auto; }
   .filters { width: 100%; border-right: none; border-bottom: 1px solid var(--ui-line); max-height: 45vh; }
   .detail-side { width: 100%; }
+  .prep { padding: 12px 16px; }
+  .tabs { overflow-x: auto; flex-basis: 100%; order: 3; }
+  .tabs button { white-space: nowrap; }
   .page { transform-origin: top left; }
 }

@@ -7,6 +7,7 @@ Das Buch zeigt, welche Zauber ein Magier *kennt*. Am Spieltisch zählt aber, wel
 - Neue Ansicht **„Heute vorbereitet“**: Zauberplätze pro Grad eintragen (Zahl, von Hand), Zauber aus dem eigenen Buch in die Plätze legen (derselbe Zauber darf mehrfach liegen).
 - **Abstreichen** gewirkter Zauber per Klick (rückgängig machbar); Zaubertricks bleiben unbegrenzt nutzbar.
 - **„Neuer Tag“** setzt alle Abstriche zurück, die Vorbereitung bleibt; **gespeicherte Vorbereitungen** (z. B. „Reise“, „Dungeon“) lassen sich laden.
+- **Nutzungsprotokoll**: Vorbereiten und Wirken werden mit Zeitstempel mitgezählt (auch Zaubertricks), als Grundlage für eine spätere Statistik. Noch keine Auswertung in diesem Change.
 - Optionaler **Tageszettel** zum Drucken: Schnellglyphe, Name, Grad und Kästchen zum Abhaken mit Stift.
 - Zustand lokal im Browser, kein Konto, keine Klassenberechnung.
 

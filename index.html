@@ -12,6 +12,7 @@
     <nav class="tabs">
       <button data-view="browse" class="active">Verzeichnis</button>
       <button data-view="book">Mein Buch <span id="book-count"></span></button>
+      <button data-view="prepare">Heute vorbereitet</button>
       <button data-view="theory">Lehre der Kreise</button>
     </nav>
     <div class="actions">
@@ -85,6 +86,11 @@
       <div id="book-pages" class="pages"></div>
     </section>
 
+    <!-- Tagesvorbereitung -->
+    <section id="view-prepare" class="view">
+      <div id="prep" class="prep"></div>
+    </section>
+
     <!-- Theorie -->
     <section id="view-theory" class="view">
       <div id="theory-pages" class="pages"></div>
@@ -124,6 +130,7 @@
   <script src="app/js/textgen.js"></script>
   <script src="app/js/book.js"></script>
   <script src="app/js/import.js"></script>
+  <script src="app/js/prepare.js"></script>
   <script src="app/js/app.js"></script>
 </body>
 </html>

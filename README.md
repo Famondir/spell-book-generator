@@ -10,8 +10,9 @@ Erzeugt ein In-Game-Zauberbuch: Zu jedem Zauber gibt es einen magischen Kreis, d
 - **Ausführliche Ansicht** (Schalter in der Zauberansicht): jeder Zauber in voller Länge mit beschriftetem Kreis
 - **Kreis anklicken**: großes Fenster mit Erläuterung aller Schichten, Beschriftung und SVG-Export
 - **Mein Buch**: komplette Buchvorschau, Druck als Buch (A5, A4 skaliert, A4 quer mit 2 Seiten) oder als **Schriftrollen** (vorne Kreis, hinten Formel und Regeln; beidseitig drucken)
+- **Heute vorbereitet**: Zauberplätze pro Grad von Hand eintragen (die App rechnet nichts aus Klasse oder Stufe), Plätze mit Zaubern aus dem Buch belegen, Gewirktes abstreichen, „Neuer Tag“ nach der Rast. Dazu kommen Sonderplätze mit Bedingung, Joker-Plätze (z. B. Arkane Verbindung), gespeicherte Vorbereitungen und ein druckbarer Tageszettel. Vorbereiten und Wirken werden lokal protokolliert, für eine spätere Statistik.
 - **Lehre der Kreise**: Legende aller Symbole, Schnellglyphen und Affinitätstabelle der Schulen
-- **Einstellungen**: Besitzer, Titel, Regelanhang, Papierformate, Hintergrund drucken ja/nein, Import (xlsx mit Spalte „Name“, csv/txt, json) und Export der Zauberliste
+- **Einstellungen**: Besitzer, Titel, Regelanhang, Papierformate, Hintergrund drucken ja/nein, Import (xlsx mit Spalte „Name“, csv/txt, json) und Export der Zauberliste (json enthält auch Vorbereitung und Protokoll)
 
 Seitenumfang: Grad 0 und Alltagszauber = ½ Seite, Grad n = n Seiten.
 
@@ -48,10 +49,15 @@ Vorgehen: Vorlage nach `data/profile.local.js` kopieren, Felder anpassen, Seite 
 | `app/js/book.js` | Seitenplanung, Vorspann, Schriftrollen, Autofit und fließende Seiten |
 | `app/js/everyday.js` | Alltagszauber: erben fehlende Regelfelder vom Basiszauber |
 | `app/js/import.js` | Zauberlisten aus xlsx/csv/txt lesen |
+| `app/js/prepare.js` | Tagesvorbereitung, Abstreichen, Nutzungsprotokoll |
 | `app/js/profile.js` | mischt neutrales und lokales Profil |
 | `data/spells.js` | Zauberdaten (erzeugt) |
 | `data/everyday_spells.js` | Alltagszauber mit Ideengebern |
 | `tools/parse_spells.py` | erzeugt `data/spells.js` aus AoN-Seiten (`spells/*.aspx`) und dem d20pfsrd-Export (`data/spell_full*.tsv`); beide Rohdaten sind nicht im Repository |
+
+## Planung
+
+Anforderungen und geplante Änderungen liegen als [OpenSpec](https://github.com/Fission-AI/OpenSpec) unter `openspec/` (`openspec list`, `openspec show <name>`).
 
 ## Quellen und Lizenzen
 

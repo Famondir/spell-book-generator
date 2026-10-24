@@ -287,6 +287,7 @@
     document.querySelectorAll(".view").forEach((v) => v.classList.toggle("active", v.id === "view-" + view));
     if (view === "book") renderBook();
     if (view === "theory" && !$("#theory-pages").innerHTML) renderTheory();
+    if (view === "prepare") PREP.render();
   }
   document.querySelectorAll(".tabs button").forEach((b) => (b.onclick = () => show(b.dataset.view)));
 
@@ -318,7 +319,7 @@
     if (state.view !== "browse") show(state.view);
   });
   $("#btn-export").onclick = () => {
-    const data = { book: [...state.book].map((id) => byId.get(id)?.s.name).filter(Boolean), settings: state.settings };
+    const data = { book: [...state.book].map((id) => byId.get(id)?.s.name).filter(Boolean), settings: state.settings, preparation: PREP.exportData() };
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
     a.download = (state.settings.owner || "zauberbuch").toLowerCase() + "-zauberbuch.json";
@@ -328,12 +329,13 @@
     const file = ev.target.files[0];
     if (!file) return;
     try {
-      let names = [], settings = null;
+      let names = [], settings = null, preparation = null;
       if (/\.xlsx$/i.test(file.name)) names = await IMPORT.xlsxNames(await file.arrayBuffer());
       else if (/\.json$/i.test(file.name)) {
         const data = JSON.parse(await file.text());
         names = data.book || [];
         settings = data.settings || null;
+        preparation = data.preparation || null;
       } else names = IMPORT.textNames(await file.text());
       const norm = (n) => String(n).toLowerCase().replace(/[^a-z0-9äöüß]/g, "");
       const lookup = new Map(ALL.map((x) => [norm(x.s.name), x.s.id]));
@@ -349,10 +351,12 @@
       if (replace) state.book = new Set();
       found.forEach((id) => state.book.add(id));
       if (settings) Object.assign(state.settings, settings);
+      if (preparation) PREP.importData(preparation);
       save();
       updateCount();
       renderList();
       if (state.view === "book") renderBook();
+      if (state.view === "prepare") PREP.render();
       alert(`${found.length} Zauber übernommen, ${state.book.size} jetzt im Buch.` + (missing.length ? `\nNicht gefunden (${missing.length}): ${missing.slice(0, 30).join(", ")}${missing.length > 30 ? " …" : ""}` : ""));
     } catch (err) {
       alert("Datei konnte nicht gelesen werden: " + err.message);
@@ -439,11 +443,12 @@
   };
 
   // --- Start ----------------------------------------------------------------------
+  PREP.init({ byId, model, book: () => state.book, select, show, printPages, owner: () => state.settings.owner });
   initFilters();
   renderList();
   updateCount();
   const first = filtered().find((x) => x.s.name === "Fireball") || filtered()[0];
   if (first) select(first.s.id);
   const hashView = location.hash.slice(1);
-  if (["book", "theory"].includes(hashView)) show(hashView);
+  if (["book", "theory", "prepare"].includes(hashView)) show(hashView);
 })();

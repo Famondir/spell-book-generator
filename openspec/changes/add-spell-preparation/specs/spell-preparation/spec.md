@@ -46,8 +46,19 @@ Die aktuelle Vorbereitung SHALL unter einem Namen gespeichert und später gelade
 - **WENN** die gespeicherte Vorbereitung „Dungeon“ geladen wird
 - **DANN** sind die Plätze mit deren Zaubern belegt und nichts ist abgestrichen
 
+### Requirement: Nutzungsprotokoll
+Die App SHALL jedes Vorbereiten, Entfernen, Wirken, Zurücknehmen und jeden Tageswechsel mit Zeitstempel, Zauber und Platzgrad protokollieren; auch Zaubertricks und Joker MUST beim Wirken protokolliert werden.
+
+#### Scenario: Zaubertrick gewirkt
+- **WENN** bei einem vorbereiteten Zaubertrick „gewirkt“ gewählt wird
+- **DANN** entsteht ein Protokolleintrag, und der Zaubertrick bleibt verfügbar
+
+#### Scenario: Abstrich zurückgenommen
+- **WENN** ein Abstrich wieder entfernt wird
+- **DANN** protokolliert die App eine Rücknahme, sodass der Zauber nicht als gewirkt zählt
+
 ### Requirement: Dauerhaftigkeit
-Plätze, Vorbereitung, Abstriche und Vorlagen MUST einen Neustart des Browsers überstehen und im json-Export enthalten sein.
+Plätze, Vorbereitung, Abstriche, Vorlagen und Protokoll MUST einen Neustart des Browsers überstehen und im json-Export enthalten sein.
 
 #### Scenario: Export
 - **WENN** die Liste exportiert und auf einem anderen Gerät importiert wird
