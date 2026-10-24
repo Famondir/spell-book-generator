@@ -27,6 +27,13 @@
       <div class="char-admin">
         <label>Name <input id="char-name"></label>
         <label>Profil <select id="char-profile"></select></label>
+        <label>Klasse <select id="char-cls"></select></label>
+        <div id="char-deity-row" class="deity-row">
+          <label>Gottheit <input id="char-deity" list="deity-list" autocomplete="off" placeholder="Name eintippen …"></label>
+          <label class="check"><input type="checkbox" id="char-deity-all"> alle Gottheiten (nicht nur passende Gesinnung)</label>
+          <datalist id="deity-list"></datalist>
+          <div class="muted" id="char-deity-info"></div>
+        </div>
         <div class="row">
           <button type="button" id="char-new">Neuer Charakter</button>
           <button type="button" id="char-dup">Duplizieren</button>
@@ -39,7 +46,7 @@
       <label>Buchtitel <input name="bookTitle"></label>
       <label>Untertitel <input name="subtitle"></label>
       <label class="check"><input type="checkbox" name="chapters"> Kapitel je Grad (Doppelseite mit Titel, Text zur Stufe und Formelliste)</label>
-      <label>Mehrseitige Zauber und Kapitel beginnen links
+      <label class="arcane-only">Mehrseitige Zauber und Kapitel beginnen links
         <select name="leftStart"><option value="notes">ja, mit Notizseite davor</option><option value="expand">ja, vorherigen Zauber im Umfang des nächsthöheren Grades</option><option value="off">nein (spart Papier)</option></select>
       </label>
       <fieldset class="refs"><legend>Regelverweise auf den Zauberseiten (für den Druck)</legend>
@@ -54,9 +61,9 @@
         <select name="scrollPaper"><option value="a4">A4 (große Rolle)</option><option value="a5">A5</option></select>
       </label>
       <label class="check"><input type="checkbox" name="printBackground"> Pergament-Hintergrund drucken (aus: spart Tinte, z. B. für eigenes braunes Papier)</label>
-      <label class="check"><input type="checkbox" name="frontMatter"> Vorspann drucken (Titelblatt, Lehre der Kreise, Verzeichnis)</label>
-      <label class="check"><input type="checkbox" name="detailPrint"> Ausführliche Fassung drucken (jeder Zauber ~10 Seiten, unabhängig vom Grad)</label>
-      <label class="check"><input type="checkbox" name="onlyWizard"> Nur Zauber der Magierliste anzeigen</label>
+      <label class="check"><input type="checkbox" name="frontMatter"> Vorspann drucken (Titelblatt, <span class="front-label">Lehre der Kreise</span>, Verzeichnis)</label>
+      <label class="check arcane-only"><input type="checkbox" name="detailPrint"> Ausführliche Fassung drucken (jeder Zauber ~10 Seiten, unabhängig vom Grad)</label>
+      <label class="check"><input type="checkbox" name="onlyClass"> Nur Zauber der Klassenliste anzeigen (<span class="cls-label">Magier</span>)</label>
       <h4>Buchbestand</h4>
       <div class="row">
         <button type="button" id="btn-export">Liste exportieren</button>
@@ -183,15 +190,19 @@
   <script src="app/js/profile.js"></script>
   <script src="data/spells.js"></script>
   <script src="data/everyday_spells.js"></script>
+  <script src="data/deities.js"></script>
   <script src="data/custom_texts.js"></script>
   <script src="app/vendor/qrcode.js"></script>
   <script src="app/js/util.js"></script>
+  <script src="app/js/classes.js"></script>
   <script src="app/js/everyday.js"></script>
   <script src="app/js/theory.js"></script>
   <script src="app/js/analyze.js"></script>
   <script src="app/js/glyphs.js"></script>
   <script src="app/js/circle.js"></script>
   <script src="app/js/textgen.js"></script>
+  <script src="app/js/vitrail.js"></script>
+  <script src="app/js/prayer.js"></script>
   <script src="app/js/book.js"></script>
   <script src="app/js/import.js"></script>
   <script src="app/js/prepare.js"></script>

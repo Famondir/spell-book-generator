@@ -4,7 +4,11 @@
 window.PREP = (function () {
   const $ = (s, el = document) => el.querySelector(s);
   const e = U.esc;
-  const GRADES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+  const GRADES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]; // gespeichert werden immer alle Grade
+  // angezeigt werden die Grade der Klasse; Joker (Arkane Verbindung) nur bei Magiern
+  const SHOWN = (window.CLASS && CLASS.grades) || GRADES;
+  const JOKER = !window.CLASS || CLASS.joker !== false;
+  const DAY = (window.CLASS && CLASS.day) || "Neuer Tag";
   // Speicherschlüssel je Charakter (chars.js)
   const KEY = CHARS.key("prep"), KEY_PRESETS = CHARS.key("prepPresets"), KEY_LOG = CHARS.key("prepLog"), KEY_DAYS = CHARS.key("prepDays");
 
@@ -178,10 +182,10 @@ window.PREP = (function () {
       STATS.render($("#stats-root"), sub, api, ctx);
       return;
     }
-    const hasSlots = st.slots.some((s) => s.n + s.extra > 0) || st.joker.n > 0;
+    const hasSlots = SHOWN.some((g) => st.slots[g].n + st.slots[g].extra > 0) || (JOKER && st.joker.n > 0);
     if (!hasSlots) editing = true;
     const day = new Date(st.day);
-    const free = GRADES.filter((g) => g > 0).reduce((a, g) => a + (gradeInfo(g).free || 0), 0) + Math.max(0, st.joker.n - st.jokers.length);
+    const free = SHOWN.filter((g) => g > 0).reduce((a, g) => a + (gradeInfo(g).free || 0), 0) + (JOKER ? Math.max(0, st.joker.n - st.jokers.length) : 0);
     root.innerHTML = tabsHTML() + `
       <div class="prep-bar">
         <div>
@@ -190,7 +194,7 @@ window.PREP = (function () {
           <div class="ingame-row">Ingame-Datum ${ingameFields(st.day)}</div>
         </div>
         <div class="row">
-          <button id="p-newday" class="primary" title="Alle Abstriche zurücksetzen, Vorbereitung behalten">Neuer Tag</button>
+          <button id="p-newday" class="primary" title="Alle Abstriche zurücksetzen, Vorbereitung behalten">${DAY}</button>
           <button id="p-edit" class="${editing ? "on" : ""}">Plätze einstellen</button>
           <button id="p-print">Tageszettel drucken</button>
         </div>
@@ -203,7 +207,7 @@ window.PREP = (function () {
       </div>
       ${editing ? editorHTML() : ""}
       ${!ctx.book().size ? `<p class="muted">Dein Buch ist leer. Nimm im Verzeichnis Zauber mit <b>+</b> auf – vorbereiten lässt sich nur, was im Buch steht.</p>` : ""}
-      <div class="prep-grades">${GRADES.map(gradeHTML).join("")}${jokerHTML()}</div>
+      <div class="prep-grades">${SHOWN.map(gradeHTML).join("")}${JOKER ? jokerHTML() : ""}</div>
       <p class="muted prep-foot">Alles bleibt nur in diesem Browser gespeichert. Für ein anderes Gerät: Einstellungen → Liste exportieren (enthält die Vorbereitung).</p>`;
   }
 
@@ -211,12 +215,12 @@ window.PREP = (function () {
     return `<div class="prep-editor">
       <table>
         <thead><tr><th>Grad</th><th>Plätze</th><th>Sonderplätze</th><th>Bedingung (z. B. Schule)</th></tr></thead>
-        <tbody>${GRADES.map((g) => {
+        <tbody>${SHOWN.map((g) => {
           const s = st.slots[g];
           return `<tr data-g="${g}"><td>${g}</td><td><input type="number" min="0" max="20" data-f="n" value="${s.n}"></td><td><input type="number" min="0" max="5" data-f="extra" value="${s.extra}"></td><td><input data-f="note" value="${e(s.note)}" placeholder="—"></td></tr>`;
         }).join("")}</tbody>
       </table>
-      <div class="row">
+      <div class="row" ${JOKER ? "" : "hidden"}>
         <label>Joker <input type="number" min="0" max="5" data-j="n" value="${st.joker.n}"></label>
         <label>bis Grad <input type="number" min="1" max="9" data-j="max" value="${st.joker.max}"></label>
         <span class="muted">z. B. Arkane Verbindung: einmal täglich ein beliebiger Zauber aus dem Buch</span>
@@ -345,7 +349,7 @@ window.PREP = (function () {
       ctx.select(it.id);
       ctx.show("browse");
     } else if (t.id === "p-newday") {
-      if (!confirm("Neuer Tag: alle Abstriche und Joker zurücksetzen?")) return;
+      if (!confirm(`${DAY}: alle Abstriche${JOKER ? " und Joker" : ""} zurücksetzen?`)) return;
       record("day", st.items.map((x) => x.id), null);
       st.items.forEach((x) => ((x.used = false), (x.casts = 0)));
       st.jokers = [];
@@ -396,13 +400,13 @@ window.PREP = (function () {
     save();
     // Liste neu zeichnen, Editor (und damit den Fokus) stehen lassen
     const grades = $("#prep .prep-grades");
-    if (grades) grades.innerHTML = GRADES.map(gradeHTML).join("") + jokerHTML();
+    if (grades) grades.innerHTML = SHOWN.map(gradeHTML).join("") + (JOKER ? jokerHTML() : "");
   }
 
   // --- Tageszettel ------------------------------------------------------------------
   function sheet() {
     const rows = [];
-    for (const g of GRADES) {
+    for (const g of SHOWN) {
       const gi = gradeInfo(g);
       if (!gi.items.length && !gi.total) continue;
       const lines = gi.items.map((it) => {
@@ -414,7 +418,7 @@ window.PREP = (function () {
       for (let i = 0; i < empty; i++) lines.push(`<tr><td class="cb">${g === 0 ? "" : "☐"}</td><td class="tq"></td><td class="blank"></td></tr>`);
       rows.push(`<h4>${g === 0 ? "Zaubertricks" : `${U.ROMAN[g]}. Grad`}</h4><table class="toc prep-sheet">${lines.join("")}</table>`);
     }
-    if (st.joker.n) {
+    if (JOKER && st.joker.n) {
       const lines = Array.from({ length: st.joker.n }, () => `<tr><td class="cb">☐</td><td class="tq"></td><td class="blank">Joker bis Grad ${st.joker.max}: </td></tr>`);
       rows.push(`<h4>Joker</h4><table class="toc prep-sheet">${lines.join("")}</table>`);
     }

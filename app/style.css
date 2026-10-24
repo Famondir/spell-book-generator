@@ -661,3 +661,36 @@ fieldset.refs legend { font-size: 0.9em; color: var(--ui-muted); }
 .st-bar { display: flex; align-items: center; gap: 8px; }
 .st-lbl { width: 160px; flex-shrink: 0; font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 600px) { .st-top .nm { width: 140px; } .st-top .st-val { display: none; } }
+
+/* --- Brevier (göttliche Klassen) ------------------------------------------------- */
+body.divine .arcane-only { display: none !important; }
+.deity-row { display: flex; flex-direction: column; gap: 6px; }
+.deity-row[hidden] { display: none; }
+.swatch { display: inline-block; width: 0.9em; height: 0.9em; border: 1px solid rgba(0, 0, 0, 0.35); border-radius: 2px; vertical-align: -0.1em; margin-right: 3px; }
+.essrow .swatch { width: 14px; height: 14px; flex-shrink: 0; }
+.own-edit { display: flex; flex-direction: column; gap: 4px; margin: 10px 0; font-size: 14px; }
+.own-edit textarea { width: 100%; font-family: var(--font-hand); font-size: 18px; line-height: 1.3; resize: vertical; }
+svg.vitrail { display: block; width: 100%; height: auto; }
+.page svg.vitrail { cursor: zoom-in; }
+.cm-figure svg.vitrail { width: auto; height: 88vh; max-width: 100%; }
+.pr-head { margin-bottom: 0.5em; }
+.pr-grid { display: grid; grid-template-columns: calc(57mm * var(--fit)) 1fr; gap: 5mm; align-items: start; }
+.vt-box { margin: 0; }
+.pr-facts { font-size: 0.85em; display: grid; grid-template-columns: auto 1fr; column-gap: 2mm; margin-bottom: 0.6em; padding-bottom: 0.4em; border-bottom: 1px solid color-mix(in srgb, var(--ink) 25%, transparent); }
+.pr-facts div { display: contents; }
+.pr-facts b { font-family: var(--font-title); font-weight: 600; font-size: 0.85em; color: var(--rubric); }
+.canon h4 { margin-top: 0; }
+.canon h4 .muted { font-family: var(--font-body); font-weight: 400; letter-spacing: 0; color: var(--ink-soft); font-style: italic; }
+.canon .cl { margin: 0 0 0.25em; line-height: 1.3; }
+.canon .cl.refrain { color: var(--rubric); font-style: italic; padding-left: 0.6em; }
+.canon .cl.refrain span { font-style: normal; }
+.own { margin-top: 0.8em; }
+.own .own-text { font-family: var(--font-hand); font-size: 1.35em; line-height: 1.25; color: var(--note); }
+.own .own-text p { text-align: left; margin: 0 0 0.3em; }
+.own-lines i { display: block; height: 7mm; border-bottom: 1px solid color-mix(in srgb, var(--ink) 35%, transparent); }
+.dt-title { text-align: center; font-style: italic; margin: -0.3em 0 0.6em; }
+.dt-symbol { width: 34mm; height: 34mm; margin: 0 auto 4mm; }
+.dt-symbol svg { width: 100%; height: 100%; }
+.dt-legal { font-size: 0.8em; margin-top: 1em; }
+.tp-vitrail { width: 46mm; margin-bottom: 6mm; }
+.vt-orn { width: 30mm; height: 70mm; color: var(--ink); margin-bottom: 6mm; }

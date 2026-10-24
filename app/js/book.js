@@ -316,6 +316,9 @@
   // Vorspann: Titel, Lesart der Kreise, Affinitäten
   // ---------------------------------------------------------------------------
   function frontMatter(settings, allModels) {
+    return divine() ? prayerFront(settings, window.DEITY, allModels) : arcaneFront(settings, allModels);
+  }
+  function arcaneFront(settings, allModels) {
     const pages = [];
     pages.push({
       cls: "title-page",
@@ -403,9 +406,102 @@
   }
 
   // ---------------------------------------------------------------------------
+  // Brevier (göttliche Klassen): eine Seite je Zauber mit Andachtsbild, Kanon und Eigenen Worten
+  // ---------------------------------------------------------------------------
+  const divine = () => !!(window.CLASS && CLASS.tradition === "divine");
+  const ALIGN_DE = { LG: "rechtschaffen gut", NG: "neutral gut", CG: "chaotisch gut", LN: "rechtschaffen neutral", N: "neutral", CN: "chaotisch neutral", LE: "rechtschaffen böse", NE: "neutral böse", CE: "chaotisch böse" };
+  function canonBlock(t) {
+    return `<div class="canon"><h4>Kanon der Kirche <span class="muted">· ${e(t.canon.tone)}</span></h4>${t.canon.lines.map((l) => `<div class="cl ${l.r ? "refrain" : ""}">${l.r ? "<span>℟</span> " : ""}${e(l.t)}</div>`).join("")}</div>`;
+  }
+  function ownBlock(own) {
+    const has = !!(own && own.trim());
+    const body = has
+      ? own.trim().split(/\n{2,}/).map((p) => `<p>${e(p).replace(/\n/g, "<br>")}</p>`).join("")
+      : `<div class="own-lines">${"<i></i>".repeat(5)}</div>`;
+    return `<div class="own ${has ? "" : "empty"}"><h4>Eigene Worte</h4><div class="own-text">${body}</div></div>`;
+  }
+  const SAVE_EFFECT = { negates: "hebt auf", half: "halbiert", partial: "teilweise", disbelief: "Anzweifeln" };
+  function prayerPages(m, t, opts = {}) {
+    const d = t.deity || window.DEITY;
+    const fact = (k, v) => (v ? `<div><b>${k}</b> ${e(v)}</div>` : "");
+    const html = `<header class="sp-head pr-head">${refBlock(m, opts.ref)}
+        <div class="sp-meta">${foreign(m) ? "Fremdes Gebet" : U.ROMAN[m.level] + ". Grad"} · ${e(m.schoolInfo.de)}</div>
+        <h2 class="sp-title">${e(t.title)}</h2>
+        <div class="sp-rulename">${e(m.name)}</div>
+      </header>
+      <div class="pr-grid">
+        <figure class="vt-box">${VITRAIL.render(m, d)}</figure>
+        <div class="pr-side">
+          <div class="pr-facts">${fact("Gebet", m.casting.de)}${fact("Reichweite", m.range.de)}${fact("Dauer", m.duration.de)}${fact("Rettungswurf", m.save.type !== "none" ? m.save.de + (SAVE_EFFECT[m.save.effect] ? ", " + SAVE_EFFECT[m.save.effect] : "") + (m.save.harmless ? " (harmlos)" : "") : "")}</div>
+          ${canonBlock(t)}
+        </div>
+      </div>
+      ${ownBlock(opts.own)}`;
+    return [{ html, first: true, spell: m.id }];
+  }
+
+  function deityPage(d) {
+    if (!d) return `<h3>Gottheit</h3><p class="hint">Keine Gottheit gewählt (Einstellungen → Charakter).</p>`;
+    const ep = PRAYER.epithet(d);
+    const base = VITRAIL.palette(d)[0];
+    const row = (k, v) => (v ? `<dt>${k}</dt><dd>${v}</dd>` : "");
+    const de = (list, dict) => list.map((x) => e(dict[x] || dict[String(x).toLowerCase()] || x)).join(", ");
+    return `<h3>${e(d.name)}</h3><div class="dt-title">${e(d.title)}${ep ? ` · ${e(ep)}` : ""}</div>
+      <figure class="dt-symbol"><svg viewBox="-12 -12 24 24">${VITRAIL.symbolSVG(d.symbol, 0, 0, 10, base)}</svg></figure>
+      <dl class="struct">
+        ${row("Gesinnung", e(ALIGN_DE[d.align] || d.align))}${row("Pantheon", e(d.pantheon))}
+        ${row("Zuständigkeiten", de(d.areas, PRAYER.AREA))}${row("Domänen", de(d.domains, PRAYER.DOMAIN))}
+        ${row("Lieblingswaffe", e(d.weapon))}${row("Heiliges Symbol", e(d.symbol))}${row("Heiliges Tier", e(d.animal))}
+        ${row("Heilige Farben", d.colors.map((c) => `<span class="swatch" style="background:${c.hex}"></span>${e(c.name)}`).join(" "))}
+      </dl>
+      <p class="hint dt-legal">Angaben nach Archives of Nethys. Name und Angaben der Gottheit gehören Paizo Inc. und werden beschreibend unter Paizos Community Use Policy verwendet.</p>`;
+  }
+
+  function prayerFront(settings, d) {
+    const sample = analyze(window.SPELLS.find((s) => s.name === "Bless Weapon") || window.SPELLS.find((s) => s.levels[CLASS.list] != null) || window.SPELLS[0]);
+    const legend = VITRAIL.legend(sample, d);
+    const name = d ? d.name : "die Gottheit";
+    return [
+      {
+        cls: "title-page",
+        html: `<div class="tp"><div class="tp-sigil tp-vitrail">${VITRAIL.render(sample, d)}</div>
+          <h1>${e(settings.bookTitle)}</h1><div class="tp-owner">${e(settings.owner)}</div><div class="tp-sub">${e(settings.subtitle || (d ? "Gebete an " + d.name : ""))}</div></div>`,
+      },
+      { html: deityPage(d) },
+      {
+        html: `<h3>Vom Lesen der Fenster</h3><p>Zu jedem Gebet gehört ein Fenster. Es wird nicht gezeichnet, um verstanden zu werden, sondern um davor zu knien. Wer es dennoch lesen will, findet darin alles, worum das Gebet bittet:</p>
+          <div class="pr-grid"><figure class="vt-box">${VITRAIL.render(sample, d)}</figure>
+          <dl class="struct">${legend.map((l) => `<dt>${e(l.k)}</dt><dd>${e(l.t)}</dd>`).join("")}</dl></div>
+          <p class="hint">Beispiel: ${e(PRAYER.texts(sample, d).title)} (${e(sample.name)}). Die Bahnen zählen den Grad, das Bogenfeld trägt das Zeichen der Gottheit, die Farben sind die der Kirche.</p>`,
+      },
+      {
+        html: `<h3>Vom Gebet</h3>
+          <p>Jeden Tag zur selben Stunde verbringt der Streiter eine Stunde in stillem Gebet und Betrachtung. Was er erbittet, wird ihm gewährt, solange er dem Kodex treu bleibt; er muss es nicht verstehen, nur darum bitten.</p>
+          <p>Jedes Gebet in diesem Brevier hat zwei Teile. Der <b>Kanon der Kirche</b> ist überliefert: Alle Gläubigen sprechen ihn gleich, und sein Kehrvers kehrt in jedem Gebet wieder. Die <b>Eigenen Worte</b> gehören dem Betenden allein. Wo noch keine stehen, bleiben Linien frei.</p>
+          <p>Ein heiliges Symbol in der Hand genügt als Fokus. Rüstung behindert das Gebet nicht.</p>`,
+      },
+    ];
+  }
+
+  const DIVINE_TEXT = {
+    1: ["Ein Fenster, ein Licht", "Die ersten Gebete sind kurz und nah. Sie bitten um das, was ein Streiter jeden Tag braucht: eine feste Hand, ein klares Auge, ein Wort zur rechten Zeit.", "Wer sie spricht, lernt, dass Gnade nicht verdient, sondern empfangen wird."],
+    2: ["Zwei Bahnen", "Mit dem zweiten Grad trägt das Gebet weiter. Es heilt, was der Kampf schlug, und schützt, wer hinter dem Schild steht.", "Die Kunst dieser Stufe ist Geduld: Nicht jede Bitte wird sofort erhört."],
+    3: ["Drei Bahnen unter einem Bogen", "Gebete des dritten Grades verändern, was sie berühren. Flüche weichen, Gift verliert seine Macht, und das Licht brennt, wo es gerufen wird.", "Wer hier betet, steht nicht mehr allein vor dem Altar."],
+    4: ["Das volle Fenster", "Der vierte Grad ist das Höchste, was einem Streiter gewährt wird. Diese Gebete wenden Schlachten und rufen zurück, was verloren schien.", "Sie werden selten gesprochen und nie ohne Furcht."],
+    foreign: ["Aus anderen Händen", "Formeln, die nicht aus dem Kanon dieser Kirche stammen. Sie stehen hier, weil sie einmal wichtig waren.", "Ob die Gottheit sie erhört, ist eine andere Frage."],
+  };
+  function divineChapterHTML(k, no) {
+    const g = /^\d$/.test(k) ? +k : 0;
+    const own = (window.PROFILE && PROFILE.chapters && PROFILE.chapters[k]) || null;
+    const [sub, ...paras] = own || DIVINE_TEXT[k] || [`${g} Bahnen`, "Gebete höheren Grades."];
+    const title = k === "foreign" ? "Fremde Gebete" : CLASS.chapter ? CLASS.chapter(g) : `Gebete des ${U.ROMAN[g]}. Grades`;
+    return `<div class="chapter"><div class="ch-kicker">Kapitel ${U.ROMAN[no] || no}</div><h1 class="ch-title">${e(title)}</h1>${VITRAIL.ornament(Math.max(1, g || 1))}<div class="ch-sub">${e(sub)}</div>${paras.map((p) => `<p>${e(p)}</p>`).join("")}</div>`;
+  }
+
+  // ---------------------------------------------------------------------------
   // Ganzes Buch zusammensetzen
   // ---------------------------------------------------------------------------
-  function assemble(entries, settings, allModels) {
+  function assemble(entries, settings, allModels, ctx = {}) {
     // entries: [{ m, t }] – sortiert nach Grad, dann Name
     const pages = [];
     const front = settings.frontMatter ? frontMatter(settings, allModels) : [];
@@ -418,13 +514,14 @@
     let fillers = 0, expanded = 0;
     const ref = settings.refNo || settings.refQr || settings.refSource;
     // Mehrseitige Zauber links beginnen: "notes" Notizseite, "expand" Aufbau des nächsthöheren Grades, "off" aus
-    const mode = settings.leftStart || (settings.startLeft === false ? "off" : "notes");
+    let mode = settings.leftStart || (settings.startLeft === false ? "off" : "notes");
+    if (divine() && mode === "expand") mode = "notes"; // Brevierseiten sind einseitig, es gibt nichts zu erweitern
     const withChapters = settings.chapters !== false;
     const chapters = [];
     let chapter = null, last = null;
     const perChapter = new Map();
     entries.forEach(({ m }) => perChapter.set(chapterKey(m), (perChapter.get(chapterKey(m)) || 0) + 1));
-    const optsFor = (m, idx) => ({ detail: settings.detailPrint, ref: ref ? { no: settings.refNo && idx + 1, qr: settings.refQr, source: settings.refSource } : null });
+    const optsFor = (m, idx) => ({ detail: !divine() && settings.detailPrint, own: (ctx.prayers || {})[m.id], ref: ref ? { no: settings.refNo && idx + 1, qr: settings.refQr, source: settings.refSource } : null });
     const spellPageObjs = (m, t, sp, startNo) =>
       sp.map((p, i) => ({ html: p.html, spell: m.id, cls: p.first ? "first-page" : "", no: startNo + i, running: t.title + (sp.length > 1 ? ` · ${i + 1}/${sp.length}` : "") }));
     // nächste Seite auf eine gerade (linke) Seite bringen
@@ -464,7 +561,7 @@
         last = null;
       }
       const opts = optsFor(m, idx);
-      const sp = spellPages(m, t, opts);
+      const sp = divine() ? prayerPages(m, t, opts) : spellPages(m, t, opts);
       if (sp.length === 1 && sp[0].half) {
         const block = `<div class="half" data-spell="${e(m.id)}">${sp[0].html}</div>`;
         if (pendingHalf) {
@@ -494,7 +591,7 @@
     for (const c of chapters) {
       (c.listPages || []).forEach((lp, i) => {
         const part = c.items.slice(i * c.perList, (i + 1) * c.perList);
-        lp.html = `<h3>Formeln dieses Kapitels${i ? " (Forts.)" : ""}</h3><div class="ch-list">${part.map((x) => `<div class="ch-row"><span class="tq">${quickGlyph(x.m)}</span><span class="ch-nm">${e(x.t.title)}<i>${e(x.m.name)}</i></span><span class="tp">${x.page}</span></div>`).join("")}</div>`;
+        lp.html = `<h3>${divine() ? "Gebete" : "Formeln"} dieses Kapitels${i ? " (Forts.)" : ""}</h3><div class="ch-list">${part.map((x) => `<div class="ch-row"><span class="tq">${quickGlyph(x.m)}</span><span class="ch-nm">${e(x.t.title)}<i>${e(x.m.name)}</i></span><span class="tp">${x.page}</span></div>`).join("")}</div>`;
       });
     }
     front.forEach((p, i) => pages.push({ ...p, no: i + 1, running: "" }));
@@ -504,7 +601,7 @@
         pages.push({
           no: front.length + i + 1,
           running: "Verzeichnis",
-          html: (i === 0 ? "<h3>Verzeichnis der Formeln</h3>" : "") +
+          html: (i === 0 ? `<h3>Verzeichnis der ${divine() ? "Gebete" : "Formeln"}</h3>` : "") +
             `<table class="toc">${chunk.map((x) => `<tr><td class="tq">${quickGlyph(x.m)}</td><td class="tg">${x.m.spell.everyday ? "A" : x.m.level === 0 ? "0" : U.ROMAN[x.m.level]}</td><td>${e(x.t.title)}<span class="tn">${e(x.m.name)}</span></td><td class="tp">${x.page}</td></tr>`).join("")}</table>`,
         });
       }
@@ -519,8 +616,12 @@
   // Einträge je Listenseite: 50 passen in voller Schriftgröße, bis 52 mit leicht kleinerer Schrift;
   // die Einträge werden gleichmäßig und paarweise auf die nötigen Seiten verteilt (86 → 44 + 42)
   const CH_LIST_MAX = 52;
-  const chapterKey = (m) => (m.spell.everyday ? "everyday" : m.level === 0 ? "cantrip" : String(m.level));
-  const chapterName = (k) => (k === "everyday" ? "Alltagszauber" : k === "cantrip" ? "Zaubertricks" : U.ROMAN[+k] + ". Grad");
+  // Brevier: Zauber außerhalb der Klassenliste (z. B. nach einem Klassenwechsel) landen als „Fremde Gebete“ am Ende
+  const foreign = (m) => divine() && (m.spell.everyday || m.spell.levels[CLASS.list] == null);
+  const chapterKey = (m) => (foreign(m) ? "foreign" : m.spell.everyday ? "everyday" : m.level === 0 ? "cantrip" : String(m.level));
+  const chapterName = (k) => (k === "foreign" ? "Fremde Gebete" : k === "everyday" ? "Alltagszauber" : k === "cantrip" ? "Zaubertricks" : U.ROMAN[+k] + ". Grad");
+  // Sortierschlüssel der Kapitel (Zaubertricks vor Alltagszaubern, Fremde Gebete zuletzt)
+  const rank = (m) => (foreign(m) ? 100 : 0) + m.level + (m.spell.everyday ? 0.5 : 0);
   const ORDINAL = ["", "erste", "zweite", "dritte", "vierte", "fünfte", "sechste", "siebte", "achte", "neunte"];
   const CHAPTER_TEXT = {
     cantrip: ["Fingerübungen", "Kreise ohne Ordnungsknoten: ein Ring, ein Zeichen, ein Kern. Nichts hält diese Formeln fest, also verbrauchen sie sich nicht – sie lassen sich wirken, solange die Hand ruhig bleibt.", "Wer die großen Kreise ziehen will, beginnt hier. Jede Fingerübung lehrt eine einzelne Bewegung, die später in mächtigeren Formeln wiederkehrt."],
@@ -549,6 +650,7 @@
     return `<svg class="ch-fig" viewBox="-56 -56 112 112"><circle r="50"/><circle r="46" class="thin"/><circle r="40" class="thin dash"/>${inner}</svg>`;
   }
   function chapterHTML(k, no) {
+    if (divine()) return divineChapterHTML(k, no);
     const own = (window.PROFILE && PROFILE.chapters && PROFILE.chapters[k]) || null;
     const [sub, ...paras] = own || CHAPTER_TEXT[k] || ["", ""];
     const title = k === "everyday" ? "Alltagszauber" : k === "cantrip" ? "Zaubertricks" : `Zauber des ${U.ROMAN[+k]}. Grades`;
@@ -812,5 +914,5 @@
     return p.spell ? ` data-spell="${e(p.spell)}"` : "";
   }
 
-  window.BOOK = { spellPages, scrollPages, assemble, rulesBook, rulesIndex, pageHTML, autofit, typeset, rulesBox, frontMatter };
+  window.BOOK = { spellPages, prayerPages, scrollPages, assemble, rulesBook, rulesIndex, pageHTML, autofit, typeset, rulesBox, frontMatter, chapterKey, chapterName, rank };
 })();

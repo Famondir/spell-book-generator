@@ -60,7 +60,10 @@ window.PROFILE_LOCAL = {
 
 // MEHRERE CHARAKTERE: Statt (oder zusätzlich zu) PROFILE_LOCAL lassen sich mehrere Profile registrieren.
 // In der App wählt jeder Charakter (Einstellungen → Charakter → Profil) eines davon.
+// cls ("wizard" oder "paladin") und deity (id aus data/deities.js) geben Klasse und Gottheit vor;
+// was am Charakter eingestellt ist, geht vor.
 // window.PROFILES_LOCAL = {
 //   mirla: { label: "Mirla (Heckenhexe)", owner: "Mirla Heckenhain", bookTitle: "…", notes: ["…"] },
 //   bruno: { label: "Bruno (Kriegsmagier)", owner: "Bruno vom Stein", calendar: { year: "im Jahr 12 nach dem Krieg" } },
+//   aldric: { label: "Aldric (Paladin)", owner: "Aldric", cls: "paladin", deity: "torag", bookTitle: "Brevier des Hammers" },
 // };

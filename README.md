@@ -18,7 +18,19 @@ Seitenumfang: Grad 0 und Alltagszauber = ½ Seite, Grad n = n Seiten. Jeder Grad
 
 ## Mehrere Charaktere
 
-Oben rechts wählst du den Charakter. Jeder hat sein eigenes Buch, eigene Einstellungen, Vorbereitung und Protokoll; in den Einstellungen lassen sich Charaktere anlegen, umbenennen, duplizieren und löschen und je Charakter ein Profil wählen. Alles liegt nur im Browser – zum Sichern oder für ein anderes Gerät „Liste exportieren“ (die Datei enthält den Charakternamen; beim Import lässt sie sich als neuer Charakter anlegen).
+Oben rechts wählst du den Charakter. Jeder hat sein eigenes Buch, eigene Einstellungen, Vorbereitung und Protokoll; in den Einstellungen lassen sich Charaktere anlegen, umbenennen, duplizieren und löschen und je Charakter ein Profil, eine **Klasse** und (bei Paladinen) eine **Gottheit** wählen. Alles liegt nur im Browser – zum Sichern oder für ein anderes Gerät „Liste exportieren“ (die Datei enthält den Charakternamen; beim Import lässt sie sich als neuer Charakter anlegen).
+
+## Paladine: das Brevier
+
+Ist ein Charakter Paladin, wird aus dem Zauberbuch ein **Brevier**. Das Verzeichnis zeigt die Paladinliste (291 Zauber, Grade I–IV), jeder Zauber wird zu einem Gebet auf einer Seite:
+
+- **Andachtsbild**: ein Lanzettfenster in Bleiglas statt des Magierkreises. Bahnen = Grad, Bogenfeld mit dem heiligen Symbol der Gottheit im Maßwerk der Schule, Medaillon der Hauptessenz, Grundscheiben in den heiligen Farben, Akzente nach Essenzanteilen, Sockel nach Wirkungsdauer, rote Bordüre bei Rettungswurf. Anklicken vergrößert und speichert als SVG.
+- **Kanon der Kirche**: generiert aus Gottheit und Zauber, im Ton nach Gesinnung (rechtschaffen: Litanei mit Kehrvers; chaotisch: freie Anrufung; böse Gottheiten bitten um Macht statt um Schutz).
+- **Eigene Worte**: dein eigenes Gebet zu jedem Zauber (Feld in der Zauberansicht); ohne Text bleiben im Druck Linien zum Hineinschreiben.
+- Vorspann mit Gottheitsseite, „Vom Lesen der Fenster“ und „Vom Gebet“, Kapitel „Gebete des I.–IV. Grades“; Zauber außerhalb der Paladinliste stehen am Ende unter „Fremde Gebete“.
+- Tagesvorbereitung mit Graden I–IV, ohne Joker; „Gebetsstunde“ statt „Neuer Tag“.
+
+Die Gottheiten (461, Daten in `data/deities.js`) lassen sich nach Name suchen; vorgeschlagen werden passende Gesinnungen (LG, LN, NG), „alle Gottheiten“ hebt das auf.
 
 ## Eigene Backstory
 
@@ -56,10 +68,15 @@ Vorgehen: Vorlage nach `data/profile.local.js` kopieren, Felder anpassen, Seite 
 | `app/js/import.js` | Zauberlisten aus xlsx/csv/txt lesen |
 | `app/js/prepare.js` | Tagesvorbereitung, Abstreichen, Ingame-Datum, Nutzungsprotokoll |
 | `app/js/stats.js` | Verlauf und Statistik der Spieltage |
-| `app/js/chars.js` | Charakter-Slots: getrennter Speicher je Charakter |
+| `app/js/chars.js` | Charakter-Slots: getrennter Speicher je Charakter (mit Klasse und Gottheit) |
+| `app/js/classes.js` | Klassen als Daten (Zauberliste, Grade, Joker, Bezeichnungen) und aktive Klasse/Gottheit |
+| `app/js/vitrail.js` | Andachtsbild: Bleiglasfenster aus Analyse und Gottheit, Motivbibliothek der Symbole |
+| `app/js/prayer.js` | Gebete: Kanon der Kirche nach Gesinnung, Beinamen- und Domänenwörterbuch |
 | `app/js/profile.js` | mischt neutrales Profil und das Profil des aktiven Charakters |
 | `data/spells.js` | Zauberdaten (erzeugt) |
 | `data/everyday_spells.js` | Alltagszauber mit Ideengebern |
+| `data/deities.js` | Gottheiten, nur beschreibende Angaben (erzeugt) |
+| `tools/parse_deities.py` | erzeugt `data/deities.js` aus AoN-Gottheitsseiten (`dieties/*.aspx`, nicht im Repository) |
 | `tools/parse_spells.py` | erzeugt `data/spells.js` aus AoN-Seiten (`spells/*.aspx`) und dem d20pfsrd-Export (`data/spell_full*.tsv`); beide Rohdaten sind nicht im Repository |
 
 ## Planung

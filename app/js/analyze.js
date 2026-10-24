@@ -5,6 +5,9 @@
 
   function spellLevel(s) {
     if (s.everyday) return 0;
+    // Grad der Klasse des aktiven Charakters (ein Klassenwechsel lädt die Seite neu)
+    const own = window.CLASS && s.levels[CLASS.list];
+    if (own != null) return own;
     if (s.levels.wizard != null) return s.levels.wizard;
     for (const c of ["sorcerer", "arcanist", "magus", "witch"]) if (s.levels[c] != null) return s.levels[c];
     const v = Object.values(s.levels);

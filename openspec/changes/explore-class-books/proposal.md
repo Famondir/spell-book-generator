@@ -31,6 +31,7 @@ Die Analyse (Essenzen, Zeichen, Gestalt, Grad) bleibt für alle Klassen gleich �
 | Orakel | göttlich, spontan | 1124 | ~50 | Mysterium, Fluch |
 | Inquisitor | göttlich, spontan, bis Grad 6 | 642 | ~40 | |
 | Paladin | göttlich, vorbereitet, ab Klassenstufe 4, bis Grad 4 | 291 | alle | Brevier für alle 291 machbar |
+| Antipaladin | göttlich, vorbereitet, chaotisch böse, bis Grad 4 | 280 | alle | Schwarzes Brevier (Folge-Change nach dem Paladin) |
 | Druide | göttlich (Natur), vorbereitet | 777 | alle | Auswahl |
 
 - Göttliche Zauber sind regeltechnisch gleich gebaut wie arkane (Grade, Schulen, V/S/M); anders sind Quelle, Vorbereitung (Gebet zu fester Zeit; Paladin: 1 Stunde stilles Gebet und Meditation), heiliges Symbol als Fokus (DF, 686 Zauber), keine Rüstungsbehinderung, Domänen.
@@ -67,10 +68,11 @@ Die Analyse (Essenzen, Zeichen, Gestalt, Grad) bleibt für alle Klassen gleich �
 
 ## Impact
 
-Nächster konkreter Change (Vorschlag): **„Paladin: Gottheitsprofil, Andachtsbild in Bleiglas, Brevier mit Kanon und eigenen Worten“** – mit Werkzeug für die Gottheitsdaten, Klasse und Gottheit am Charakter-Slot, Andachtsbild-Renderer, Gebetsgenerator, Brevier-Layout, Klassenliste als Filter, Tagesvorbereitung für Paladin-Plätze.
+Umgesetzt in `add-paladin-prayer-book`: **„Paladin: Gottheitsprofil, Andachtsbild in Bleiglas, Brevier mit Kanon und eigenen Worten“** – mit Werkzeug für die Gottheitsdaten, Klasse und Gottheit am Charakter-Slot, Andachtsbild-Renderer, Gebetsgenerator, Brevier-Layout, Klassenliste als Filter, Tagesvorbereitung für Paladin-Plätze.
 
 Offen:
-- Welche Gottheit hat der Paladin der Gruppe? (Bis dahin Iomedae als Standard.)
+- Welche Gottheit hat der Paladin der Gruppe? (Iomedae ist Standard; Torag und Angradd sind in der Auswahl.)
+- Nächste Kandidaten: Antipaladin (Klasseneintrag + dunkles Glas), Kleriker und Inquisitor (Domänen), Barde.
 - Reihenfolge: Paladin zuerst oder Barde (Liederbuch), solange der Paladin der Gruppe noch offen ist?
 - Soll die Brevier-Auswahl wie beim Magier von Hand erfolgen oder sich aus der Statistik füllen (oder beides)?
 - Weitere Fluff-Quellen (PDF-Sammlung) erst bei Bedarf, z. B. für Gebetston und Liturgie einzelner Kirchen.

@@ -7,7 +7,7 @@
   // --- Zustand (lokal im Browser gespeichert) -----------------------------------
   const DEFAULTS = {
     owner: PROFILE.owner,
-    bookTitle: PROFILE.bookTitle,
+    bookTitle: (CLASS.bookTitle && !(PROFILE.cls === CLASS.id)) ? CLASS.bookTitle : PROFILE.bookTitle,
     subtitle: PROFILE.subtitle,
     leftStart: "notes",
     chapters: true,
@@ -15,7 +15,7 @@
     refQr: false,
     refSource: false,
     frontMatter: true,
-    onlyWizard: true,
+    onlyClass: true,
     paper: "a5",
     scrollPaper: "a4",
     printBackground: true,
@@ -41,6 +41,8 @@
       const st = { ...DEFAULTS, ...store.get("settings", {}) };
       if (st.startLeft === false && !store.get("settings", {}).leftStart) st.leftStart = "off"; // alte Einstellung
       delete st.startLeft;
+      if ("onlyWizard" in st) st.onlyClass = st.onlyWizard; // alte Einstellung: nur Magierliste → nur Klassenliste
+      delete st.onlyWizard;
       return st;
     })(),
     book: new Set(store.get("book", [])),
@@ -48,7 +50,10 @@
     view: "browse",
     detailView: store.get("detailView", false),
     ui: { browseLeft: false, bookLeft: false, toc: false, ...store.get("ui", {}) },
+    prayers: store.get("prayers", {}), // eigene Gebete je Zauber (göttliche Klassen)
   };
+  const DIVINE = CLASS.tradition === "divine";
+  document.body.classList.add(DIVINE ? "divine" : "arcane");
   const save = () => {
     store.set("settings", state.settings);
     store.set("book", [...state.book]);
@@ -58,18 +63,19 @@
   const ALL = window.SPELLS.map((s) => ({ s, m: null, t: null }));
   const byId = new Map(ALL.map((x) => [x.s.id, x]));
   const model = (x) => (x.m = x.m || analyze(x.s));
-  const texts = (x) => (x.t = x.t || generateTexts(model(x), { name: state.settings.owner }));
+  const texts = (x) => (x.t = x.t || (DIVINE ? PRAYER.texts(model(x), window.DEITY) : generateTexts(model(x), { name: state.settings.owner })));
   ALL.forEach(model);
   ALL.forEach((x) => (x.title = texts(x).title));
-  // Alltagszauber sind immer sichtbar – sie gehören zum Buch, nicht zu einer Klassenliste
-  const visible = () => ALL.filter((x) => !state.settings.onlyWizard || x.s.levels.wizard != null || x.s.everyday);
+  // Alltagszauber gehören zum Magierbuch, nicht zu einer Klassenliste: bei Magiern immer sichtbar, sonst nie
+  const visible = () => ALL.filter((x) => (x.s.everyday ? CLASS.everyday : !state.settings.onlyClass || x.s.levels[CLASS.list] != null));
 
   // --- Filter ---------------------------------------------------------------------
   // Filterleisten: Verzeichnis (Präfix "") und Buch (Präfix "b")
   function initFilters() {
     for (const p of ["", "b"]) {
       const lv = $(`#${p}f-level`);
-      for (let i = 0; i <= 9; i++) lv.insertAdjacentHTML("beforeend", `<option value="${i}">Grad ${i}</option>`);
+      for (const i of CLASS.grades) lv.insertAdjacentHTML("beforeend", `<option value="${i}">Grad ${i}</option>`);
+      if (!CLASS.everyday) $(`#${p}f-origin`).closest("select").hidden = true;
       const sc = $(`#${p}f-school`);
       for (const [k, v] of Object.entries(T.SCHOOLS)) sc.insertAdjacentHTML("beforeend", `<option value="${k}">${v.de}</option>`);
       const es = $(`#${p}f-essence`);
@@ -171,6 +177,7 @@
   function renderDetail() {
     const x = byId.get(state.selected);
     if (!x) return;
+    if (DIVINE) return renderPrayerDetail(x);
     const m = model(x), t = texts(x);
     const inBook = state.book.has(x.s.id);
     const sp = BOOK.spellPages(m, t, { detail: state.detailView });
@@ -215,6 +222,48 @@
     BOOK.autofit($("#detail")).then(() => addRulesButtons($("#detail .pages")));
   }
 
+  // Detailansicht für göttliche Klassen: Brevierseite, Eigene Worte bearbeiten
+  function renderPrayerDetail(x) {
+    const m = model(x), t = texts(x);
+    const inBook = state.book.has(x.s.id);
+    const own = state.prayers[x.s.id] || "";
+    const pages = BOOK.prayerPages(m, t, { own }).map((p) => BOOK.pageHTML({ ...p, cls: "first-page", no: "", running: t.title }));
+    $("#detail").innerHTML = `
+      <div class="detail-head">
+        <div>
+          <h2>${e(x.s.name)}</h2>
+          <div class="muted">${e(t.title)} · ${e(t.epithet)}${own ? ' · <span class="badge">eigene Worte</span>' : ""}</div>
+        </div>
+        <div class="row">
+          <button id="d-add" class="${inBook ? "" : "primary"}">${inBook ? "Aus dem Brevier entfernen" : "Ins Brevier aufnehmen"}</button>
+          <button id="d-print">Nur dieses Gebet drucken</button>
+        </div>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-side">
+          <div class="facts">
+            <div><b>Gottheit</b> ${window.DEITY ? e(window.DEITY.name) : "keine gewählt"}</div>
+            <div><b>Essenzen</b></div>
+            ${m.essences.map((y) => `<div class="essrow"><span class="swatch" style="background:${VITRAIL.ESS_GLASS[y.id]}"></span><span class="essname">${T.ESS[y.id].latin}</span><span class="essbar"><i style="width:${y.pct}%"></i></span><span class="esspct">${y.pct} %</span></div>`).join("")}
+          </div>
+          <label class="own-edit"><b>Eigene Worte</b> <span class="muted">(dein eigenes Gebet zu diesem Zauber; leer = Linien zum Hineinschreiben)</span>
+            <textarea id="d-own" rows="6" placeholder="Herrin, gib mir …">${e(own)}</textarea></label>
+          ${BOOK.rulesBox(m)}
+        </div>
+        <div class="pages preview">${pages.join("")}</div>
+      </div>`;
+    $("#d-add").onclick = () => toggleBook(x.s.id);
+    $("#d-print").onclick = () => printPages(pages.join(""));
+    $("#d-own").onchange = (ev) => {
+      const v = ev.target.value.replace(/\s+$/, "");
+      if (v) state.prayers[x.s.id] = v;
+      else delete state.prayers[x.s.id];
+      store.set("prayers", state.prayers);
+      renderDetail();
+    };
+    BOOK.autofit($("#detail")).then(() => addRulesButtons($("#detail .pages")));
+  }
+
   // --- Buchansicht ----------------------------------------------------------------
   // Das ganze Buch wird nur zusammengesetzt (HTML-Strings), aber nie komplett gerendert:
   // Die Vorschau baut nur die Seiten der gerade sichtbaren Zauber auf und blättert in 1er- oder 2er-Schritten.
@@ -222,16 +271,16 @@
     return [...state.book]
       .map((id) => byId.get(id))
       .filter(Boolean)
-      .sort((a, b) => a.m.level - b.m.level || !!a.s.everyday - !!b.s.everyday || a.title.localeCompare(b.title))
+      .sort((a, b) => BOOK.rank(a.m) - BOOK.rank(b.m) || a.title.localeCompare(b.title))
       .map((x) => ({ m: model(x), t: texts(x) }));
   }
 
   let bookCache = null;
   function bookData() {
-    const key = [...state.book].sort().join(",") + "|" + JSON.stringify(state.settings);
+    const key = [...state.book].sort().join(",") + "|" + JSON.stringify(state.settings) + (DIVINE ? "|" + JSON.stringify(state.prayers) : "");
     if (bookCache && bookCache.key === key) return bookCache;
     const entries = bookEntries();
-    const r = BOOK.assemble(entries, state.settings, visible().map((x) => x.m));
+    const r = BOOK.assemble(entries, state.settings, visible().map((x) => x.m), { prayers: state.prayers });
     // Einheiten: alle Seiten eines Zaubers gehören zusammen (Seitenfüllung verschiebt Blöcke zwischen ihnen)
     const units = [];
     r.pages.forEach((p, i) => {
@@ -244,7 +293,7 @@
     const front = [];
     const strip = (h) => h.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
     for (const p of r.pages) {
-      if (p.spell || p.halves) break;
+      if (p.spell || p.halves || /chapter-page|chapter-list/.test(p.cls || "")) break; // Kapitel gehören nicht zum Vorspann
       const h = /<h[123][^>]*>([\s\S]*?)<\/h[123]>/.exec(p.html);
       const title = /title-page/.test(p.cls || "") ? "Titelblatt" : h ? strip(h[1]) : null;
       if (title && title !== front[front.length - 1]?.title) front.push({ title, page: p.no });
@@ -271,12 +320,13 @@
   function renderBook() {
     const d = bookData();
     const byLevel = {};
-    d.entries.forEach(({ m }) => (byLevel[m.spell.everyday ? "A" : m.level] = (byLevel[m.spell.everyday ? "A" : m.level] || 0) + 1));
+    const lvKey = (m) => (BOOK.chapterKey(m) === "foreign" ? "F" : m.spell.everyday ? "A" : m.level);
+    d.entries.forEach(({ m }) => (byLevel[lvKey(m)] = (byLevel[lvKey(m)] || 0) + 1));
     $("#book-stats").innerHTML = d.entries.length
-      ? `<b>${d.entries.length}</b> Formeln · <b>${d.spellPagesCount}</b> Seiten Formeln${d.chapterPages ? ` · ${d.chapterPages} Kapitelseiten` : ""}${d.fillers ? ` · ${d.fillers} Notizseiten` : ""}${d.expanded ? ` · ${d.expanded} Zauber im Umfang des nächsthöheren Grades` : ""} · <b>${d.pages.length}</b> Seiten gesamt
-         <span class="muted">(Gesegnetes Buch: 1000 Seiten · gewöhnliches Zauberbuch: 100 Seiten)</span>
-         <div class="muted">${Object.entries(byLevel).map(([l, n]) => (l === "A" ? "Alltag" : "Grad " + l) + ": " + n).join(" · ")}</div>`
-      : `Das Buch ist leer. Nimm im Verzeichnis Zauber mit <b>+</b> auf.`;
+      ? `<b>${d.entries.length}</b> ${DIVINE ? "Gebete" : "Formeln"} · <b>${d.spellPagesCount}</b> Seiten ${DIVINE ? "Gebete" : "Formeln"}${d.chapterPages ? ` · ${d.chapterPages} Kapitelseiten` : ""}${d.fillers ? ` · ${d.fillers} Notizseiten` : ""}${d.expanded ? ` · ${d.expanded} Zauber im Umfang des nächsthöheren Grades` : ""} · <b>${d.pages.length}</b> Seiten gesamt
+         ${DIVINE ? "" : `<span class="muted">(Gesegnetes Buch: 1000 Seiten · gewöhnliches Zauberbuch: 100 Seiten)</span>`}
+         <div class="muted">${Object.entries(byLevel).map(([l, n]) => (l === "A" ? "Alltag" : l === "F" ? "Fremde Gebete" : "Grad " + l) + ": " + n).join(" · ")}</div>`
+      : `${DIVINE ? "Das Brevier" : "Das Buch"} ist leer. Nimm im Verzeichnis Zauber mit <b>+</b> auf.`;
     renderBookList();
     renderBookToc();
     showSpread();
@@ -385,7 +435,7 @@
   function renderBookList() {
     const d = bookData();
     const items = filterItems([...state.book].map((id) => byId.get(id)).filter(Boolean), readFilters("b"));
-    $("#book-list-info").textContent = `${items.length} von ${d.entries.length} Zaubern im Buch`;
+    $("#book-list-info").textContent = `${items.length} von ${d.entries.length} Zaubern im ${DIVINE ? "Brevier" : "Buch"}`;
     $("#book-list").innerHTML = items.map((x) => listRow(x, { remove: true, page: d.pageBySpell.get(x.s.id) })).join("");
   }
   $("#book-list").addEventListener("click", (ev) => {
@@ -416,7 +466,7 @@
     d.front.forEach((x) => add("Vorspann", `<li data-page="${x.page}"><span class="q"></span><span class="nm"><b>${e(x.title)}</b></span><span class="pg">${x.page}</span></li>`));
     const chapterPage = new Map((d.chapters || []).map((c) => [c.name, c.page]));
     d.toc.forEach((x) => {
-      const gr = x.m.spell.everyday ? "Alltagszauber" : x.m.level === 0 ? "Zaubertricks" : U.ROMAN[x.m.level] + ". Grad";
+      const gr = BOOK.chapterName(BOOK.chapterKey(x.m));
       if (chapterPage.has(gr) && (!groups.length || groups[groups.length - 1].name !== gr))
         add(gr, `<li data-page="${chapterPage.get(gr)}" class="toc-chapter"><span class="q"></span><span class="nm"><b>Kapitelseite</b></span><span class="pg">${chapterPage.get(gr)}</span></li>`);
       add(gr, `<li data-page="${x.page}"><span class="q">${quickGlyph(x.m)}</span><span class="nm"><b>${e(x.t.title)}</b><i>${e(x.m.name)}</i></span><span class="pg">${x.page}</span></li>`);
@@ -516,7 +566,7 @@
 
   function renderTheory() {
     const pages = BOOK.frontMatter(state.settings, visible().map((x) => x.m)).slice(1);
-    $("#theory-pages").innerHTML = pages.map((p, i) => BOOK.pageHTML({ ...p, no: i + 1, running: "Lehre der Kreise" })).join("");
+    $("#theory-pages").innerHTML = pages.map((p, i) => BOOK.pageHTML({ ...p, no: i + 1, running: DIVINE ? "Vom Gebet" : "Lehre der Kreise" })).join("");
     BOOK.autofit($("#theory-pages"));
   }
 
@@ -629,7 +679,7 @@
   dlg.addEventListener("close", () => {
     if (charReload) return location.reload();
     const f = dlg.querySelector("form");
-    const owner = state.settings.owner, wizard = state.settings.onlyWizard;
+    const owner = state.settings.owner, only = state.settings.onlyClass;
     for (const k of Object.keys(DEFAULTS)) {
       const el = f.elements[k];
       if (!el) continue;
@@ -637,14 +687,14 @@
     }
     save();
     if (state.settings.owner !== owner) ALL.forEach((x) => (x.t = null)); // Besitzername steckt in den Randnotizen; Titel bleiben gleich
-    if (state.settings.onlyWizard !== wizard || state.settings.owner !== owner) renderList();
+    if (state.settings.onlyClass !== only || state.settings.owner !== owner) renderList();
     if (state.selected) renderDetail();
     $("#theory-pages").innerHTML = "";
     if (state.view !== "browse") show(state.view);
   });
   $("#btn-export").onclick = () => {
     const ch = CHARS.current();
-    const data = { character: ch.name, profile: ch.profile, book: [...state.book].map((id) => byId.get(id)?.s.name).filter(Boolean), settings: state.settings, preparation: PREP.exportData() };
+    const data = { character: ch.name, profile: ch.profile, cls: CLASS.id, deity: ch.deity || null, prayers: state.prayers, book: [...state.book].map((id) => byId.get(id)?.s.name).filter(Boolean), settings: state.settings, preparation: PREP.exportData() };
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
     a.download = (ch.name || state.settings.owner || "zauberbuch").toLowerCase().replace(/[^a-z0-9äöüß]+/g, "-") + "-zauberbuch.json";
@@ -654,7 +704,7 @@
     const file = ev.target.files[0];
     if (!file) return;
     try {
-      let names = [], settings = null, preparation = null, character = null, profile = null;
+      let names = [], settings = null, preparation = null, character = null, profile = null, extra = {}, prayers = null;
       if (/\.xlsx$/i.test(file.name)) names = await IMPORT.xlsxNames(await file.arrayBuffer());
       else if (/\.json$/i.test(file.name)) {
         const data = JSON.parse(await file.text());
@@ -663,6 +713,9 @@
         preparation = data.preparation || null;
         character = data.character || null;
         profile = data.profile || null;
+        if (data.cls) extra.cls = data.cls;
+        if (data.deity) extra.deity = data.deity;
+        prayers = data.prayers || null;
       } else names = IMPORT.textNames(await file.text());
       const norm = (n) => String(n).toLowerCase().replace(/[^a-z0-9äöüß]/g, "");
       const lookup = new Map(ALL.map((x) => [norm(x.s.name), x.s.id]));
@@ -679,8 +732,9 @@
       if (!found.length) throw new Error("Keine bekannten Zaubernamen gefunden.");
       // Datei eines anderen Charakters: als neuen Charakter anlegen?
       if (character && character !== CHARS.current().name && confirm(`Die Datei gehört zu „${character}“.\nOK = als neuen Charakter anlegen, Abbrechen = in „${CHARS.current().name}“ übernehmen.`)) {
-        const c = CHARS.create(character, CHARS.profiles().some((p) => p.key === profile) ? profile : null);
+        const c = CHARS.create(character, CHARS.profiles().some((p) => p.key === profile) ? profile : null, null, extra);
         CHARS.write(c.id, "book", found);
+        if (prayers) CHARS.write(c.id, "prayers", prayers);
         if (settings) CHARS.write(c.id, "settings", settings);
         if (preparation) {
           if (preparation.state) CHARS.write(c.id, "prep", preparation.state);
@@ -699,6 +753,7 @@
       found.forEach((id) => state.book.add(id));
       if (settings) Object.assign(state.settings, settings);
       if (preparation) PREP.importData(preparation);
+      if (prayers) (state.prayers = { ...state.prayers, ...prayers }), store.set("prayers", state.prayers);
       save();
       progress.show("Buch zusammensetzen", 0, 0);
       await tick();
@@ -743,6 +798,8 @@
     const c = CHARS.current();
     $("#char-name").value = c.name;
     $("#char-profile").innerHTML = `<option value="">Neutral (data/profile.js)</option>` + CHARS.profiles().map((p) => `<option value="${e(p.key)}" ${p.key === c.profile ? "selected" : ""}>${e(p.label)}</option>`).join("");
+    $("#char-cls").innerHTML = Object.entries(CLASSES).map(([k, v]) => `<option value="${k}" ${k === CLASS.id ? "selected" : ""}>${e(v.label)}</option>`).join("");
+    renderDeityPicker();
     $("#char-del").disabled = CHARS.list().length < 2;
     $("#char-hint").textContent = charReload ? "Das neue Profil gilt nach dem Schließen (die Seite lädt neu)." : `${CHARS.list().length} Charakter${CHARS.list().length > 1 ? "e" : ""} in diesem Browser.`;
   }
@@ -752,6 +809,31 @@
   };
   $("#char-profile").onchange = (ev) => {
     CHARS.update(CHARS.active(), { profile: ev.target.value || null });
+    charReload = true;
+    renderCharAdmin();
+  };
+  // Gottheit: Eingabe mit Vorschlagsliste, vorgefiltert auf die Gesinnungen der Klasse
+  function renderDeityPicker() {
+    const cls = CLASSES[$("#char-cls").value] || CLASS;
+    $("#char-deity-row").hidden = !cls.deity;
+    if (!cls.deity) return;
+    const all = $("#char-deity-all").checked;
+    const list = (window.DEITIES || []).filter((d) => all || !cls.alignments || cls.alignments.includes(d.align));
+    $("#deity-list").innerHTML = list.map((d) => `<option value="${e(d.name)}">${e(d.align)} · ${e(d.title || d.pantheon)}</option>`).join("");
+    const cur = deityById(CHARS.current().deity) || (CLASS.deity ? window.DEITY : null);
+    if (document.activeElement !== $("#char-deity")) $("#char-deity").value = cur ? cur.name : "";
+    $("#char-deity-info").textContent = cur ? `${cur.name}: ${cur.align}, ${cur.areas.join(", ")} · Symbol: ${cur.symbol}` : "Noch keine Gottheit gewählt (Standard: Iomedae).";
+  }
+  $("#char-cls").onchange = (ev) => {
+    CHARS.update(CHARS.active(), { cls: ev.target.value });
+    charReload = true;
+    renderCharAdmin();
+  };
+  $("#char-deity-all").onchange = renderDeityPicker;
+  $("#char-deity").onchange = (ev) => {
+    const d = (window.DEITIES || []).find((x) => x.name.toLowerCase() === ev.target.value.trim().toLowerCase());
+    if (!d) return ($("#char-deity-info").textContent = "Unbekannte Gottheit – bitte aus der Liste wählen.");
+    CHARS.update(CHARS.active(), { deity: d.id });
     charReload = true;
     renderCharAdmin();
   };
@@ -770,6 +852,8 @@
   const cm = $("#circle-modal");
   let cmSvg = null, cmName = "kreis";
   document.addEventListener("click", (ev) => {
+    const vt = ev.target.closest(".page svg.vitrail");
+    if (vt && !document.body.classList.contains("printing")) return openVitrail(vt);
     const svg = ev.target.closest(".page svg.circle");
     if (!svg || document.body.classList.contains("printing")) return;
     const spellId = svg.closest("[data-spell]")?.dataset.spell;
@@ -799,6 +883,26 @@
     $("#cm-annot").classList.remove("primary");
     cm.showModal();
   });
+  function openVitrail(svg) {
+    const spellId = svg.closest("[data-spell]")?.dataset.spell;
+    const x = spellId && byId.get(spellId);
+    const big = svg.cloneNode(true);
+    big.classList.add("cm-svg");
+    cm.querySelector(".cm-figure").replaceChildren(big);
+    cmSvg = big;
+    cmSpell = null;
+    cmName = (x ? x.s.id : "fenster") + "-fenster";
+    if (x) {
+      const m = model(x), t = texts(x);
+      cm.querySelector(".cm-head").innerHTML = `<h3>${e(t.title)}</h3><div class="muted">${e(t.epithet)} · ${e(x.s.name)}</div>`;
+      cm.querySelector(".cm-legend").innerHTML = `<dl class="struct">${VITRAIL.legend(m, window.DEITY).map((l) => `<dt>${e(l.k)}</dt><dd>${e(l.t)}</dd>`).join("")}</dl>`;
+    } else {
+      cm.querySelector(".cm-head").innerHTML = `<h3>Andachtsbild</h3>`;
+      cm.querySelector(".cm-legend").innerHTML = "";
+    }
+    $("#cm-annot").hidden = true;
+    cm.showModal();
+  }
   let cmSpell = null, cmAnnot = false;
   function renderModalCircle() {
     const x = cmSpell && byId.get(cmSpell);
@@ -827,9 +931,16 @@
     if (!cmSvg) return;
     const out = cmSvg.cloneNode(true);
     out.removeAttribute("style");
-    out.setAttribute("width", "1200");
-    out.setAttribute("height", "1200");
-    out.insertAdjacentHTML("afterbegin", `<rect x="-300" y="-300" width="600" height="600" fill="#f3e9d2" stroke="none"/><style>${SVG_STYLE}</style>`);
+    if (out.classList.contains("vitrail")) {
+      // Andachtsbild: Farben stehen schon im SVG
+      out.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+      out.setAttribute("width", "800");
+      out.setAttribute("height", "1600");
+    } else {
+      out.setAttribute("width", "1200");
+      out.setAttribute("height", "1200");
+      out.insertAdjacentHTML("afterbegin", `<rect x="-300" y="-300" width="600" height="600" fill="#f3e9d2" stroke="none"/><style>${SVG_STYLE}</style>`);
+    }
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([out.outerHTML], { type: "image/svg+xml" }));
     a.download = cmName + ".svg";
@@ -838,6 +949,13 @@
 
   // --- Start ----------------------------------------------------------------------
   PREP.init({ byId, model, book: () => state.book, select, show, printPages, owner: () => state.settings.owner });
+  document.querySelectorAll(".cls-label").forEach((el) => (el.textContent = CLASS.label));
+  document.querySelectorAll(".front-label").forEach((el) => (el.textContent = DIVINE ? "Gottheit, Vom Lesen der Fenster, Vom Gebet" : "Lehre der Kreise"));
+  if (DIVINE) {
+    $('.tabs [data-view="book"]').firstChild.textContent = "Mein Brevier ";
+    $('.tabs [data-view="theory"]').textContent = "Vom Gebet";
+    $("#btn-print-scrolls").hidden = true;
+  }
   initFilters();
   renderCharSwitch();
   applySides();

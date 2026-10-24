@@ -4,7 +4,7 @@
 TBD - created by archiving change add-character-slots. Update Purpose after archive.
 ## Requirements
 ### Requirement: Getrennte Daten je Charakter
-Die App SHALL mehrere Charaktere verwalten; Buch, Einstellungen, Buchposition, Vorbereitung, Vorlagen und Nutzungsprotokoll MUST je Charakter getrennt gespeichert werden.
+Die App SHALL mehrere Charaktere verwalten; Buch, Einstellungen, Buchposition, Vorbereitung, Vorlagen, Nutzungsprotokoll und eigene Gebete MUST je Charakter getrennt gespeichert werden.
 
 #### Scenario: Zweiter Charakter
 - **WENN** ein zweiter Charakter angelegt und ein Zauber in sein Buch aufgenommen wird
@@ -34,4 +34,15 @@ Der Export SHALL den Charakternamen enthalten; beim Import einer Datei eines and
 #### Scenario: Import als neuer Charakter
 - **WENN** die Exportdatei von „Mirla“ importiert wird, während „Kirran“ aktiv ist, und „neuer Charakter“ gewählt wird
 - **DANN** gibt es einen Charakter „Mirla“ mit den importierten Daten, und Kirran bleibt unverändert
+
+### Requirement: Klasse und Gottheit
+Jeder Charakter SHALL eine Klasse (Magier oder Paladin) und bei göttlicher Klasse eine Gottheit haben. Charaktere ohne Klasse MUST als Magier gelten. Ein Wechsel der Klasse MUST das Buch behalten und nur Darstellung, Grade und Filter ändern.
+
+#### Scenario: Bestehender Charakter
+- **WENN** Kirran nach dem Update geladen wird
+- **DANN** ist er Magier, und sein Buch sieht aus wie vorher
+
+#### Scenario: Neuer Paladin
+- **WENN** ein Charakter mit Klasse Paladin und Gottheit Iomedae angelegt wird
+- **DANN** zeigt die App für ihn Paladin-Grade, Andachtsbilder und ein Brevier
 
