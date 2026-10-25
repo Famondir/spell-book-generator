@@ -8,7 +8,8 @@ window.PREP = (function () {
   // angezeigt werden die Grade der Klasse; Joker (Arkane Verbindung) nur bei Magiern
   const SHOWN = (window.CLASS && CLASS.grades) || GRADES;
   const JOKER = !window.CLASS || CLASS.joker !== false;
-  const DAY = (window.CLASS && CLASS.day) || "Neuer Tag";
+  const t = I18N.t, b = I18N.b;
+  const DAY = () => t(`class.${(window.CLASS && CLASS.id) || "wizard"}.day`);
   // Speicherschlüssel je Charakter (chars.js)
   const KEY = CHARS.key("prep"), KEY_PRESETS = CHARS.key("prepPresets"), KEY_LOG = CHARS.key("prepLog"), KEY_DAYS = CHARS.key("prepDays");
 
@@ -102,9 +103,9 @@ window.PREP = (function () {
   }
   function ingameFields(id) {
     const ig = (days[id] && days[id].ingame) || { d: "", m: 0, y: cal().year || "" };
-    return `<span class="ingame" data-day="${e(id)}"><input type="number" min="1" max="31" data-ig="d" value="${ig.d}" placeholder="Tag">
+    return `<span class="ingame" data-day="${e(id)}"><input type="number" min="1" max="31" data-ig="d" value="${ig.d}" placeholder="${t("prep.igDay")}">
       <select data-ig="m">${(cal().months || []).map((name, i) => `<option value="${i}" ${+ig.m === i ? "selected" : ""}>${e(name)}${cal().earth && cal().earth[i] && cal().earth[i] !== name ? ` (${e(cal().earth[i])})` : ""}</option>`).join("")}</select>
-      <input data-ig="y" value="${e(ig.y || "")}" placeholder="Jahr"></span>`;
+      <input data-ig="y" value="${e(ig.y || "")}" placeholder="${t("prep.igYear")}"></span>`;
   }
   function setIngame(id, field, value) {
     const cur = (days[id] && days[id].ingame) || { d: "", m: 0, y: cal().year || "" };
@@ -160,7 +161,7 @@ window.PREP = (function () {
       .map(spell)
       .filter(Boolean)
       .filter((x) => (maxOnly || g > 0 ? level(x) >= 1 && level(x) <= g : level(x) === 0))
-      .sort((a, b) => level(b) - level(a) || a.s.name.localeCompare(b.s.name));
+      .sort((a, b) => level(b) - level(a) || RULES.name(a.s).localeCompare(RULES.name(b.s), "de"));
   }
   function gradeInfo(g) {
     const sl = st.slots[g];
@@ -174,7 +175,7 @@ window.PREP = (function () {
 
   // --- Ansicht ----------------------------------------------------------------------
   const tabsHTML = () =>
-    `<nav class="prep-tabs">${[["heute", "Heute"], ["verlauf", "Verlauf"], ["statistik", "Statistik"]].map(([k, l]) => `<button data-sub="${k}" class="${sub === k ? "active" : ""}">${l}</button>`).join("")}</nav>`;
+    `<nav class="prep-tabs">${[["heute", t("prep.tabToday")], ["verlauf", t("prep.tabHistory")], ["statistik", t("prep.tabStats")]].map(([k, l]) => `<button data-sub="${k}" class="${sub === k ? "active" : ""}">${l}</button>`).join("")}</nav>`;
   function render() {
     const root = $("#prep");
     if (sub !== "heute") {
@@ -189,32 +190,32 @@ window.PREP = (function () {
     root.innerHTML = tabsHTML() + `
       <div class="prep-bar">
         <div>
-          <h2>Heute vorbereitet</h2>
-          <div class="muted">${hasSlots ? `${free} Zauber übrig · ` : ""}Tag begonnen ${day.toLocaleDateString("de-DE")} ${day.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}</div>
-          <div class="ingame-row">Ingame-Datum ${ingameFields(st.day)}</div>
+          <h2>${t("tab.prepare")}</h2>
+          <div class="muted">${hasSlots ? t("prep.left", { n: free }) + " · " : ""}${t("prep.dayStarted")} ${day.toLocaleDateString(I18N.locale())} ${day.toLocaleTimeString(I18N.locale(), { hour: "2-digit", minute: "2-digit" })}</div>
+          <div class="ingame-row">${t("stats.ingameDate")} ${ingameFields(st.day)}</div>
         </div>
         <div class="row">
-          <button id="p-newday" class="primary" title="Alle Abstriche zurücksetzen, Vorbereitung behalten">${DAY}</button>
-          <button id="p-edit" class="${editing ? "on" : ""}">Plätze einstellen</button>
-          <button id="p-print">Tageszettel drucken</button>
+          <button id="p-newday" class="primary" title="${t("prep.newDayTitle")}">${DAY()}</button>
+          <button id="p-edit" class="${editing ? "on" : ""}">${t("prep.editSlots")}</button>
+          <button id="p-print">${t("prep.printSheet")}</button>
         </div>
         <div class="row prep-presets">
-          <select id="p-preset"><option value="">Gespeicherte Vorbereitung …</option>${presets.map((p, i) => `<option value="${i}">${e(p.name)}</option>`).join("")}</select>
-          <button id="p-load">Laden</button>
-          <button id="p-save">Speichern als …</button>
-          <button id="p-del" class="danger">Löschen</button>
+          <select id="p-preset"><option value="">${t("prep.presetPick")}</option>${presets.map((p, i) => `<option value="${i}">${e(p.name)}</option>`).join("")}</select>
+          <button id="p-load">${t("prep.load")}</button>
+          <button id="p-save">${t("prep.saveAs")}</button>
+          <button id="p-del" class="danger">${t("common.delete")}</button>
         </div>
       </div>
       ${editing ? editorHTML() : ""}
-      ${!ctx.book().size ? `<p class="muted">Dein Buch ist leer. Nimm im Verzeichnis Zauber mit <b>+</b> auf – vorbereiten lässt sich nur, was im Buch steht.</p>` : ""}
+      ${!ctx.book().size ? `<p class="muted">${t("prep.emptyBook")}</p>` : ""}
       <div class="prep-grades">${SHOWN.map(gradeHTML).join("")}${JOKER ? jokerHTML() : ""}</div>
-      <p class="muted prep-foot">Alles bleibt nur in diesem Browser gespeichert. Für ein anderes Gerät: Einstellungen → Liste exportieren (enthält die Vorbereitung).</p>`;
+      <p class="muted prep-foot">${t("prep.foot")}</p>`;
   }
 
   function editorHTML() {
     return `<div class="prep-editor">
       <table>
-        <thead><tr><th>Grad</th><th>Plätze</th><th>Sonderplätze</th><th>Bedingung (z. B. Schule)</th></tr></thead>
+        <thead><tr><th>${t("prep.thGrade")}</th><th>${t("prep.thSlots")}</th><th>${t("prep.thExtra")}</th><th>${t("prep.thNote")}</th></tr></thead>
         <tbody>${SHOWN.map((g) => {
           const s = st.slots[g];
           return `<tr data-g="${g}"><td>${g}</td><td><input type="number" min="0" max="20" data-f="n" value="${s.n}"></td><td><input type="number" min="0" max="5" data-f="extra" value="${s.extra}"></td><td><input data-f="note" value="${e(s.note)}" placeholder="—"></td></tr>`;
@@ -222,10 +223,10 @@ window.PREP = (function () {
       </table>
       <div class="row" ${JOKER ? "" : "hidden"}>
         <label>Joker <input type="number" min="0" max="5" data-j="n" value="${st.joker.n}"></label>
-        <label>bis Grad <input type="number" min="1" max="9" data-j="max" value="${st.joker.max}"></label>
-        <span class="muted">z. B. Arkane Verbindung: einmal täglich ein beliebiger Zauber aus dem Buch</span>
+        <label>${t("prep.upTo")} <input type="number" min="1" max="9" data-j="max" value="${st.joker.max}"></label>
+        <span class="muted">${t("prep.jokerNote")}</span>
       </div>
-      <p class="muted">Trag die Zahlen von deinem Charakterbogen ein; die App rechnet nichts nach.</p>
+      <p class="muted">${t("prep.sheetNote")}</p>
     </div>`;
   }
 
@@ -236,13 +237,13 @@ window.PREP = (function () {
     const lv = level(x);
     const cantrip = it.g === 0;
     const box = cantrip
-      ? `<button class="p-cast0" title="Gewirkt – verbraucht nichts, wird nur gezählt">gewirkt${it.casts ? ` ×${it.casts}` : ""}</button>`
-      : `<button class="p-cast ${it.used ? "on" : ""}" title="${it.used ? "Abstrich zurücknehmen" : "Als gewirkt abstreichen"}">${it.used ? "✓" : ""}</button>`;
+      ? `<button class="p-cast0" title="${t("prep.cast0Title")}">${t("prep.cast0")}${it.casts ? ` ×${it.casts}` : ""}</button>`
+      : `<button class="p-cast ${it.used ? "on" : ""}" title="${it.used ? t("prep.uncast") : t("prep.castTitle")}">${it.used ? "✓" : ""}</button>`;
     return `<li data-uid="${it.uid}" class="${it.used ? "used" : ""}">
       ${box}
       <span class="q">${quickGlyph(m)}</span>
-      <span class="nm"><b>${e(x.s.name)}</b><i>${e(x.title)}${lv !== it.g && !cantrip ? ` · Grad ${lv} im Platz ${it.g}` : ""}${it.extra ? ` · Sonderplatz` : ""}</i></span>
-      <button class="p-rm" title="Aus der Vorbereitung nehmen">×</button>
+      <span class="nm"><b>${e(RULES.name(x.s))}</b><i>${e(x.title)}${lv !== it.g && !cantrip ? " · " + t("prep.inSlot", { lv, g: it.g }) : ""}${it.extra ? " · " + t("prep.extraSlot") : ""}</i></span>
+      <button class="p-rm" title="${t("prep.remove")}">×</button>
     </li>`;
   }
 
@@ -251,10 +252,10 @@ window.PREP = (function () {
     if (!gi.total && !gi.items.length) return "";
     const emptyN = Math.max(0, gi.sl.n - gi.normal.length), emptyX = Math.max(0, gi.sl.extra - gi.extra.length);
     const empties =
-      Array.from({ length: emptyN }, () => `<li class="empty"><button class="p-fill" data-g="${g}">+ Platz belegen</button></li>`).join("") +
-      Array.from({ length: emptyX }, () => `<li class="empty"><button class="p-fill" data-g="${g}" data-extra="1">+ Sonderplatz belegen${gi.sl.note ? ` (${e(gi.sl.note)})` : ""}</button></li>`).join("");
-    const over = gi.items.length > gi.total ? ` <span class="warn">${gi.items.length - gi.total} mehr vorbereitet als Plätze</span>` : "";
-    const head = g === 0 ? `Zaubertricks <span class="muted">unbegrenzt wirkbar</span>` : `Grad ${g} <span class="muted">${gi.free} von ${gi.total} übrig</span>`;
+      Array.from({ length: emptyN }, () => `<li class="empty"><button class="p-fill" data-g="${g}">+ ${t("prep.fill")}</button></li>`).join("") +
+      Array.from({ length: emptyX }, () => `<li class="empty"><button class="p-fill" data-g="${g}" data-extra="1">+ ${t("prep.fillExtra")}${gi.sl.note ? ` (${e(gi.sl.note)})` : ""}</button></li>`).join("");
+    const over = gi.items.length > gi.total ? ` <span class="warn">${t("prep.over", { n: gi.items.length - gi.total })}</span>` : "";
+    const head = g === 0 ? `${t("prep.cantrips")} <span class="muted">${t("prep.unlimited")}</span>` : `${t("prep.grade", { g })} <span class="muted">${t("prep.ofLeft", { a: gi.free, b: gi.total })}</span>`;
     return `<section class="prep-grade"><h3>${head}${over}</h3><ul class="prep-list">${gi.items.map(itemHTML).join("")}${empties}</ul></section>`;
   }
 
@@ -262,10 +263,10 @@ window.PREP = (function () {
     if (!st.joker.n && !st.jokers.length) return "";
     const rows = st.jokers.map((id, i) => {
       const x = spell(id);
-      return x ? `<li class="used"><span class="p-cast on">✓</span><span class="q">${quickGlyph(ctx.model(x))}</span><span class="nm"><b>${e(x.s.name)}</b><i>über Joker gewirkt</i></span><button class="p-unjoker" data-i="${i}" title="Zurücknehmen">×</button></li>` : "";
+      return x ? `<li class="used"><span class="p-cast on">✓</span><span class="q">${quickGlyph(ctx.model(x))}</span><span class="nm"><b>${e(RULES.name(x.s))}</b><i>${t("prep.viaJoker")}</i></span><button class="p-unjoker" data-i="${i}" title="${t("prep.undo")}">×</button></li>` : "";
     });
-    for (let i = st.jokers.length; i < st.joker.n; i++) rows.push(`<li class="empty"><button class="p-joker">Joker wirken … (bis Grad ${st.joker.max})</button></li>`);
-    return `<section class="prep-grade"><h3>Joker <span class="muted">${Math.max(0, st.joker.n - st.jokers.length)} von ${st.joker.n} übrig</span></h3><ul class="prep-list">${rows.join("")}</ul></section>`;
+    for (let i = st.jokers.length; i < st.joker.n; i++) rows.push(`<li class="empty"><button class="p-joker">${t("prep.castJoker", { g: st.joker.max })}</button></li>`);
+    return `<section class="prep-grade"><h3>Joker <span class="muted">${t("prep.ofLeft", { a: Math.max(0, st.joker.n - st.jokers.length), b: st.joker.n })}</span></h3><ul class="prep-list">${rows.join("")}</ul></section>`;
   }
 
   // --- Auswahl-Dialog ---------------------------------------------------------------
@@ -278,14 +279,14 @@ window.PREP = (function () {
       document.body.appendChild(dlg);
       dlg.addEventListener("click", (ev) => { if (ev.target === dlg) dlg.close(); });
     }
-    dlg.innerHTML = `<h3>${e(title)}</h3><input type="search" placeholder="Suchen …" autocomplete="off"><ul class="spell-list"></ul><div class="row end"><button class="p-close">Abbrechen</button></div>`;
+    dlg.innerHTML = `<h3>${e(title)}</h3><input type="search" placeholder="${t("prep.search")}" autocomplete="off"><ul class="spell-list"></ul><div class="row end"><button class="p-close">${t("common.cancel")}</button></div>`;
     const ul = $("ul", dlg), q = $("input", dlg);
     const draw = () => {
       const w = q.value.trim().toLowerCase();
-      const hits = list.filter((x) => !w || (x.s.name + " " + x.title).toLowerCase().includes(w));
+      const hits = list.filter((x) => !w || (x.s.name + " " + RULES.name(x.s) + " " + x.title).toLowerCase().includes(w));
       ul.innerHTML = hits.length
-        ? hits.map((x) => `<li data-id="${x.s.id}"><span class="lvl">${level(x)}</span><span class="nm"><b>${e(x.s.name)}</b><i>${e(x.title)}</i></span><span class="ess">${quickGlyph(ctx.model(x))}</span></li>`).join("")
-        : `<li class="muted">Kein passender Zauber im Buch.</li>`;
+        ? hits.map((x) => `<li data-id="${x.s.id}"><span class="lvl">${level(x)}</span><span class="nm"><b>${e(RULES.name(x.s))}</b><i>${e(x.title)}</i></span><span class="ess">${quickGlyph(ctx.model(x))}</span></li>`).join("")
+        : `<li class="muted">${t("prep.noMatch")}</li>`;
     };
     q.oninput = draw;
     ul.onclick = (ev) => {
@@ -306,50 +307,50 @@ window.PREP = (function () {
     render();
   }
   function onClick(ev) {
-    const t = ev.target;
-    const tab = t.closest("[data-sub]");
+    const tg = ev.target;
+    const tab = tg.closest("[data-sub]");
     if (tab) {
       sub = tab.dataset.sub;
       return render();
     }
-    if (t.closest("#stats-root")) return; // Verlauf und Statistik haben eigene Klicks (stats.js)
-    const li = t.closest("li[data-uid]");
+    if (tg.closest("#stats-root")) return; // Verlauf und Statistik haben eigene Klicks (stats.js)
+    const li = tg.closest("li[data-uid]");
     const it = li && st.items.find((x) => x.uid === li.dataset.uid);
-    if (t.closest(".p-fill")) {
-      const b = t.closest(".p-fill");
+    if (tg.closest(".p-fill")) {
+      const b = tg.closest(".p-fill");
       const g = +b.dataset.g, extra = !!b.dataset.extra;
-      pick(g === 0 ? "Zaubertrick vorbereiten" : `Platz des ${g}. Grades belegen`, candidates(g), (id) => {
+      pick(g === 0 ? t("prep.pickCantrip") : t("prep.pickSlot", { g }), candidates(g), (id) => {
         st.items.push({ uid: uid(), g, id, extra, used: false, casts: 0 });
         record("prep", id, g);
         commit();
       });
-    } else if (t.closest(".p-cast") && it) {
+    } else if (tg.closest(".p-cast") && it) {
       it.used = !it.used;
       record(it.used ? "cast" : "uncast", it.id, it.g);
       commit();
-    } else if (t.closest(".p-cast0") && it) {
+    } else if (tg.closest(".p-cast0") && it) {
       it.casts++;
       record("cast", it.id, it.g);
       commit();
-    } else if (t.closest(".p-rm") && it) {
+    } else if (tg.closest(".p-rm") && it) {
       st.items = st.items.filter((x) => x !== it);
       record("unprep", it.id, it.g);
       commit();
-    } else if (t.closest(".p-joker")) {
-      pick(`Joker: Zauber bis Grad ${st.joker.max} wirken`, candidates(st.joker.max, true), (id) => {
+    } else if (tg.closest(".p-joker")) {
+      pick(t("prep.pickJoker", { g: st.joker.max }), candidates(st.joker.max, true), (id) => {
         st.jokers.push(id);
         record("cast", id, "joker");
         commit();
       });
-    } else if (t.closest(".p-unjoker")) {
-      const [id] = st.jokers.splice(+t.closest(".p-unjoker").dataset.i, 1);
+    } else if (tg.closest(".p-unjoker")) {
+      const [id] = st.jokers.splice(+tg.closest(".p-unjoker").dataset.i, 1);
       record("uncast", id, "joker");
       commit();
-    } else if (t.closest(".nm") && li) {
+    } else if (tg.closest(".nm") && li) {
       ctx.select(it.id);
       ctx.show("browse");
-    } else if (t.id === "p-newday") {
-      if (!confirm(`${DAY}: alle Abstriche${JOKER ? " und Joker" : ""} zurücksetzen?`)) return;
+    } else if (tg.id === "p-newday") {
+      if (!confirm(t(JOKER ? "prep.newDayConfirmJoker" : "prep.newDayConfirm", { day: DAY() }))) return;
       record("day", st.items.map((x) => x.id), null);
       st.items.forEach((x) => ((x.used = false), (x.casts = 0)));
       st.jokers = [];
@@ -358,29 +359,29 @@ window.PREP = (function () {
       const ig = nextIngame(prevIngame);
       if (ig) days[st.day] = { ingame: ig };
       commit();
-    } else if (t.id === "p-edit") {
+    } else if (tg.id === "p-edit") {
       editing = !editing;
       render();
-    } else if (t.id === "p-print") {
-      ctx.printPages(BOOK.pageHTML(sheet()));
-    } else if (t.id === "p-save") {
-      const name = prompt("Name der Vorbereitung (z. B. Reise, Dungeon):");
+    } else if (tg.id === "p-print") {
+      ctx.printPages(TYPESET.pageHTML(sheet()));
+    } else if (tg.id === "p-save") {
+      const name = prompt(t("prep.presetName"));
       if (!name) return;
       const entry = { name: name.trim(), items: st.items.map(({ g, id, extra }) => ({ g, id, extra })) };
       const i = presets.findIndex((p) => p.name === entry.name);
       if (i >= 0) presets[i] = entry;
       else presets.push(entry);
       commit();
-    } else if (t.id === "p-load") {
+    } else if (tg.id === "p-load") {
       const p = presets[$("#p-preset").value];
       if (!p) return;
       st.items.forEach((x) => record("unprep", x.id, x.g));
       st.items = p.items.filter((x) => spell(x.id)).map((x) => ({ uid: uid(), g: x.g, id: x.id, extra: !!x.extra, used: false, casts: 0 }));
       st.items.forEach((x) => record("prep", x.id, x.g));
       commit();
-    } else if (t.id === "p-del") {
+    } else if (tg.id === "p-del") {
       const i = $("#p-preset").value;
-      if (i === "" || !confirm(`Vorbereitung „${presets[i].name}“ löschen?`)) return;
+      if (i === "" || !confirm(t("prep.presetDel", { name: presets[i].name }))) return;
       presets.splice(+i, 1);
       commit();
     }
@@ -412,18 +413,18 @@ window.PREP = (function () {
       const lines = gi.items.map((it) => {
         const x = spell(it.id);
         if (!x) return "";
-        return `<tr><td class="cb">${g === 0 ? "" : "☐"}</td><td class="tq">${quickGlyph(ctx.model(x))}</td><td>${e(x.title)}<span class="tn">${e(x.s.name)}${it.extra ? " · Sonderplatz" : ""}</span></td></tr>`;
+        return `<tr><td class="cb">${g === 0 ? "" : "☐"}</td><td class="tq">${quickGlyph(ctx.model(x))}</td><td>${e(x.title)}<span class="tn">${e(RULES.name(x.s))}${it.extra ? " · " + b("prep.extraSlot") : ""}</span></td></tr>`;
       });
       const empty = Math.max(0, gi.total - gi.items.length);
       for (let i = 0; i < empty; i++) lines.push(`<tr><td class="cb">${g === 0 ? "" : "☐"}</td><td class="tq"></td><td class="blank"></td></tr>`);
-      rows.push(`<h4>${g === 0 ? "Zaubertricks" : `${U.ROMAN[g]}. Grad`}</h4><table class="toc prep-sheet">${lines.join("")}</table>`);
+      rows.push(`<h4>${g === 0 ? b("prep.cantrips") : b("stats.grade", { r: U.ROMAN[g], n: g })}</h4><table class="toc prep-sheet">${lines.join("")}</table>`);
     }
     if (JOKER && st.joker.n) {
-      const lines = Array.from({ length: st.joker.n }, () => `<tr><td class="cb">☐</td><td class="tq"></td><td class="blank">Joker bis Grad ${st.joker.max}: </td></tr>`);
+      const lines = Array.from({ length: st.joker.n }, () => `<tr><td class="cb">☐</td><td class="tq"></td><td class="blank">${b("prep.jokerUpTo", { g: st.joker.max })}: </td></tr>`);
       rows.push(`<h4>Joker</h4><table class="toc prep-sheet">${lines.join("")}</table>`);
     }
-    const date = new Date().toLocaleDateString("de-DE");
-    return { html: `<h3>Vorbereitete Formeln</h3><p class="hint" style="text-align:center">${e(ctx.owner())} · ${date}</p>${rows.join("") || `<p class="hint">Noch nichts vorbereitet.</p>`}`, cls: "prep-page", running: "Tageszettel", no: "" };
+    const date = new Date().toLocaleDateString(I18N.lang.book === "de" ? "de-DE" : "en-GB");
+    return { html: `<h3>${b("prep.sheetTitle")}</h3><p class="hint" style="text-align:center">${e(ctx.owner())} · ${date}</p>${rows.join("") || `<p class="hint">${b("prep.nothing")}</p>`}`, cls: "prep-page", running: b("prep.sheetRunning"), no: "" };
   }
 
   // --- Export / Import --------------------------------------------------------------

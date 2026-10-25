@@ -97,11 +97,15 @@ Die Abschnitte des Inhaltsverzeichnisses (Vorspann, Zaubertricks, Alltagszauber,
 - **DANN** erscheinen die Zauber des 3. Grades, die anderen Abschnitte bleiben wie sie sind
 
 ### Requirement: Vorspann
-Das Buch SHALL optional einen Vorspann haben: Titelblatt, Lesart mit beschriftetem Beispielkreis, Lehre der Kreise und ein Verzeichnis der Formeln mit Schnellglyphen.
+Das Buch SHALL optional einen Vorspann haben: Titelblatt, Lesart mit beschriftetem Beispielkreis, Lehre der Kreise und ein Verzeichnis der Formeln mit Schnellglyphen. Ist das Buch in Bände geteilt, MUST der vollständige Vorspann nur in Band I stehen; jeder weitere Band SHALL nur Bandtitelseite und das Verzeichnis seiner eigenen Formeln erhalten.
 
 #### Scenario: Vorspann aus
 - **WENN** „Vorspann drucken“ ausgeschaltet ist
 - **DANN** beginnt das Buch mit der ersten Formel
+
+#### Scenario: Vorspann in Band II
+- **WENN** das Buch in zwei Bände geteilt und der Vorspann eingeschaltet ist
+- **DANN** enthält Band II Titelseite und Verzeichnis, aber keine Lesart der Kreise
 
 ### Requirement: Kapitel
 Bei aktivierter Einstellung „Kapitel“ (Standard) SHALL jeder Abschnitt (Zaubertricks, Alltagszauber, jeder Grad) mit einer Doppelseite beginnen: links Kapiteltitel, Ordnungsfigur und Text zur Stufe, rechts die Formeln des Kapitels mit deutschem Titel, Regelnamen und Seitenzahl, bei langen Kapiteln über mehrere Seiten fortgesetzt. Die Kapiteldoppelseite MUST links beginnen; dazu SHALL am Ende des vorherigen Kapitels bei Bedarf eine Leerseite stehen.

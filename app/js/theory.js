@@ -489,8 +489,41 @@
     primo: "erste", secundo: "zweite", tertio: "dritte", quarto: "vierte", quinto: "fünfte", sexto: "sechste", septimo: "siebte", octavo: "achte", nono: "neunte",
     clausum: "geschlossen", signatum: "besiegelt", audi: "höre", veni: "komm", esto: "sei", sta: "steh",
   };
+  // Essenzanteile wie ein Rezept: ein Teil = ein Zehntel; Zwischenwerte mit „knapp“, „gut“, „stark“, „schwach“,
+  // gleich lautende Anteile nebeneinander mit „je“ zusammengefasst.
+  // Vis 32, Terra 28, Spatium 12, Vita 11, Aqua 9, Ignis 8 → „drei Teile Vis, knapp drei Teile Terra,
+  // je ein starkes Teil Spatium und Vita, je ein schwaches Teil Aqua und Ignis“
+  const NUM = ["", "ein", "zwei", "drei", "vier", "fünf", "sechs", "sieben", "acht", "neun", "zehn"];
+  function partPhrase(pct) {
+    pct = Math.round(pct); // ganzzahlig rechnen: d = Abweichung in Zehnteln eines Teils
+    if (pct < 4) return "eine Spur";
+    if (pct < 7) return "ein halbes Teil";
+    const n = Math.round(pct / 10), d = pct - 10 * n;
+    if (Math.abs(d) >= 4) {
+      const lo = Math.floor(pct / 10);
+      return lo === 1 ? "anderthalb Teile" : `${NUM[lo] || lo}einhalb Teile`;
+    }
+    if (n === 1) return d >= 1 ? "ein starkes Teil" : d <= -1 ? "ein schwaches Teil" : "ein Teil";
+    const base = `${NUM[n] || n} Teile`;
+    return d <= -2 ? "knapp " + base : d >= 3 ? "gut " + base : base;
+  }
+  function parts(essences, opts = {}) {
+    const name = opts.name || ((id) => ESS[id].latin);
+    const list = [...essences].filter((x) => x.pct > 0).sort((a, b) => b.pct - a.pct);
+    const groups = [];
+    for (const x of list) {
+      const ph = partPhrase(x.pct);
+      const last = groups[groups.length - 1];
+      if (last && last.ph === ph) last.ids.push(x.id);
+      else groups.push({ ph, ids: [x.id] });
+    }
+    return groups
+      .map((g) => (g.ids.length > 1 ? `je ${g.ph} ${g.ids.slice(0, -1).map(name).join(", ")} und ${name(g.ids[g.ids.length - 1])}` : `${g.ph} ${name(g.ids[0])}`))
+      .join(", ");
+  }
+
   window.THEORY = {
     SCHOOLS, SUBSCHOOLS, ESSENCES, ESS, DESCRIPTORS, KEYWORDS, MATERIAL_NOUNS, TAG_ESS, ALCHEMY,
-    COMBOS, comboName, SHAPES, RANGES, DURATIONS, SAVES, SIGNS, SIGN_RULES, GLOSSARY,
+    COMBOS, comboName, SHAPES, RANGES, DURATIONS, SAVES, SIGNS, SIGN_RULES, GLOSSARY, parts, partPhrase,
   };
 })();

@@ -482,5 +482,5 @@
   }
 
   window.generateTexts = generate;
-  window.TEXTGEN = { CORRESPOND, MONTHS };
+  window.TEXTGEN = { CORRESPOND, MONTHS, SCHOOL_GESTURE };
 })();

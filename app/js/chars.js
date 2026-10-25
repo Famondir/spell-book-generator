@@ -4,7 +4,7 @@
 // Ein Listeneintrag: { id, name, profile, cls, deity } – ohne cls gilt der Charakter als Magier.
 window.CHARS = (function () {
   const P = "spellbook.";
-  const OWN = ["settings", "book", "bookPos", "prep", "prepPresets", "prepLog", "prepDays", "prayers"]; // je Charakter
+  const OWN = ["settings", "book", "bookPos", "bookVol", "prep", "prepPresets", "prepLog", "prepDays", "prayers"]; // je Charakter
   const ls = {
     get(k) {
       try {
@@ -31,7 +31,7 @@ window.CHARS = (function () {
   // verfügbare lokale Profile: PROFILE_LOCAL (bisher, „lokal“) und PROFILES_LOCAL { key: { label, … } }
   function profiles() {
     const out = [];
-    if (window.PROFILE_LOCAL) out.push({ key: "local", label: window.PROFILE_LOCAL.label || window.PROFILE_LOCAL.owner || "Lokales Profil", data: window.PROFILE_LOCAL });
+    if (window.PROFILE_LOCAL) out.push({ key: "local", label: window.PROFILE_LOCAL.label || window.PROFILE_LOCAL.owner || I18N.t("char.localProfile"), data: window.PROFILE_LOCAL });
     for (const [key, data] of Object.entries(window.PROFILES_LOCAL || {})) out.push({ key, label: data.label || data.owner || key, data });
     return out;
   }
@@ -41,7 +41,7 @@ window.CHARS = (function () {
   if (!Array.isArray(list) || !list.length) {
     const settings = json(P + "settings", {});
     const prof = profiles()[0];
-    list = [{ id: "c1", name: settings.owner || (prof && prof.data.owner) || "Charakter 1", profile: prof ? prof.key : null }];
+    list = [{ id: "c1", name: settings.owner || (prof && prof.data.owner) || I18N.t("char.first"), profile: prof ? prof.key : null }];
     for (const k of OWN) {
       const v = ls.get(P + k);
       if (v != null) {
@@ -68,7 +68,7 @@ window.CHARS = (function () {
   }
   function create(name, profile = null, copyFrom = null, extra = {}) {
     const src = copyFrom && list.find((x) => x.id === copyFrom);
-    const c = { id: newId(), name: name || "Neuer Charakter", profile, ...(src ? { cls: src.cls, deity: src.deity } : {}), ...extra };
+    const c = { id: newId(), name: name || I18N.t("char.newName"), profile, ...(src ? { cls: src.cls, deity: src.deity } : {}), ...extra };
     list.push(c);
     save();
     if (copyFrom) for (const k of OWN) if (k !== "prepLog" && k !== "prepDays") ls.set(`${P}c.${c.id}.${k}`, ls.get(`${P}c.${copyFrom}.${k}`));

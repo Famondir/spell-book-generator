@@ -42,6 +42,8 @@
       baseSource: base.source,
       essHint: e.ess || null,
       signHint: e.signs || null,
+      // selbst angegebene Regelfelder (der Rest ist geerbt; für deutsche Regeltexte wichtig)
+      ownFields: [...INHERIT, "target", "area", "effect"].filter((k) => e[k] != null),
     };
     for (const k of INHERIT) s[k] = e[k] != null ? e[k] : base[k];
     window.SPELLS.push(s);

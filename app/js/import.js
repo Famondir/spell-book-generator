@@ -12,7 +12,7 @@
         break;
       }
     }
-    if (eocd < 0) throw new Error("Keine gültige xlsx-Datei.");
+    if (eocd < 0) throw new Error(I18N.t("import.badXlsx"));
     const count = dv.getUint16(eocd + 10, true);
     let p = dv.getUint32(eocd + 16, true);
     const files = {};

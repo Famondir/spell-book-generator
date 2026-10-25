@@ -147,7 +147,7 @@
       if (!out.nouns.includes(de)) out.nouns.push(de);
       if (!seen.has(tag)) {
         seen.add(tag);
-        out.materialTags.push({ tag, ess: T.TAG_ESS[tag] || {} });
+        out.materialTags.push({ tag, ess: T.TAG_ESS[tag] || {}, noun: de });
       }
     }
     if ((out.M || out.F) && !out.materialTags.length) out.materialTags.push({ tag: "materia", ess: {} });

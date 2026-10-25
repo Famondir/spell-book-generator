@@ -25,8 +25,12 @@
     const s = m.spell;
     const src = (x) => String(x || "").replace(/\bpg\. ?/g, "S. ").replace(/^PRPG /, "");
     const parts = [];
-    if (ref.no) parts.push(`Regelband Nr. ${ref.no}`);
-    if (ref.source) parts.push(e(s.everyday ? `nach ${s.base}, ${src(s.baseSource)}` : src(s.source)));
+    const D = RULES.de();
+    if (ref.no) parts.push(`${D ? "Regelband Nr." : "Rules Vol. no."} ${ref.no}`);
+    // deutsche Fundstelle (z. B. „GRW 272“), wenn die lokalen Regeldaten sie kennen
+    const srcOf = (x) => (D && RULES.source(x).de) || src(x.source);
+    const base = s.everyday && window.SPELLS.find((x) => x.name === s.base);
+    if (ref.source) parts.push(e(s.everyday ? `${D ? "nach" : "after"} ${RULES.name(base || s)}, ${base ? srcOf(base) : src(s.baseSource)}` : srcOf(s)));
     return (parts.length ? `<div class="sp-ref">${parts.join(" · ")}</div>` : "") + (ref.qr ? `<div class="sp-qr" title="${e(aonUrl(s))}">${qrSVG(aonUrl(s))}</div>` : "");
   }
   function head(m, t, small, ref) {
@@ -34,7 +38,7 @@
       <div class="sp-meta">${m.spell.everyday ? "Alltagszauber" : m.level === 0 ? "Fingerübung" : U.ROMAN[m.level] + ". Ordnung"} · ${e(SCHOOL_DE(m))}${m.subschools.length ? " (" + m.subschools.map((s) => T.SUBSCHOOLS[s].de).join(", ") + ")" : ""}</div>
       <h2 class="sp-title">${e(t.title)}</h2>
       <div class="sp-epithet">${e(t.epithet)}</div>
-      <div class="sp-rulename">${e(m.name)}${m.spell.everyday ? ` · nach ${e(m.spell.base)}` : ""}</div>
+      <div class="sp-rulename">${e(RULES.name(m))}${m.spell.everyday ? ` · nach ${e(RULES.name(window.SPELLS.find((x) => x.name === m.spell.base) || m))}` : ""}</div>
     </header>`;
   }
   const circleBox = (m, t, cls, opts = {}) => `<figure class="circle-box ${cls}">${renderCircle(m, { text: t.formula.band, ...opts })}</figure>`;
@@ -274,7 +278,7 @@
         <h2 class="sp-title">${e(t.title)}</h2>
         <div class="sp-epithet">${e(t.epithet)}</div>
         <figure class="circle-box scroll-circle">${renderCircle(m, { text: t.formula.band })}</figure>
-        <div class="sp-rulename">${e(m.name)}</div>
+        <div class="sp-rulename">${e(RULES.name(m))}</div>
       </div>`;
     const back = `${head(m, t, true)}${formulaBlock(t)}${componentsBlock(m, t)}${gesturesBlock(t, 4)}
       ${rulesBox(m)}`;
@@ -284,29 +288,33 @@
     ];
   }
 
-  // Quellenangabe unter dem Regeltext
+  // Quellenangabe unter dem Regeltext (in der Regelsprache)
   function sourceBox(s) {
     const via = s.origin === "tsv" ? "d20pfsrd.com" : "Archives of Nethys (aonprd.com)";
+    const D = RULES.de();
     if (s.everyday) {
       const insp = s.inspiration
-        ? `<div><b>Idee</b> ${e(s.inspiration.title)}<br><a href="${e(s.inspiration.url)}" target="_blank" rel="noopener">${e(s.inspiration.url)}</a></div>`
-        : `<div><b>Idee</b> eigene Erfindung</div>`;
-      return `<div class="rules-source"><div><b>Quelle</b> Alltagszauber (Hausregel, eigene Formulierung) · Grundlage: ${e(s.base)} – ${e(s.baseSource || "")} (Open Game Content, OGL 1.0a)</div>${insp}</div>`;
+        ? `<div><b>${D ? "Idee" : "Idea"}</b> ${e(s.inspiration.title)}<br><a href="${e(s.inspiration.url)}" target="_blank" rel="noopener">${e(s.inspiration.url)}</a></div>`
+        : `<div><b>${D ? "Idee" : "Idea"}</b> ${D ? "eigene Erfindung" : "own invention"}</div>`;
+      return D
+        ? `<div class="rules-source"><div><b>Quelle</b> Alltagszauber (Hausregel, eigene Formulierung) · Grundlage: ${e(RULES.name(window.SPELLS.find((x) => x.name === s.base) || s))} – ${e(s.baseSource || "")} (Open Game Content, OGL 1.0a)</div>${insp}</div>`
+        : `<div class="rules-source"><div><b>Source</b> Everyday spell (house rule, own wording) · based on ${e(s.base)} – ${e(s.baseSource || "")} (Open Game Content, OGL 1.0a)</div>${insp}</div>`;
     }
-    return `<div class="rules-source"><div><b>Quelle</b> ${e(s.source || "unbekannt")}</div><div><b>Regeltext</b> Open Game Content (OGL 1.0a), übernommen über ${via}</div></div>`;
+    const src = RULES.source(s);
+    if (D && src.de) return `<div class="rules-source"><div><b>Quelle</b> ${e(src.de)} · englisch: ${e(src.en)}</div><div><b>Regeltext</b> Open Game Content (OGL 1.0a), deutsch nach dem Deutschen Pathfinder-Referenzdokument (MyPFDB); deutsche Begriffe mit freundlicher Genehmigung von Ulisses Spiele</div></div>`;
+    if (D) return `<div class="rules-source"><div><b>Quelle</b> ${e(src.en || "unbekannt")}</div><div><b>Regeltext</b> Open Game Content (OGL 1.0a), englisch, übernommen über ${via}${RULES.hasData() ? "" : " – deutsche Regeltexte lassen sich lokal einbinden (tools/import-rules-de.mjs)"}</div></div>`;
+    return `<div class="rules-source"><div><b>Source</b> ${e(src.en || "unknown")}</div><div><b>Rules text</b> Open Game Content (OGL 1.0a), via ${via}</div></div>`;
   }
 
   function rulesBox(m, no) {
     const s = m.spell;
-    const row = (k, v) => (v ? `<div class="rr"><b>${k}</b> ${e(v)}</div>` : "");
-    return `<div class="rules splittable">
-      <div class="rules-title">${no ? `<span class="rb-no">Nr. ${no}</span> ` : ""}${e(s.name)}</div>
-      ${row("Schule", s.school_raw)}
-      ${s.everyday ? row("Grad", "Alltagszauber (Grad 0)") + row("Basiszauber", s.base + " – " + Object.entries(s.baseLevels).map(([k, v]) => k + " " + v).join(", ")) : row("Grad", Object.entries(s.levels).map(([k, v]) => k + " " + v).join(", "))}
-      ${row("Zeitaufwand", s.casting_time)}${row("Komponenten", s.components)}${row("Reichweite", s.range)}
-      ${row("Bereich", s.area)}${row("Ziel", s.target)}${row("Effekt", s.effect)}${row("Wirkungsdauer", s.duration)}
-      ${row("Rettungswurf", s.saving_throw)}${row("Zauberresistenz", s.spell_resistance)}
-      ${e(s.description).split(/\n\n+/).map((para) => `<p class="rules-p">${para.replace(/\n/g, "<br>")}</p>`).join("")}
+    const row = ([k, v]) => `<div class="rr"><b>${e(k)}</b> ${e(v)}</div>`;
+    const tx = RULES.text(s);
+    const alt = RULES.other(s);
+    return `<div class="rules splittable" lang="${tx.lang}">
+      <div class="rules-title">${no ? `<span class="rb-no">Nr. ${no}</span> ` : ""}${e(RULES.name(s))}${alt ? ` <span class="rules-alt">(${e(alt)})</span>` : ""}</div>
+      ${RULES.fields(s).map(row).join("")}
+      ${e(tx.text).split(/\n\n+/).map((para) => `<p class="rules-p">${para.replace(/\n/g, "<br>")}</p>`).join("")}
       ${s.mythic ? `<p class="rules-p"><b>Mythic:</b> ${e(s.mythic)}</p>` : ""}
       ${sourceBox(s)}
     </div>`;
@@ -359,33 +367,25 @@
     });
     // Schulen
     pages.push({
-      html: `<h3>Die Schulen – das Verb</h3><div class="legend-grid schools">${Object.entries(T.SCHOOLS)
-        .map(([k, s]) => `<div class="lg">${glyphSVG("school", k, { s: 14 })}<div><b>${e(s.de)}</b> <i>${e(s.latin)}</i><br><span>${e(s.figure)} · ${e(s.verb)}</span></div></div>`)
-        .join("")}</div>`,
+      html: `<h3>Die Schulen – das Verb</h3>${LEGEND.grid(LEGEND.schools(14), "schools")}`,
     });
     // Essenzen
     pages.push({
-      html: `<h3>Die sechzehn Essenzen – das Substantiv</h3><p class="hint">Acht Gegensatzpaare, abgeleitet aus den Ebenen der Großen Ordnung. Jede Formel trägt einen Anteil mehrerer Essenzen.</p><div class="legend-grid ess">${T.ESSENCES.map(
-        (x) => `<div class="lg">${glyphSVG("essence", x.id, { s: 9 })}<div><b>${x.latin}</b> – ${e(x.de)}<br><span>${e(x.plane)} · Gegenpol: ${T.ESS[x.opp].latin}</span></div></div>`
-      ).join("")}</div>`,
+      html: `<h3>Die sechzehn Essenzen – das Substantiv</h3><p class="hint">Acht Gegensatzpaare, abgeleitet aus den Ebenen der Großen Ordnung. Jede Formel trägt einen Anteil mehrerer Essenzen.</p>${LEGEND.grid(LEGEND.essences(9), "ess")}`,
     });
     // Zeichen + Alchemie
     pages.push({
-      html: `<h3>Die Zeichen – das Wie</h3><div class="legend-grid signs">${Object.entries(T.SIGNS)
-        .map(([k, s]) => `<div class="lg">${glyphSVG("sign", k, { s: 8 })}<div><b>${e(s.de)}</b><br><span>${e(s.text)}</span></div></div>`)
-        .join("")}</div>`,
+      html: `<h3>Die Zeichen – das Wie</h3>${LEGEND.grid(LEGEND.signs(8), "signs")}`,
     });
     const ex = ["Fireball", "Shield", "Charm Person", "Magic Missile", "Teleport", "Animate Dead"].map((n) => window.SPELLS.find((s) => s.name === n)).filter(Boolean).map(analyze);
     pages.push({
       html: `<h3>Schnellglyphen</h3><p>Am Spieltisch bleibt keine Zeit für den vollen Kreis. Wer eine Formel einmal vollständig gezeichnet hat, kann sie mit ihrer Schnellglyphe abrufen – fünf Striche statt fünfzig:</p>
-      <ol class="laws"><li><b>Kreis:</b> geschlossen; oben offen, wenn die Formel augenblicklich wirkt.</li><li><b>Kurzfigur der Schule</b> im Kreis.</li><li><b>Hauptessenz</b> in der Mitte.</li><li><b>Ein Gestaltstrich</b> außen: Pfeil (Strahl, Ziel), Keil (Kegel), Doppelstrich (Linie), vier Striche (Fläche), Bogen (Ausströmung), Kerben (Berührung), Schleife (selbst).</li><li><b>Punkte</b> unten: einer je Ordnung.</li></ol>
-      <div class="legend-grid quick-schools">${Object.entries(T.SCHOOLS).map(([k, s]) => `<div class="lg"><svg class="quick" viewBox="-40 -40 80 80">${(QUICK_SCHOOL[k] || QUICK_SCHOOL.universal)()}</svg><div><b>${e(s.de)}</b></div></div>`).join("")}</div>
-      <div class="quick-ex">${ex.map((m) => `<figure>${quickGlyph(m)}<figcaption>${e(generateTexts(m).title)}<br><span>${e(m.name)}</span></figcaption></figure>`).join("")}</div>`,
+      ${LEGEND.quickRules()}
+      ${LEGEND.grid(LEGEND.quickSchools(), "quick-schools")}
+      <div class="quick-ex">${ex.map((m) => `<figure>${quickGlyph(m)}<figcaption>${e(generateTexts(m).title)}<br><span>${e(RULES.name(m))}</span></figcaption></figure>`).join("")}</div>`,
     });
     pages.push({
-      html: `<h3>Stoffe und Zeichen der Alchemie</h3><div class="legend-grid alch">${Object.entries(T.ALCHEMY)
-        .map(([k, s]) => `<div class="lg">${glyphSVG("alch", k, { s: 8 })}<div>${e(s)}</div></div>`)
-        .join("")}</div>
+      html: `<h3>Stoffe und Zeichen der Alchemie</h3>${LEGEND.grid(LEGEND.alchemy(8), "alch")}
         <h3>Benannte Verbindungen</h3><p class="combos">${Object.entries(T.COMBOS).map(([k, v]) => `<span><b>${e(v)}</b> ${k.split("+").map((x) => T.ESS[x].latin).join(" + ")}</span>`).join(" · ")}</p>`,
     });
     // Affinitäten (aus allen Zaubern errechnet)
@@ -427,7 +427,7 @@
     const html = `<header class="sp-head pr-head">${refBlock(m, opts.ref)}
         <div class="sp-meta">${foreign(m) ? "Fremdes Gebet" : U.ROMAN[m.level] + ". Grad"} · ${e(m.schoolInfo.de)}</div>
         <h2 class="sp-title">${e(t.title)}</h2>
-        <div class="sp-rulename">${e(m.name)}</div>
+        <div class="sp-rulename">${e(RULES.name(m))}</div>
       </header>
       <div class="pr-grid">
         <figure class="vt-box">${VITRAIL.render(m, d)}</figure>
@@ -544,22 +544,34 @@
     4: ["Das volle Fenster", "Der vierte Grad ist das Höchste, was einem Streiter gewährt wird. Diese Gebete wenden Schlachten und rufen zurück, was verloren schien.", "Sie werden selten gesprochen und nie ohne Furcht."],
     foreign: ["Aus anderen Händen", "Formeln, die nicht aus dem Kanon dieser Kirche stammen. Sie stehen hier, weil sie einmal wichtig waren.", "Ob die Gottheit sie erhört, ist eine andere Frage."],
   };
-  function divineChapterHTML(k, no) {
+  function divineChapterHTML(k, no, cont) {
     const g = /^\d$/.test(k) ? +k : 0;
     const own = (window.PROFILE && PROFILE.chapters && PROFILE.chapters[k]) || null;
     let [sub, ...paras] = own || DIVINE_TEXT[k] || [`${g} Bahnen`, "Gebete höheren Grades."];
     if (!own && VITRAIL.materialFor(window.DEITY) === "stone") sub = { 1: "Ein Stein, ein Licht", 3: "Drei Bahnen unter einem Giebel", 4: "Die volle Tafel" }[k] || sub;
-    const title = k === "foreign" ? "Fremde Gebete" : CLASS.chapter ? CLASS.chapter(g) : `Gebete des ${U.ROMAN[g]}. Grades`;
+    const title = (k === "foreign" ? "Fremde Gebete" : CLASS.chapter ? CLASS.chapter(g) : `Gebete des ${U.ROMAN[g]}. Grades`) + (cont ? " (Fortsetzung)" : "");
     return `<div class="chapter"><div class="ch-kicker">Kapitel ${U.ROMAN[no] || no}</div><h1 class="ch-title">${e(title)}</h1>${VITRAIL.withMaterial(window.DEITY, () => VITRAIL.ornament(Math.max(1, g || 1)))}<div class="ch-sub">${e(sub)}</div>${paras.map((p) => `<p>${e(p)}</p>`).join("")}</div>`;
   }
 
   // ---------------------------------------------------------------------------
   // Ganzes Buch zusammensetzen
   // ---------------------------------------------------------------------------
+  // ctx.volume (bei mehreren Bänden): { no, total, label, chapterNo: Map Kapitel → Nummer, refOffset, continued }
+  // ctx.front: vorab gesetzter Vorspann, ctx.pageCache: Seiten je Zauber (beides für wiederholte Läufe der Bandaufteilung)
   function assemble(entries, settings, allModels, ctx = {}) {
     // entries: [{ m, t }] – sortiert nach Grad, dann Name
     const pages = [];
-    const front = settings.frontMatter ? frontMatter(settings, allModels) : [];
+    const vol = ctx.volume || null;
+    let front = vol && vol.no > 1 ? [] : settings.frontMatter ? ctx.front || frontMatter(settings, allModels) : [];
+    if (vol && vol.total > 1) {
+      // Band I: Bandzeile aufs Titelblatt; weitere Bände: nur Titelblatt (auch ohne Vorspann, damit die Bände unterscheidbar sind)
+      const title = vol.no > 1 ? (ctx.front || frontMatter(settings, allModels))[0] : front[0];
+      if (title && title.cls === "title-page") {
+        const line = `<div class="tp-vol">Band ${U.ROMAN[vol.no] || vol.no}${vol.label ? " · " + e(vol.label) : ""}</div>`;
+        const t2 = { ...title, html: title.html.replace('<div class="tp-sub">', line + '<div class="tp-sub">') };
+        front = vol.no > 1 ? [t2] : [t2, ...front.slice(1)];
+      }
+    }
     const toc = []; // [{ title, name, level, page }]
     const PER_TOC = 22;
     const tocPageCount = settings.frontMatter ? Math.max(1, Math.ceil(entries.length / PER_TOC)) : 0;
@@ -576,14 +588,22 @@
     let chapter = null, last = null;
     const perChapter = new Map();
     entries.forEach(({ m }) => perChapter.set(chapterKey(m), (perChapter.get(chapterKey(m)) || 0) + 1));
-    const optsFor = (m, idx) => ({ detail: !divine() && settings.detailPrint, own: (ctx.prayers || {})[m.id], ref: ref ? { no: settings.refNo && idx + 1, qr: settings.refQr, source: settings.refSource } : null });
+    const refOffset = vol ? vol.refOffset || 0 : 0;
+    const optsFor = (m, idx) => ({ detail: !divine() && settings.detailPrint, own: (ctx.prayers || {})[m.id], ref: ref ? { no: settings.refNo && refOffset + idx + 1, qr: settings.refQr, source: settings.refSource } : null });
+    // Seiten eines Zaubers hängen nur von Zauber und Optionen ab: bei wiederholten Läufen aus dem Zwischenspeicher
+    const pagesFor = (m, t, opts) => {
+      if (!ctx.pageCache) return divine() ? prayerPages(m, t, opts) : spellPages(m, t, opts);
+      const k = m.id + "|" + JSON.stringify(opts);
+      if (!ctx.pageCache.has(k)) ctx.pageCache.set(k, divine() ? prayerPages(m, t, opts) : spellPages(m, t, opts));
+      return ctx.pageCache.get(k);
+    };
     const spellPageObjs = (m, t, sp, startNo) =>
       sp.map((p, i) => ({ html: p.html, spell: m.id, cls: p.first ? "first-page" : "", no: startNo + i, running: t.title + (sp.length > 1 ? ` · ${i + 1}/${sp.length}` : "") }));
     // nächste Seite auf eine gerade (linke) Seite bringen
     const toLeft = () => {
       if (pageNo % 2 === 0) return;
       if (mode === "expand" && last && last.len % 2 === 1 && last.level < 9 && body.length === last.start + last.len) {
-        const sp2 = spellPages(last.m, last.t, { ...last.opts, layout: last.len + 1 });
+        const sp2 = pagesFor(last.m, last.t, { ...last.opts, layout: last.len + 1 });
         if (sp2.length === last.len + 1) {
           body.splice(last.start, last.len, ...spellPageObjs(last.m, last.t, sp2, body[last.start].no));
           pageNo++;
@@ -604,7 +624,9 @@
         if (withChapters) {
           if (mode !== "off") toLeft();
           chapter.page = pageNo;
-          body.push({ no: pageNo++, running: "", cls: "chapter-page", html: chapterHTML(key, chapters.length) });
+          const cont = vol && vol.continued === key && chapters.length === 1;
+          const no = vol && vol.chapterNo ? vol.chapterNo.get(key) : chapters.length;
+          body.push({ no: pageNo++, running: "", cls: "chapter-page", html: chapterHTML(key, no, cont) });
           // Formelliste mit Namen; lange Kapitel bekommen mehrere Listenseiten
           const n = perChapter.get(key);
           chapter.listPages = Array.from({ length: Math.ceil(n / CH_LIST_MAX) }, () => ({ no: pageNo++, running: chapter.name, cls: "chapter-list", html: "" }));
@@ -616,7 +638,7 @@
         last = null;
       }
       const opts = optsFor(m, idx);
-      const sp = divine() ? prayerPages(m, t, opts) : spellPages(m, t, opts);
+      const sp = pagesFor(m, t, opts);
       if (sp.length === 1 && sp[0].half) {
         const block = `<div class="half" data-spell="${e(m.id)}">${sp[0].html}</div>`;
         if (pendingHalf) {
@@ -646,7 +668,7 @@
     for (const c of chapters) {
       (c.listPages || []).forEach((lp, i) => {
         const part = c.items.slice(i * c.perList, (i + 1) * c.perList);
-        lp.html = `<h3>${divine() ? "Gebete" : "Formeln"} dieses Kapitels${i ? " (Forts.)" : ""}</h3><div class="ch-list">${part.map((x) => `<div class="ch-row"><span class="tq">${quickGlyph(x.m)}</span><span class="ch-nm">${e(x.t.title)}<i>${e(x.m.name)}</i></span><span class="tp">${x.page}</span></div>`).join("")}</div>`;
+        lp.html = `<h3>${divine() ? "Gebete" : "Formeln"} dieses Kapitels${i ? " (Forts.)" : ""}</h3><div class="ch-list">${part.map((x) => `<div class="ch-row"><span class="tq">${quickGlyph(x.m)}</span><span class="ch-nm">${e(x.t.title)}<i>${e(RULES.name(x.m))}</i></span><span class="tp">${x.page}</span></div>`).join("")}</div>`;
       });
     }
     front.forEach((p, i) => pages.push({ ...p, no: i + 1, running: "" }));
@@ -657,7 +679,7 @@
           no: front.length + i + 1,
           running: "Verzeichnis",
           html: (i === 0 ? `<h3>Verzeichnis der ${divine() ? "Gebete" : "Formeln"}</h3>` : "") +
-            `<table class="toc">${chunk.map((x) => `<tr><td class="tq">${quickGlyph(x.m)}</td><td class="tg">${x.m.spell.everyday ? "A" : x.m.level === 0 ? "0" : U.ROMAN[x.m.level]}</td><td>${e(x.t.title)}<span class="tn">${e(x.m.name)}</span></td><td class="tp">${x.page}</td></tr>`).join("")}</table>`,
+            `<table class="toc">${chunk.map((x) => `<tr><td class="tq">${quickGlyph(x.m)}</td><td class="tg">${x.m.spell.everyday ? "A" : x.m.level === 0 ? "0" : U.ROMAN[x.m.level]}</td><td>${e(x.t.title)}<span class="tn">${e(RULES.name(x.m))}</span></td><td class="tp">${x.page}</td></tr>`).join("")}</table>`,
         });
       }
     }
@@ -665,6 +687,130 @@
     const chapterPages = chapters.reduce((a, c) => a + (c.listPages ? 1 + c.listPages.length : 0), 0);
     const spellPagesCount = body.length - fillers - chapterPages;
     return { pages, toc, spellPagesCount, fillers, expanded, chapterPages, chapters: chapters.filter((c) => c.page).map((c) => ({ key: c.key, name: c.name, page: c.page })) };
+  }
+
+  // --- Bände ----------------------------------------------------------------------
+  // Aufteilung nach Höchstseitenzahl: Schnitte nur an Kapitelgrenzen; ein Kapitel, das allein nicht in einen Band passt,
+  // wird an Zaubergrenzen in Stücke geteilt. Gemessen wird mit echtem Satz (assemble), die Seiten der Zauber kommen
+  // dabei aus dem Zwischenspeicher. Erst die kleinste Bandzahl bestimmen, dann die Schnitte so wählen,
+  // dass der dickste Band möglichst dünn wird.
+  function volumes(entries, settings, allModels, ctx = {}) {
+    const max = Math.max(0, Math.floor(+settings.maxPages || 0));
+    const whole = (r) => ({ vols: [{ ...r, no: 1, label: "", entries, offset: 0 }], warnings: [] });
+    if (!max || !entries.length) return whole(assemble(entries, settings, allModels, ctx));
+    const base = { ...ctx, pageCache: ctx.pageCache || new Map(), front: ctx.front || frontMatter(settings, allModels) };
+    const full = assemble(entries, settings, allModels, base);
+    if (full.pages.length <= max) return whole(full);
+
+    const keys = entries.map(({ m }) => chapterKey(m));
+    const chapterNo = new Map();
+    keys.forEach((k) => chapterNo.has(k) || chapterNo.set(k, chapterNo.size + 1));
+    // Bandkontext für den Abschnitt [i, j)
+    const volCtx = (i, no, total, label) => ({ no, total, label, chapterNo, refOffset: i, continued: i > 0 && keys[i] === keys[i - 1] ? keys[i] : null });
+    const sizes = new Map();
+    const size = (i, j) => {
+      const k = i + "," + j;
+      if (!sizes.has(k)) sizes.set(k, assemble(entries.slice(i, j), settings, allModels, { ...base, volume: volCtx(i, i === 0 ? 1 : 2, 2, "") }).pages.length);
+      return sizes.get(k);
+    };
+    // erlaubte Schnitte innerhalb eines Kapitels: nicht zwischen zwei Hälften derselben Seite
+    const pageOf = full.toc.map((x) => x.page);
+    const cuttable = (j) => pageOf[j] !== pageOf[j - 1];
+    const warnings = [];
+    const cuts = [0];
+    const splitNames = [];
+    let tooSmall = 0;
+    // Stücke eines zu großen Kapitels [i, end) mit höchstens limit Seiten, jedes so groß wie möglich
+    // (Binärsuche über die erlaubten Schnitte); null, wenn ein einzelner Zauber schon zu groß ist
+    const pieces = (i, end, limit) => {
+      const out = [];
+      while (i < end) {
+        const cand = [];
+        for (let j = i + 1; j < end; j++) if (cuttable(j)) cand.push(j);
+        cand.push(end);
+        let lo = 0, hi = cand.length - 1, best = -1;
+        while (lo <= hi) {
+          const mid = (lo + hi) >> 1;
+          if (size(i, cand[mid]) <= limit) (best = mid), (lo = mid + 1);
+          else hi = mid - 1;
+        }
+        if (best < 0) return null;
+        out.push((i = cand[best]));
+      }
+      return out;
+    };
+    for (let i = 0; i < entries.length; ) {
+      let end = i;
+      while (end < entries.length && keys[end] === keys[i]) end++;
+      if (size(i, end) <= max) {
+        cuts.push((i = end));
+        continue;
+      }
+      splitNames.push(chapterName(keys[i]));
+      let ps = pieces(i, end, max);
+      if (!ps) {
+        // nicht einmal ein Zauber passt: jeder Zauber wird ein eigenes Stück und darf die Grenze überschreiten
+        ps = [];
+        for (let j = i + 1; j <= end; j++) if (j === end || cuttable(j)) ps.push(j);
+        tooSmall = Math.max(tooSmall, ...ps.map((j, n) => size(n ? ps[n - 1] : i, j)));
+      } else if (ps.length > 1) {
+        // gleich viele Stücke, aber ausgeglichen: kleinste Grenze suchen, mit der es nicht mehr Stücke werden
+        let lo = Math.ceil(size(i, end) / ps.length), hi = max;
+        while (lo < hi) {
+          const mid = (lo + hi) >> 1;
+          const t = pieces(i, end, mid);
+          if (t && t.length <= ps.length) hi = mid;
+          else lo = mid + 1;
+        }
+        ps = pieces(i, end, lo);
+      }
+      cuts.push(...ps);
+      i = end;
+    }
+    if (splitNames.length) warnings.push(`Größer als ${max} Seiten und deshalb innerhalb des Kapitels auf mehrere Bände geteilt: ${splitNames.join(", ")}.`);
+    if (tooSmall) warnings.push(`Die Grenze ist kleiner als ein einzelner Zauber mit Bandvorspann; sinnvoll sind mindestens ${tooSmall} Seiten je Band.`);
+
+    // kleinste Bandzahl (gierig), dann ausgeglichene Schnitte; Abschnitte über der Grenze sind nur als einzelnes Stück erlaubt
+    const cost = (a, b) => {
+      const n = size(cuts[a], cuts[b]);
+      return n <= max || b === a + 1 ? n : Infinity;
+    };
+    let k = 0;
+    for (let a = 0; a < cuts.length - 1; k++) {
+      let b = a + 1;
+      while (b + 1 < cuts.length && cost(a, b + 1) <= max) b++;
+      a = b;
+    }
+    // best[v][b]: kleinster dickster Band, wenn v Bände bis Schnitt b reichen
+    const M = cuts.length - 1;
+    const best = Array.from({ length: k + 1 }, () => new Array(M + 1).fill(Infinity));
+    const from = Array.from({ length: k + 1 }, () => new Array(M + 1).fill(-1));
+    best[0][0] = 0;
+    for (let v = 1; v <= k; v++)
+      for (let b = 1; b <= M; b++)
+        for (let a = b - 1; a >= 0; a--) {
+          const c = cost(a, b);
+          if (c === Infinity) break; // längere Abschnitte werden nur dicker
+          const val = Math.max(best[v - 1][a], c);
+          if (val < best[v][b]) (best[v][b] = val), (from[v][b] = a);
+        }
+    const bounds = [M];
+    for (let v = k, b = M; v > 0; v--) bounds.unshift((b = from[v][b]));
+
+    const label = (i, j) => {
+      const a = keys[i], b = keys[j - 1];
+      const nm = (x) => chapterName(x);
+      if (a === b) return nm(a);
+      return /^\d$/.test(a) && /^\d$/.test(b) ? `${U.ROMAN[+a]}.–${U.ROMAN[+b]}. Grad` : `${nm(a)} – ${nm(b)}`;
+    };
+    const vols = [];
+    for (let v = 0; v < k; v++) {
+      const i = cuts[bounds[v]], j = cuts[bounds[v + 1]];
+      const lb = label(i, j);
+      const part = entries.slice(i, j);
+      vols.push({ ...assemble(part, settings, allModels, { ...base, volume: volCtx(i, v + 1, k, lb) }), no: v + 1, label: lb, entries: part, offset: i });
+    }
+    return { vols, warnings };
   }
 
   // --- Kapitel ---------------------------------------------------------------------
@@ -704,11 +850,11 @@
     else inner += `<circle r="4"/>`;
     return `<svg class="ch-fig" viewBox="-56 -56 112 112"><circle r="50"/><circle r="46" class="thin"/><circle r="40" class="thin dash"/>${inner}</svg>`;
   }
-  function chapterHTML(k, no) {
-    if (divine()) return divineChapterHTML(k, no);
+  function chapterHTML(k, no, cont) {
+    if (divine()) return divineChapterHTML(k, no, cont);
     const own = (window.PROFILE && PROFILE.chapters && PROFILE.chapters[k]) || null;
     const [sub, ...paras] = own || CHAPTER_TEXT[k] || ["", ""];
-    const title = k === "everyday" ? "Alltagszauber" : k === "cantrip" ? "Zaubertricks" : `Zauber des ${U.ROMAN[+k]}. Grades`;
+    const title = (k === "everyday" ? "Alltagszauber" : k === "cantrip" ? "Zaubertricks" : `Zauber des ${U.ROMAN[+k]}. Grades`) + (cont ? " (Fortsetzung)" : "");
     const kicker = /^\d$/.test(k) ? `Die ${ORDINAL[+k]} Ordnung` : k === "cantrip" ? "Ohne Ordnung" : "Sonderformen";
     return `<div class="chapter"><div class="ch-kicker">Kapitel ${U.ROMAN[no] || no} · ${kicker}</div><h1 class="ch-title">${e(title)}</h1>${chapterFigure(k)}<div class="ch-sub">${e(sub)}</div>${paras.map((p) => `<p>${e(p)}</p>`).join("")}</div>`;
   }
@@ -722,18 +868,19 @@
       pg.querySelectorAll(".rules-title").forEach((t) => {
         if (t.closest(".rules")?.dataset.splitOf) return; // Fortsetzung eines umbrochenen Kastens
         const nr = t.querySelector(".rb-no");
-        if (nr) rows.push({ nr: nr.textContent.replace("Nr. ", ""), name: t.textContent.replace(nr.textContent, "").trim(), page: no });
+        const alt = t.querySelector(".rules-alt");
+        if (nr) rows.push({ nr: nr.textContent.replace("Nr. ", ""), name: t.textContent.replace(nr.textContent, "").replace(alt ? alt.textContent : "", "").trim(), page: no });
       });
     });
     const tocs = [...root.querySelectorAll(":scope > .page.rb-toc")];
     for (let i = 0; i < tocs.length; i++) {
       const chunk = rows.slice(i * RB_TOC_ROWS, (i + 1) * RB_TOC_ROWS);
       const inner = tocs[i].querySelector(".page-inner");
-      inner.innerHTML = (i === 0 ? "<h3>Inhalt</h3>" : "") + `<div class="rb-index">${chunk.map((r) => `<div class="rb-row"><span class="rb-nr">${r.nr}</span><span class="rb-nm">${e(r.name)}</span><span class="tp">${r.page}</span></div>`).join("")}</div>`;
+      inner.innerHTML = (i === 0 ? `<h3>${RULES.de() ? "Inhalt" : "Contents"}</h3>` : "") + `<div class="rb-index">${chunk.map((r) => `<div class="rb-row"><span class="rb-nr">${r.nr}</span><span class="rb-nm">${e(r.name)}</span><span class="tp">${r.page}</span></div>`).join("")}</div>`;
       const box = document.createElement("div");
       tocs[i].before(box);
       box.append(tocs[i]);
-      fit(box);
+      TYPESET.fit(box);
       box.replaceWith(tocs[i]);
     }
   }
@@ -743,231 +890,22 @@
 
   // Regelband: zweites Buch nur mit Regeltexten, nummeriert wie das Inhaltsverzeichnis des Zauberbuchs
   function rulesBook(entries, settings) {
-    const pages = [{ cls: "title-page", no: 1, running: "", html: `<div class="tp"><h1>Regelband</h1><div class="tp-owner">${e(settings.bookTitle)}</div><div class="tp-sub">Regeltexte aller Formeln in der Reihenfolge des Zauberbuchs · Open Game Content (OGL 1.0a)</div></div>` }];
+    const D = RULES.de();
+    const pages = [{ cls: "title-page", no: 1, running: "", html: D
+      ? `<div class="tp"><h1>Regelband</h1><div class="tp-owner">${e(settings.bookTitle)}</div><div class="tp-sub">Regeltexte aller Formeln in der Reihenfolge des Zauberbuchs · Open Game Content (OGL 1.0a)</div></div>`
+      : `<div class="tp"><h1>Rules Volume</h1><div class="tp-owner">${e(settings.bookTitle)}</div><div class="tp-sub">Rules texts of all formulae in the order of the spellbook · Open Game Content (OGL 1.0a)</div></div>` }];
     const groups = new Map();
     entries.forEach(({ m }, i) => {
-      const k = m.spell.everyday ? "Alltagszauber" : m.level === 0 ? "Zaubertricks" : U.ROMAN[m.level] + ". Grad";
+      const k = D ? (m.spell.everyday ? "Alltagszauber" : m.level === 0 ? "Zaubertricks" : U.ROMAN[m.level] + ". Grad") : (m.spell.everyday ? "Everyday spells" : m.level === 0 ? "Cantrips" : "Level " + m.level);
       if (!groups.has(k)) groups.set(k, []);
       groups.get(k).push(rulesBox(m, i + 1));
     });
     // Platzhalter fürs Inhaltsverzeichnis; rulesIndex() füllt sie nach dem Setzen (dann stehen die Seiten fest)
-    for (let i = 0; i < Math.ceil(entries.length / RB_TOC_ROWS); i++) pages.push({ no: 0, running: "Regelband · Inhalt", cls: "rb-toc", html: "" });
+    for (let i = 0; i < Math.ceil(entries.length / RB_TOC_ROWS); i++) pages.push({ no: 0, running: D ? "Regelband · Inhalt" : "Rules Volume · Contents", cls: "rb-toc", html: "" });
     // je Abschnitt eine fließende Seite; der Umbruch verteilt sie auf Folgeseiten
-    for (const [k, boxes] of groups) pages.push({ no: 0, running: "Regelband · " + k, cls: "rules-page flow", html: `<h3>${e(k)}</h3>` + boxes.join("") });
+    for (const [k, boxes] of groups) pages.push({ no: 0, running: (D ? "Regelband · " : "Rules Volume · ") + k, cls: "rules-page flow", html: `<h3>${e(k)}</h3>` + boxes.join("") });
     return pages;
   }
 
-  function pageHTML(p) {
-    return `<section class="page ${p.cls || ""} ${p.halves ? "halves" : ""}"${pageHTMLAttr(p)}><div class="page-inner">${p.html}</div><footer class="page-foot"><span>${e(p.running || "")}</span><span>${p.no || ""}</span></footer></section>`;
-  }
-
-  // Autofit: Schrift verkleinern, bis die Pflichtblöcke aufs Blatt passen; danach optionale
-  // Füller einblenden, solange Platz ist (jeder Füller nur einmal pro Zauber).
-  // Fließende Seiten (.flow): Überstehendes wandert auf Fortsetzungsseiten. Blöcke mit .splittable
-  // dürfen in sich umbrechen; ihre Kinder werden einzeln verschoben.
-  let splitSeq = 0;
-  function flow(root) {
-    const over = (el) => el.scrollHeight > el.clientHeight + 1;
-    let page = root.querySelector(".page.flow");
-    let guard = 0;
-    while (page && guard++ < 2000) {
-      const inner = page.querySelector(".page-inner");
-      inner.style.setProperty("--fit", "0.95");
-      let moves = 0;
-      while (over(inner) && moves++ < 400) {
-        let next = page.nextElementSibling;
-        if (!next || !next.classList.contains("flow-cont")) {
-          next = page.cloneNode(false);
-          next.classList.add("flow-cont");
-          next.innerHTML = `<div class="page-inner"></div>${page.querySelector(".page-foot").outerHTML}`;
-          next.querySelector(".page-foot span").textContent = (page.querySelector(".page-foot span").textContent.replace(/ \(Forts\.\)$/, "")) + " (Forts.)";
-          page.after(next);
-        }
-        const nextInner = next.querySelector(".page-inner");
-        // alles hinter dem ersten überstehenden Block auf einmal verschieben (sonst quadratisch bei langen Anhängen)
-        const lim = inner.getBoundingClientRect().top + inner.clientHeight + 1;
-        const kids = [...inner.children];
-        const k = kids.findIndex((c) => c.getBoundingClientRect().bottom > lim);
-        if (k >= 0 && k < kids.length - 1) {
-          nextInner.prepend(...kids.slice(k + 1));
-          continue;
-        }
-        const last = inner.lastElementChild;
-        if (!last) break;
-        if (last.classList.contains("splittable") && last.children.length > 1) {
-          last.dataset.splitId = last.dataset.splitId || "s" + ++splitSeq;
-          let cont = nextInner.firstElementChild;
-          if (!cont || cont.dataset.splitOf !== last.dataset.splitId) {
-            cont = last.cloneNode(false);
-            delete cont.dataset.splitId;
-            cont.dataset.splitOf = last.dataset.splitId;
-            nextInner.prepend(cont);
-          }
-          cont.prepend(last.lastElementChild);
-        } else if (inner.children.length > 1) nextInner.prepend(last);
-        else break;
-      }
-      // nächste fließende Seite (auch eben erzeugte Fortsetzungen)
-      let n = page.nextElementSibling;
-      while (n && !n.classList.contains("flow")) n = n.nextElementSibling;
-      page = n;
-    }
-    // Seitenzahlen neu durchzählen, falls Seiten hinzugekommen sind
-    const feet = [...root.querySelectorAll(".page > .page-foot span:last-child")];
-    const first = feet.find((f) => /^\d+$/.test(f.textContent));
-    if (first) {
-      let no = +first.textContent;
-      for (const f of feet.slice(feet.indexOf(first))) f.textContent = no++;
-    }
-  }
-
-  // Pflichtblöcke eines Zaubers zwischen seinen Seiten verschieben, bevor verkleinert wird:
-  // letzter Block einer übervollen Seite an den Anfang der nächsten, erster Block ans Ende der vorigen –
-  // jeweils nur, wenn die Zielseite dadurch nicht selbst überläuft. Die Lesereihenfolge bleibt erhalten.
-  function rebalance(root) {
-    const over = (el) => el.scrollHeight > el.clientHeight + 1;
-    const blks = (el) => [...el.children].filter((c) => c.classList.contains("blk"));
-    const beforeOpts = (el, node) => el.insertBefore(node, el.querySelector(":scope > .opt"));
-    const groups = new Map();
-    for (const inner of root.querySelectorAll(".page:not(.flow):not(.halves) > .page-inner")) {
-      const id = inner.closest("[data-spell]")?.dataset.spell;
-      if (!id) continue;
-      inner.querySelectorAll(":scope > .opt").forEach((o) => o.classList.add("off"));
-      inner.style.setProperty("--fit", 1);
-      if (!groups.has(id)) groups.set(id, []);
-      groups.get(id).push(inner);
-    }
-    for (const inners of groups.values()) {
-      if (inners.length < 2) continue;
-      for (let pass = 0, changed = true; changed && pass < 30; pass++) {
-        changed = false;
-        inners.forEach((a, i) => {
-          if (!over(a)) return;
-          const next = inners[i + 1];
-          let bl = blks(a);
-          if (next && bl.length > 1) {
-            const last = bl[bl.length - 1];
-            next.insertBefore(last, next.firstChild);
-            if (!over(next)) return void (changed = true);
-            beforeOpts(a, last);
-          }
-          const prev = inners[i - 1];
-          bl = blks(a);
-          if (prev && !prev.parentElement.classList.contains("first-page") && bl.length > 1) {
-            const first = bl[0];
-            beforeOpts(prev, first);
-            if (!over(prev)) return void (changed = true);
-            a.insertBefore(first, a.firstChild);
-          }
-        });
-      }
-    }
-  }
-
-  function fit(root, seen) {
-    flow(root);
-    rebalance(root);
-    const over = (el) => el.scrollHeight > el.clientHeight + 1;
-    const free = (el) => {
-      const kids = [...el.children].filter((c) => !c.classList.contains("off"));
-      const last = kids[kids.length - 1];
-      return last ? el.clientHeight - (last.offsetTop + last.offsetHeight - el.offsetTop) : el.clientHeight;
-    };
-    const groups = new Map();
-    const seenNotes = seen || new Set();
-    root.querySelectorAll(".note").forEach((n) => !n.closest(".opt") && seenNotes.add(n.textContent.trim()));
-    for (const inner of root.querySelectorAll(".page-inner, .half")) {
-      if (inner.classList.contains("page-inner") && inner.querySelector(".half")) continue;
-      if (inner.closest(".page.flow")) continue;
-      inner.querySelectorAll(":scope > .opt").forEach((o) => o.classList.add("off"));
-      let scale = 1, guard = 0;
-      inner.style.setProperty("--fit", scale);
-      while (over(inner) && scale > 0.62 && guard++ < 30) {
-        scale -= 0.03;
-        inner.style.setProperty("--fit", scale.toFixed(2));
-      }
-      inner.classList.toggle("overflow", over(inner));
-      const spell = inner.closest("[data-spell]")?.dataset.spell || "";
-      if (!groups.has(spell)) groups.set(spell, []);
-      groups.get(spell).push(inner);
-    }
-    // Alle Seiten eines Zaubers nach der ersten in derselben Schriftgröße (der kleinsten nötigen)
-    for (const inners of groups.values()) {
-      const rest = inners.filter((x) => x.classList.contains("page-inner") && !x.parentElement.classList.contains("first-page"));
-      if (rest.length < 2) continue;
-      const min = Math.min(...rest.map((x) => +(x.style.getPropertyValue("--fit") || 1)));
-      rest.forEach((x) => x.style.setProperty("--fit", min));
-    }
-    // Füller jeweils auf die Seite mit dem meisten freien Platz setzen; höchstens eine Randnotiz pro Seite
-    const hasNote = new Set();
-    for (const inners of groups.values()) {
-      const keys = [];
-      for (const inner of inners) for (const o of inner.querySelectorAll(":scope > .opt")) if (!keys.includes(o.dataset.k)) keys.push(o.dataset.k);
-      for (const k of keys) {
-        const cands = inners
-          .map((inner) => ({ inner, o: inner.querySelector(`:scope > .opt[data-k="${k}"]`) }))
-          .filter((c) => c.o && !(k.startsWith("note") && hasNote.has(c.inner)))
-          .sort((a, b) => free(b.inner) - free(a.inner));
-        let placed = null;
-        // gleichlautende Randnotizen nur einmal im ganzen Buch
-        const text = k.startsWith("note") && cands[0] ? cands[0].o.textContent.trim() : null;
-        if (text && seenNotes.has(text)) cands.length = 0;
-        for (const c of cands) {
-          c.o.classList.remove("off");
-          if (!over(c.inner)) {
-            placed = c;
-            if (text) seenNotes.add(text), hasNote.add(c.inner);
-            break;
-          }
-          c.o.classList.add("off");
-        }
-        inners.forEach((inner) => inner.querySelectorAll(`:scope > .opt[data-k="${k}"]`).forEach((o) => o !== placed?.o && o.remove()));
-      }
-    }
-  }
-  // Setzen in Häppchen: Seiten eines Zaubers bleiben zusammen; zwischen den Häppchen bekommt der Browser Luft
-  // und onProgress(erledigt, gesamt) wird aufgerufen. pages: Array von Seitenobjekten oder fertiges HTML.
-  async function typeset(root, pages, onProgress, chunk = 12) {
-    if (document.fonts) await document.fonts.ready;
-    if (typeof pages === "string") {
-      root.innerHTML = pages;
-      fit(root);
-      onProgress && onProgress(1, 1);
-      return;
-    }
-    root.innerHTML = "";
-    const groups = [];
-    for (const p of pages) {
-      const last = groups[groups.length - 1];
-      if (p.spell && last && last.spell === p.spell) last.pages.push(p);
-      else groups.push({ spell: p.spell, pages: [p] });
-    }
-    const seen = new Set();
-    let done = 0;
-    for (let i = 0; i < groups.length; ) {
-      const part = [];
-      while (i < groups.length && (part.length < chunk || !part.length)) part.push(...groups[i++].pages);
-      const box = document.createElement("div");
-      root.appendChild(box);
-      box.innerHTML = part.map(pageHTML).join("");
-      fit(box, seen);
-      box.replaceWith(...box.childNodes);
-      done += part.length;
-      onProgress && onProgress(done, pages.length);
-      await new Promise((r) => setTimeout(r, 0));
-    }
-    // fließende Seiten (Regelband) haben Folgeseiten bekommen: fortlaufend nummerieren
-    if (root.querySelector(".flow")) {
-      let no = 1;
-      root.querySelectorAll(":scope > .page > .page-foot span:last-child").forEach((f) => (f.textContent = no++));
-    }
-  }
-
-  const autofit = (root) => (document.fonts ? document.fonts.ready.then(() => fit(root)) : Promise.resolve(fit(root)));
-
-  function pageHTMLAttr(p) {
-    return p.spell ? ` data-spell="${e(p.spell)}"` : "";
-  }
-
-  window.BOOK = { spellPages, prayerPages, scrollPages, assemble, rulesBook, rulesIndex, pageHTML, autofit, typeset, rulesBox, frontMatter, chapterKey, chapterName, rank };
+  window.BOOK = { spellPages, prayerPages, scrollPages, assemble, volumes, rulesBook, rulesIndex, rulesBox, frontMatter, chapterKey, chapterName, rank };
 })();

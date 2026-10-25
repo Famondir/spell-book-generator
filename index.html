@@ -3,75 +3,114 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Zauberbuch-Generator</title>
+  <title data-i18n="app.title">Zauberbuch-Generator</title>
   <link rel="stylesheet" href="app/style.css">
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">Zauberbuch-Generator <span>Pathfinder 1e</span></div>
+    <div class="brand"><span data-i18n="app.title">Zauberbuch-Generator</span> <span>Pathfinder 1e</span></div>
     <nav class="tabs">
-      <button data-view="browse" class="active">Verzeichnis</button>
-      <button data-view="book">Mein Buch <span id="book-count"></span></button>
-      <button data-view="prepare">Heute vorbereitet</button>
-      <button data-view="theory">Lehre der Kreise</button>
+      <button data-view="browse" class="active" data-i18n="tab.browse">Verzeichnis</button>
+      <button data-view="book"><span data-i18n="tab.book">Mein Buch</span> <span id="book-count"></span></button>
+      <button data-view="prepare" data-i18n="tab.prepare">Heute vorbereitet</button>
+      <button data-view="theory" data-i18n="tab.theory">Lehre</button>
     </nav>
     <div class="actions">
-      <select id="char-switch" title="Charakter wechseln"></select>
-      <button id="btn-settings" title="Buch-Einstellungen">Einstellungen</button>
+      <select id="char-switch" data-i18n-attr="title:top.charSwitch" title="Charakter wechseln"></select>
+      <button id="btn-settings" data-i18n="top.settings" data-i18n-attr="title:top.settingsTitle" title="Buch-Einstellungen">Einstellungen</button>
     </div>
   </header>
 
   <dialog id="settings">
     <form method="dialog">
-      <h3>Charakter</h3>
-      <div class="char-admin">
-        <label>Name <input id="char-name"></label>
-        <label>Profil <select id="char-profile"></select></label>
-        <label>Klasse <select id="char-cls"></select></label>
-        <div id="char-deity-row" class="deity-row">
-          <label>Gottheit <input id="char-deity" list="deity-list" autocomplete="off" placeholder="Name eintippen …"></label>
-          <label class="check"><input type="checkbox" id="char-deity-all"> alle Gottheiten (nicht nur passende Gesinnung)</label>
-          <datalist id="deity-list"></datalist>
-          <div class="muted" id="char-deity-info"></div>
-          <label>Andachtsbild <select name="material"><option value="auto">automatisch (Steinintarsie bei zwergischen Gottheiten, sonst Bleiglas)</option><option value="glass">Bleiglas</option><option value="stone">Steinintarsie</option></select></label>
-        </div>
-        <div class="row">
-          <button type="button" id="char-new">Neuer Charakter</button>
-          <button type="button" id="char-dup">Duplizieren</button>
-          <button type="button" id="char-del" class="danger">Löschen</button>
-        </div>
-        <div class="muted" id="char-hint"></div>
+      <nav class="set-nav">
+        <button type="button" data-sec="charakter"><span data-i18n="set.nav.char">Charakter</span><small data-i18n="set.nav.charSub">Name, Klasse, Gottheit</small></button>
+        <button type="button" data-sec="buch"><span data-i18n="set.nav.book">Buch</span><small data-i18n="set.nav.bookSub">Titel, Aufbau, Verweise</small></button>
+        <button type="button" data-sec="druck"><span data-i18n="set.nav.print">Druck</span><small data-i18n="set.nav.printSub">Papier, Bände</small></button>
+        <button type="button" data-sec="sprache"><span data-i18n="set.nav.lang">Sprache</span><small data-i18n="set.nav.langSub">Oberfläche, Buch, Regeln</small></button>
+        <button type="button" data-sec="bestand"><span data-i18n="set.nav.data">Bestand &amp; Export</span><small data-i18n="set.nav.dataSub">Import, Export</small></button>
+      </nav>
+      <div class="set-body">
+        <section class="set-sec" data-sec="charakter">
+          <h3 data-i18n="set.nav.char">Charakter</h3>
+          <div class="char-admin">
+            <label><span data-i18n="set.char.name">Name</span> <input id="char-name"></label>
+            <label><span data-i18n="set.char.profile">Profil</span> <select id="char-profile"></select></label>
+            <label><span data-i18n="set.char.cls">Klasse</span> <select id="char-cls"></select></label>
+            <div id="char-deity-row" class="deity-row">
+              <label><span data-i18n="set.char.deity">Gottheit</span> <input id="char-deity" list="deity-list" autocomplete="off" data-i18n-attr="placeholder:set.char.deityPh" placeholder="Name eintippen …"></label>
+              <label class="check"><input type="checkbox" id="char-deity-all"> <span data-i18n="set.char.deityAll">alle Gottheiten (nicht nur passende Gesinnung)</span></label>
+              <datalist id="deity-list"></datalist>
+              <div class="muted" id="char-deity-info"></div>
+              <label><span data-i18n="set.char.material">Andachtsbild</span> <select name="material"><option value="auto" data-i18n="set.char.matAuto">automatisch (Steinintarsie bei zwergischen Gottheiten, sonst Bleiglas)</option><option value="glass" data-i18n="set.char.matGlass">Bleiglas</option><option value="stone" data-i18n="set.char.matStone">Steinintarsie</option></select></label>
+            </div>
+            <label class="check"><input type="checkbox" name="onlyClass"> <span><span data-i18n="set.char.onlyClass">Nur Zauber der Klassenliste anzeigen</span> (<span class="cls-label">Magier</span>)</span></label>
+            <label class="inline arcane-only"><span data-i18n="set.char.level">Charakterstufe</span> <input type="number" name="charLevel" min="0" max="40" placeholder="–" class="num"> <span class="muted" data-i18n="set.char.levelNote">freiwillig, nur für Randnotizen im Lehrheft</span></label>
+            <div class="row">
+              <button type="button" id="char-new" data-i18n="set.char.new">Neuer Charakter</button>
+              <button type="button" id="char-dup" data-i18n="set.char.dup">Duplizieren</button>
+              <button type="button" id="char-del" class="danger" data-i18n="set.char.del">Löschen</button>
+            </div>
+            <div class="muted" id="char-hint"></div>
+          </div>
+        </section>
+        <section class="set-sec" data-sec="buch" hidden>
+          <h3 data-i18n="set.nav.book">Buch</h3>
+          <p class="muted set-note" data-i18n="set.book.note">Gilt für die Vorschau und den Druck.</p>
+          <label><span data-i18n="set.book.owner">Besitzer</span> <input name="owner"></label>
+          <label><span data-i18n="set.book.title">Buchtitel</span> <input name="bookTitle"></label>
+          <label><span data-i18n="set.book.subtitle">Untertitel</span> <input name="subtitle"></label>
+          <label class="arcane-only"><span data-i18n="set.book.master">Meister im Lehrheft</span> <input name="primerMaster" id="set-primer-master"></label>
+          <label class="check"><input type="checkbox" name="frontMatter"> <span><span data-i18n="set.book.front1">Vorspann (Titelblatt,</span> <span class="front-label">Lehre der Kreise</span><span data-i18n="set.book.front2">, Verzeichnis)</span></span></label>
+          <label class="check"><input type="checkbox" name="chapters"> <span data-i18n="set.book.chapters">Kapitel je Grad (Doppelseite mit Titel, Text zur Stufe und Formelliste)</span></label>
+          <label class="arcane-only"><span data-i18n="set.book.leftStart">Mehrseitige Zauber und Kapitel beginnen links</span>
+            <select name="leftStart"><option value="notes" data-i18n="set.book.leftNotes">ja, mit Notizseite davor</option><option value="expand" data-i18n="set.book.leftExpand">ja, vorherigen Zauber im Umfang des nächsthöheren Grades</option><option value="off" data-i18n="set.book.leftOff">nein (spart Papier)</option></select>
+          </label>
+          <label class="check arcane-only"><input type="checkbox" name="detailPrint"> <span data-i18n="set.book.detail">Ausführliche Fassung (jeder Zauber ~10 Seiten, unabhängig vom Grad)</span></label>
+          <fieldset class="refs"><legend data-i18n="set.book.refs">Regelverweise auf den Zauberseiten</legend>
+            <label class="check"><input type="checkbox" name="refNo"> <span data-i18n="set.book.refNo">Nummer im Regelband</span></label>
+            <label class="check"><input type="checkbox" name="refQr"> <span data-i18n="set.book.refQr">QR-Code zur Seite bei Archives of Nethys</span></label>
+            <label class="check"><input type="checkbox" name="refSource"> <span data-i18n="set.book.refSource">Quellenangabe (Regelwerk und Seite)</span></label>
+          </fieldset>
+        </section>
+        <section class="set-sec" data-sec="druck" hidden>
+          <h3 data-i18n="set.nav.print">Druck</h3>
+          <p class="muted set-note" data-i18n="set.print.note">Betrifft nur das Papier.</p>
+          <label><span data-i18n="set.print.paper">Papierformat</span>
+            <select name="paper"><option value="a5" data-i18n="set.print.a5">A5 (eine Buchseite pro Blatt)</option><option value="a4" data-i18n="set.print.a4">A4 (A5-Seite hochskaliert)</option><option value="a4-2up" data-i18n="set.print.a42up">A4 quer (zwei A5-Seiten nebeneinander)</option></select>
+          </label>
+          <label><span data-i18n="set.print.scroll">Format für Schriftrollen</span>
+            <select name="scrollPaper"><option value="a4" data-i18n="set.print.scrollA4">A4 (große Rolle)</option><option value="a5">A5</option></select>
+          </label>
+          <label class="check"><input type="checkbox" name="printBackground"> <span data-i18n="set.print.bg">Pergament-Hintergrund drucken (aus: spart Tinte, z. B. für eigenes braunes Papier)</span></label>
+          <label class="arcane-only"><span data-i18n="set.print.layout">Satz des Lehrhefts</span>
+            <select name="primerLayout"><option value="balanced" data-i18n="set.print.balanced">ausgewogen (Lektionen möglichst ganz auf einer Seite)</option><option value="pages" data-i18n="set.print.pages">jede Lektion auf neuer Seite</option><option value="dense" data-i18n="set.print.dense">dicht (fortlaufend, spart Papier)</option></select>
+          </label>
+          <label class="check arcane-only"><input type="checkbox" name="primerGutter"> <span data-i18n="set.print.gutter">Lehrheft mit Lochrand (breiterer Rand auf der Bindungsseite, abwechselnd links und rechts, z. B. für ein Ringbuch; gilt auch in der Ansicht)</span></label>
+          <label class="inline"><span data-i18n="set.print.max1">Höchstens</span> <input type="number" name="maxPages" min="0" step="10" placeholder="–" class="num"> <span data-i18n="set.print.max2">Seiten je Band</span></label>
+          <p class="muted set-note" data-i18n="set.print.maxNote">Leer = ein Band. Für die Seitengrenze eines Druckdienstes: geteilt wird an den Kapiteln, die Bände werden möglichst gleich dick; die Buchansicht zeigt sie dann einzeln.</p>
+        </section>
+        <section class="set-sec" data-sec="sprache" hidden>
+          <h3 data-i18n="set.nav.lang">Sprache</h3>
+          <p class="muted set-note" data-i18n="set.lang.note">Oberfläche, Buch und Regeln lassen sich getrennt einstellen, etwa ein deutsches Buch mit englischem Regeltext zum Nachschlagen.</p>
+          <label><span data-i18n="set.lang.ui">Oberfläche</span> <select name="uiLang"><option value="de">Deutsch</option><option value="en">English</option></select></label>
+          <label><span data-i18n="set.lang.book">Buch (Texte im Zauberbuch, Lehrheft, Brevier)</span> <select name="bookLang"><option value="de">Deutsch</option><option value="en">English</option></select></label>
+          <label><span data-i18n="set.lang.rules">Regeln (Regeltext, Werte, Zaubernamen)</span> <select name="rulesLang"><option value="de">Deutsch</option><option value="en">English</option></select></label>
+          <label><span data-i18n="set.lang.units">Maßeinheit</span> <select name="units"><option value="" data-i18n="set.lang.unitsAuto">nach Regelsprache</option><option value="m" data-i18n="set.lang.unitsM">Meter</option><option value="ft" data-i18n="set.lang.unitsFt">Fuß</option></select></label>
+          <p class="muted set-note" id="set-lang-hint"></p>
+        </section>
+        <section class="set-sec" data-sec="bestand" hidden>
+          <h3 data-i18n="set.nav.data">Bestand &amp; Export</h3>
+          <p class="muted set-note" data-i18n="set.data.note">Der Export enthält Buch, Einstellungen, eigene Gebete, Vorbereitung und Protokoll dieses Charakters. Importiert werden Zauberlisten als xlsx (Spalte „Name“), csv, txt oder ein früherer Export.</p>
+          <div class="row">
+            <button type="button" id="btn-export" data-i18n="set.data.export">Liste exportieren</button>
+            <label class="filebtn"><span data-i18n="set.data.import">Liste importieren (xlsx, csv, txt, json)</span> <input type="file" id="file-import" accept=".json,.xlsx,.csv,.txt,application/json" hidden></label>
+          </div>
+          <p class="muted set-note" data-i18n="set.data.clearNote">Entfernt alle Zauber aus dem Buch dieses Charakters.</p>
+          <div class="row"><button type="button" id="btn-clear" class="danger" data-i18n="set.data.clear">Buch leeren</button></div>
+        </section>
       </div>
-      <h3>Buch-Einstellungen</h3>
-      <label>Besitzer <input name="owner"></label>
-      <label>Buchtitel <input name="bookTitle"></label>
-      <label>Untertitel <input name="subtitle"></label>
-      <label class="check"><input type="checkbox" name="chapters"> Kapitel je Grad (Doppelseite mit Titel, Text zur Stufe und Formelliste)</label>
-      <label class="arcane-only">Mehrseitige Zauber und Kapitel beginnen links
-        <select name="leftStart"><option value="notes">ja, mit Notizseite davor</option><option value="expand">ja, vorherigen Zauber im Umfang des nächsthöheren Grades</option><option value="off">nein (spart Papier)</option></select>
-      </label>
-      <fieldset class="refs"><legend>Regelverweise auf den Zauberseiten (für den Druck)</legend>
-        <label class="check"><input type="checkbox" name="refNo"> Nummer im Regelband</label>
-        <label class="check"><input type="checkbox" name="refQr"> QR-Code zur Seite bei Archives of Nethys</label>
-        <label class="check"><input type="checkbox" name="refSource"> Quellenangabe (Regelwerk und Seite)</label>
-      </fieldset>
-      <label>Papierformat
-        <select name="paper"><option value="a5">A5 (eine Buchseite pro Blatt)</option><option value="a4">A4 (A5-Seite hochskaliert)</option><option value="a4-2up">A4 quer (zwei A5-Seiten nebeneinander)</option></select>
-      </label>
-      <label>Format für Schriftrollen
-        <select name="scrollPaper"><option value="a4">A4 (große Rolle)</option><option value="a5">A5</option></select>
-      </label>
-      <label class="check"><input type="checkbox" name="printBackground"> Pergament-Hintergrund drucken (aus: spart Tinte, z. B. für eigenes braunes Papier)</label>
-      <label class="check"><input type="checkbox" name="frontMatter"> Vorspann drucken (Titelblatt, <span class="front-label">Lehre der Kreise</span>, Verzeichnis)</label>
-      <label class="check arcane-only"><input type="checkbox" name="detailPrint"> Ausführliche Fassung drucken (jeder Zauber ~10 Seiten, unabhängig vom Grad)</label>
-      <label class="check"><input type="checkbox" name="onlyClass"> Nur Zauber der Klassenliste anzeigen (<span class="cls-label">Magier</span>)</label>
-      <h4>Buchbestand</h4>
-      <div class="row">
-        <button type="button" id="btn-export">Liste exportieren</button>
-        <label class="filebtn">Liste importieren (xlsx, csv, txt, json) <input type="file" id="file-import" accept=".json,.xlsx,.csv,.txt,application/json" hidden></label>
-        <button type="button" id="btn-clear" class="danger">Buch leeren</button>
-      </div>
-      <div class="row end"><button value="ok" class="primary">Fertig</button></div>
+      <div class="set-foot"><button value="ok" class="primary" data-i18n="common.done">Fertig</button></div>
     </form>
   </dialog>
 
@@ -79,39 +118,39 @@
     <!-- Verzeichnis -->
     <section id="view-browse" class="view active">
       <aside class="filters side">
-        <button class="side-toggle" data-side="browseLeft" title="Filterleiste ein-/ausklappen"></button>
-        <input id="q" type="search" placeholder="Suchen (Name, Titel, Essenz …)" autocomplete="off">
+        <button class="side-toggle" data-side="browseLeft" data-i18n-attr="title:side.filters" title="Filterleiste ein-/ausklappen"></button>
+        <input id="q" type="search" data-i18n-attr="placeholder:browse.search" placeholder="Suchen (Name, Titel, Essenz …)" autocomplete="off">
         <div class="frow">
-          <select id="f-level"><option value="">Alle Grade</option></select>
-          <select id="f-school"><option value="">Alle Schulen</option></select>
+          <select id="f-level"><option value="" data-i18n="filter.allLevels">Alle Grade</option></select>
+          <select id="f-school"><option value="" data-i18n="filter.allSchools">Alle Schulen</option></select>
         </div>
         <div class="frow">
-          <select id="f-essence"><option value="">Alle Essenzen</option></select>
-          <select id="f-inbook"><option value="">Alle</option><option value="1">Nur im Buch</option><option value="0">Nicht im Buch</option></select>
+          <select id="f-essence"><option value="" data-i18n="filter.allEssences">Alle Essenzen</option></select>
+          <select id="f-inbook"><option value="" data-i18n="filter.all">Alle</option><option value="1" data-i18n="filter.inBook">Nur im Buch</option><option value="0" data-i18n="filter.notInBook">Nicht im Buch</option></select>
         </div>
         <div class="frow">
-          <select id="f-origin"><option value="">Regelwerk und Alltagszauber</option><option value="rules">Nur Regelwerk</option><option value="everyday">Nur Alltagszauber</option></select>
+          <select id="f-origin"><option value="" data-i18n="filter.originAll">Regelwerk und Alltagszauber</option><option value="rules" data-i18n="filter.originRules">Nur Regelwerk</option><option value="everyday" data-i18n="filter.originEveryday">Nur Alltagszauber</option></select>
         </div>
         <div id="list-info" class="muted"></div>
         <ul id="list" class="spell-list"></ul>
       </aside>
       <article id="detail" class="detail">
-        <div class="empty">Wähle links einen Zauber.</div>
+        <div class="empty" data-i18n="browse.empty">Wähle links einen Zauber.</div>
       </article>
     </section>
 
     <!-- Buch -->
     <section id="view-book" class="view">
       <aside id="book-side" class="filters side">
-        <button class="side-toggle" data-side="bookLeft" title="Filterleiste ein-/ausklappen"></button>
-        <input id="bq" type="search" placeholder="Im Buch suchen …" autocomplete="off">
+        <button class="side-toggle" data-side="bookLeft" data-i18n-attr="title:side.filters" title="Filterleiste ein-/ausklappen"></button>
+        <input id="bq" type="search" data-i18n-attr="placeholder:book.search" placeholder="Im Buch suchen …" autocomplete="off">
         <div class="frow">
-          <select id="bf-level"><option value="">Alle Grade</option></select>
-          <select id="bf-school"><option value="">Alle Schulen</option></select>
+          <select id="bf-level"><option value="" data-i18n="filter.allLevels">Alle Grade</option></select>
+          <select id="bf-school"><option value="" data-i18n="filter.allSchools">Alle Schulen</option></select>
         </div>
         <div class="frow">
-          <select id="bf-essence"><option value="">Alle Essenzen</option></select>
-          <select id="bf-origin"><option value="">Regelwerk und Alltagszauber</option><option value="rules">Nur Regelwerk</option><option value="everyday">Nur Alltagszauber</option></select>
+          <select id="bf-essence"><option value="" data-i18n="filter.allEssences">Alle Essenzen</option></select>
+          <select id="bf-origin"><option value="" data-i18n="filter.originAll">Regelwerk und Alltagszauber</option><option value="rules" data-i18n="filter.originRules">Nur Regelwerk</option><option value="everyday" data-i18n="filter.originEveryday">Nur Alltagszauber</option></select>
         </div>
         <div id="book-list-info" class="muted"></div>
         <ul id="book-list" class="spell-list"></ul>
@@ -120,17 +159,18 @@
         <div class="book-bar">
           <div id="book-stats"></div>
           <div class="row">
-            <button id="btn-print-rules" title="Zweites Buch nur mit den Regeltexten, nummeriert wie das Inhaltsverzeichnis">Regelband drucken</button>
-            <button id="btn-print-scrolls" title="Pro Zauber zwei Seiten: Kreis vorne, Regeln hinten – beidseitig drucken">Alle als Schriftrollen drucken</button>
-            <button id="btn-print-book" class="primary">Buch drucken / als PDF</button>
+            <button id="btn-print-rules" data-i18n="book.printRules" data-i18n-attr="title:book.printRulesTitle" title="Zweites Buch nur mit den Regeltexten, nummeriert wie das Inhaltsverzeichnis">Regelband drucken</button>
+            <button id="btn-print-scrolls" data-i18n="book.printScrolls" data-i18n-attr="title:book.printScrollsTitle" title="Pro Zauber zwei Seiten: Kreis vorne, Regeln hinten – beidseitig drucken">Alle als Schriftrollen drucken</button>
+            <button id="btn-print-book" class="primary" data-i18n="book.print">Buch drucken / als PDF</button>
           </div>
         </div>
+        <nav id="book-vols" class="vol-tabs" hidden></nav>
         <nav id="book-pager" class="pager"></nav>
         <div id="book-pages" class="pages spread"></div>
       </article>
       <aside id="book-toc" class="toc-side side">
-        <button class="side-toggle" data-side="toc" title="Inhaltsverzeichnis ein-/ausklappen"></button>
-        <h3>Inhalt</h3>
+        <button class="side-toggle" data-side="toc" data-i18n-attr="title:side.toc" title="Inhaltsverzeichnis ein-/ausklappen"></button>
+        <h3 data-i18n="book.toc">Inhalt</h3>
         <ul id="book-toc-list" class="toc-list"></ul>
       </aside>
     </section>
@@ -142,7 +182,24 @@
 
     <!-- Theorie -->
     <section id="view-theory" class="view">
-      <div id="theory-pages" class="pages"></div>
+      <div id="theory-view" class="primer-view" hidden>
+        <article class="primer-main">
+          <nav id="theory-pager" class="pager"></nav>
+          <div id="theory-pages" class="pages spread"></div>
+        </article>
+      </div>
+      <div id="primer-view" class="primer-view" hidden>
+        <article class="primer-main">
+          <div class="book-bar"><div id="primer-info" class="muted"></div><div class="row"><button id="btn-print-checks" data-i18n="primer.printChecks" data-i18n-attr="title:primer.printChecksTitle" title="Alle Prüfvermerke gesammelt als Handzettel für den Meister">Prüfbogen drucken</button><button id="btn-print-primer" class="primary" data-i18n="primer.print">Lehrheft drucken / als PDF</button></div></div>
+          <nav id="primer-pager" class="pager"></nav>
+          <div id="primer-pages" class="pages spread"></div>
+        </article>
+        <aside id="primer-side" class="toc-side side">
+          <button class="side-toggle" data-side="primerTocOff" data-i18n-attr="title:side.toc" title="Inhaltsverzeichnis ein-/ausklappen"></button>
+          <h3 id="primer-toc-title"></h3>
+          <ul id="primer-toc" class="toc-list primer-toc"></ul>
+        </aside>
+      </div>
     </section>
   </main>
 
@@ -153,43 +210,47 @@
         <div class="cm-head"></div>
         <div class="cm-legend"></div>
         <div class="row">
-          <button type="button" id="cm-annot">Beschriftung</button>
-          <button type="button" id="cm-save">Als SVG speichern</button>
-          <button type="button" id="cm-close" class="primary">Schließen</button>
+          <button type="button" id="cm-annot" data-i18n="circle.annot">Beschriftung</button>
+          <button type="button" id="cm-save" data-i18n="circle.save">Als SVG speichern</button>
+          <button type="button" id="cm-close" class="primary" data-i18n="common.close">Schließen</button>
         </div>
       </aside>
     </div>
   </dialog>
 
-  <footer class="legal-bar">Inoffizielles Fanprojekt · Regeltexte OGL 1.0a · Eigennamen nach Paizos Community Use Policy · <button type="button" id="btn-legal" class="linkish">Lizenzen</button></footer>
+  <footer class="legal-bar"><span data-i18n="legal.bar">Inoffizielles Fanprojekt · Regeltexte OGL 1.0a · Eigennamen nach Paizos Community Use Policy</span> · <button type="button" id="btn-legal" class="linkish" data-i18n="legal.title">Lizenzen</button></footer>
 
   <dialog id="legal-modal" class="legal-modal">
-    <h3>Lizenzen</h3>
+    <h3 data-i18n="legal.title">Lizenzen</h3>
     <p lang="en">Zauberbuch-Generator uses trademarks and/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy (<a href="https://paizo.com/licenses/communityuse" target="_blank" rel="noopener">paizo.com/licenses/communityuse</a>). We are expressly prohibited from charging you to use or access this content. Zauberbuch-Generator is not published, endorsed, or specifically approved by Paizo. For more information about Paizo Inc. and Paizo products, visit <a href="https://paizo.com" target="_blank" rel="noopener">paizo.com</a>.</p>
-    <ul>
+    <ul data-i18n-html="legal.list">
       <li><b>Regeltexte</b> der Zauber: Open Game Content unter der Open Game License 1.0a, übernommen über Archives of Nethys und d20pfsrd.com (<a href="LICENSE-OGL.txt" target="_blank">Lizenztext</a>).</li>
       <li><b>Eigennamen</b> wie Gottheiten, Orte und Figuren gehören Paizo und werden nur beschreibend verwendet.</li>
       <li><b>Alltagszauber, Magietheorie, Kreise und Texte</b>: eigene Ausarbeitung.</li>
-      <li><b>QR-Codes</b>: qrcode-generator von Kazuhiko Arase (MIT). <b>Schriften</b>: Cinzel, IM Fell English, Caveat (SIL Open Font License 1.1).</li>
+      <li><b>QR-Codes</b>: qrcode-generator von Kazuhiko Arase (MIT). <b>Schriften</b>: Cinzel, IM Fell English, Caveat, Kalam, Covered By Your Grace (SIL Open Font License 1.1).</li>
     </ul>
-    <form method="dialog" class="row end"><button class="primary">Schließen</button></form>
+    <form method="dialog" class="row end"><button class="primary" data-i18n="common.close">Schließen</button></form>
   </dialog>
 
   <dialog id="rules-modal" class="rules-modal">
     <div class="rm-body"></div>
-    <form method="dialog" class="row end"><button class="primary">Schließen</button></form>
+    <form method="dialog" class="row end"><button class="primary" data-i18n="common.close">Schließen</button></form>
   </dialog>
 
   <div id="progress" class="progress" hidden><span class="pg-label"></span> <b class="pg-count"></b><span class="pg-bar"><i></i></span></div>
 
   <div id="print-root"></div>
 
+  <script src="app/js/i18n.js"></script>
+  <script src="data/lang/de.js"></script>
+  <script src="data/lang/en.js"></script>
   <script src="data/profile.js"></script>
   <!-- optional, eigene Backstory (siehe data/profile.local.example.js); fehlt die Datei, gilt das neutrale Profil -->
   <script src="data/profile.local.js" onerror="this.remove()"></script>
   <script src="app/js/chars.js"></script>
   <script src="app/js/profile.js"></script>
   <script src="data/spells.js"></script>
+  <script src="data/rules.de.local.js" onerror="this.remove()"></script>
   <script src="data/everyday_spells.js"></script>
   <script src="data/deities.js"></script>
   <script src="data/custom_texts.js"></script>
@@ -204,7 +265,13 @@
   <script src="app/js/textgen.js"></script>
   <script src="app/js/vitrail.js"></script>
   <script src="app/js/prayer.js"></script>
+  <script src="app/js/rules.js"></script>
+  <script src="app/js/legend.js"></script>
+  <script src="app/js/typeset.js"></script>
   <script src="app/js/book.js"></script>
+  <script src="app/js/viewer.js"></script>
+  <script src="data/primer.js"></script>
+  <script src="app/js/primer.js"></script>
   <script src="app/js/import.js"></script>
   <script src="app/js/prepare.js"></script>
   <script src="app/js/stats.js"></script>

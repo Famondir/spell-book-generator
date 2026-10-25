@@ -56,6 +56,38 @@ window.PROFILE_LOCAL = {
       "Katzenschoß": "Kater Mops kommt auch ohne Zauber. Aber dann nur, wenn er will.",
     },
   },
+
+  // Sprache der eigenen Texte (ab Werk Deutsch)
+  lang: "de",
+  // Deutsche Regeldaten (tools/import-rules-de.mjs): Handzuordnungen, wo der Import nicht sicher ist
+  // rulesDe: { overrides: { "Magisches Geschoss": "magic-missile" } },
+
+  // Lehrheft („Lehre“ → Fibel der Kreise); alles optional
+  primer: {
+    title: "Fibel vom Moor",
+    master: { name: "Großmutter Hedda", preface: ["Wer dieses Heft liest, hat Tinte an den Fingern. Gut so."] },
+    // Stimmen der Randnotizen: hand = angular | flowing | even, ink = Tintenfarbe
+    voices: { hedda: { label: "Hedda", hand: "angular", ink: "#5a3b2a" }, mirla: { label: "Mirla", hand: "flowing", ink: "#2f4a6b" } },
+    // Randnotizen je Lektion; level = erst ab dieser Charakterstufe sichtbar
+    notes: {
+      l29: [{ voice: "hedda", text: "Hier am Moor sieht man den roten Stern nur im Herbst." }, { voice: "mirla", level: 3, text: "Im Frühjahr auch. Man muss nur früher aufstehen." }],
+    },
+    // Übergabeschreiben nach dem Titelblatt (ab Stufe level)
+    // handover: { level: 1, voice: "hedda", text: ["Für Mirla, …"] },
+    // Randkästen je Teil: { praise, fear, saying }
+    // boxes: { II: { praise: "…", fear: "…", saying: "…" } },
+    // loses Blatt hinter dem Anhang, im Aufbau eines okkulten Rituals; strike: Streichung einer zweiten Stimme
+    // looseLeaf: { level: 5, voice: "hedda", ritual: { title: "…", text: ["…"], school: "…", level: "…", time: "…",
+    //   components: "…", checks: "…", backlash: "…", failure: "…", effect: "…" },
+    //   strike: { voice: "mirla", text: "…" }, notes: [{ voice: "mirla", text: "…" }] },
+    // Beinamen der eigenen Welt, in Klammern hinter dem irdischen Namen (z. B. bei den Wandelsternen);
+    // gearbeitet wird mit den irdischen Namen
+    aliases: { Mars: "der Rote Wanderer", Venus: "der Abendstern" },
+    // einzelne Lektionen ganz oder teilweise ersetzen (Felder wie in data/primer.js)
+    lessons: {
+      // l30: { box: { title: "Die Woche am Moor", text: ["Auf dem Markt in Ellbach zählt man die Tage anders …"] } },
+    },
+  },
 };
 
 // MEHRERE CHARAKTERE: Statt (oder zusätzlich zu) PROFILE_LOCAL lassen sich mehrere Profile registrieren.

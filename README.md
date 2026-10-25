@@ -9,10 +9,10 @@ Erzeugt ein In-Game-Zauberbuch: Zu jedem Zauber gibt es einen magischen Kreis, d
 - **Verzeichnis**: alle Zauber durchsuchen und filtern (Grad, Schule, Essenz, Regelwerk/Alltagszauber), mit **+** ins Buch aufnehmen
 - **Ausführliche Ansicht** (Schalter in der Zauberansicht): jeder Zauber in voller Länge mit beschriftetem Kreis
 - **Kreis anklicken**: großes Fenster mit Erläuterung aller Schichten, Beschriftung und SVG-Export
-- **Mein Buch**: Buchvorschau zum Blättern (je nach Breite eine Seite oder eine Doppelseite wie im gebundenen Buch, seitenweise oder Zauber für Zauber, Pfeiltasten), (i) zeigt den Regeltext, links die Buchzauber mit denselben Filtern wie im Verzeichnis (− entfernt), rechts ein ausklappbares Inhaltsverzeichnis; Druck mit Fortschrittsanzeige als Buch (A5, A4 skaliert, A4 quer mit 2 Seiten) oder als **Schriftrollen** (vorne Kreis, hinten Formel und Regeln; beidseitig drucken); dazu der **Regelband** (Regeltexte nummeriert wie das Inhaltsverzeichnis, mit eigenem Inhaltsverzeichnis Nummer → Seite)
+- **Mein Buch**: Buchvorschau zum Blättern (je nach Breite eine Seite oder eine Doppelseite wie im gebundenen Buch, seitenweise oder Zauber für Zauber, Pfeiltasten), (i) zeigt den Regeltext, links die Buchzauber mit denselben Filtern wie im Verzeichnis (− entfernt), rechts ein ausklappbares Inhaltsverzeichnis; Druck mit Fortschrittsanzeige als Buch (A5, A4 skaliert, A4 quer mit 2 Seiten) oder als **Schriftrollen** (vorne Kreis, hinten Formel und Regeln; beidseitig drucken); dazu der **Regelband** (Regeltexte nummeriert wie das Inhaltsverzeichnis, mit eigenem Inhaltsverzeichnis Nummer → Seite); mit einer Höchstseitenzahl je Band wird das Buch in **Bände** geteilt (an den Kapiteln, möglichst gleich dick, jeder Band mit Titelseite und eigenem Verzeichnis, Seiten je Band ab 1, Regelband-Nummern durchgehend) und bandweise gedruckt
 - **Heute vorbereitet**: Zauberplätze pro Grad von Hand eintragen (die App rechnet nichts aus Klasse oder Stufe), Plätze mit Zaubern aus dem Buch belegen, Gewirktes abstreichen, „Neuer Tag“ nach der Rast. Dazu kommen Sonderplätze mit Bedingung, Joker-Plätze (z. B. Arkane Verbindung), gespeicherte Vorbereitungen und ein druckbarer Tageszettel. Jeder Spieltag hat ein Ingame-Datum (Monate aus dem Profilkalender, zählt bei „Neuer Tag“ weiter). Unter **Verlauf** stehen alle Spieltage mit ihren Ereignissen (Testtage als Probe markieren oder löschen), unter **Statistik** die meistgewirkten Zauber, „oft vorbereitet, selten gewirkt“ und die Würfe nach Grad, Schule und Tag.
 - **Lehre der Kreise**: Legende aller Symbole, Schnellglyphen und Affinitätstabelle der Schulen
-- **Einstellungen**: Besitzer, Titel, Regelverweise auf den Zauberseiten (Regelband-Nummer, QR-Code zu Archives of Nethys, Quellenangabe; alle aus), mehrseitige Zauber links beginnen lassen, Papierformate, Hintergrund drucken ja/nein, Import (xlsx mit Spalte „Name“, csv/txt, json) und Export der Zauberliste (json enthält auch Vorbereitung und Protokoll)
+- **Einstellungen**: Besitzer, Titel, Höchstseitenzahl je Band, Regelverweise auf den Zauberseiten (Regelband-Nummer, QR-Code zu Archives of Nethys, Quellenangabe; alle aus), mehrseitige Zauber links beginnen lassen, Papierformate, Hintergrund drucken ja/nein, Import (xlsx mit Spalte „Name“, csv/txt, json) und Export der Zauberliste (json enthält auch Vorbereitung und Protokoll)
 
 Seitenumfang: Grad 0 und Alltagszauber = ½ Seite, Grad n = n Seiten. Jeder Grad ist ein Kapitel mit eigener Doppelseite (Titel, Ordnungsfigur, Text zur Stufe, Formelliste). Kapitel und mehrseitige Zauber beginnen links – davor bei Bedarf eine Notizseite, oder der vorherige Zauber bekommt den Umfang des nächsthöheren Grades; beides abschaltbar.
 
@@ -65,7 +65,11 @@ Vorgehen: Vorlage nach `data/profile.local.js` kopieren, Felder anpassen, Seite 
 | `app/js/analyze.js` | Zauber → Modell (Essenzprofil in %, Gestalt, Reichweite, Dauer, Komponenten …) |
 | `app/js/glyphs.js`, `circle.js` | SVG-Glyphen, Kreisgenerator, Schnellglyphen, Beschriftung |
 | `app/js/textgen.js` | Baukasten-Texte (deterministisch pro Zauber) |
-| `app/js/book.js` | Seitenplanung, Vorspann, Schriftrollen, Autofit und fließende Seiten |
+| `app/js/book.js` | Seitenplanung, Vorspann, Regelband, Schriftrollen |
+| `app/js/typeset.js` | Satzmodul: Seiten setzen, Autofit, fließende Seiten; Kopf beschreibt die Satz-Klassen |
+| `app/js/viewer.js` | Seitenbetrachter (Doppelseiten, Blätterleiste, Sprünge) und Verzeichnis-Akkordeon für Buch, Lehrheft, „Vom Gebet“ |
+| `app/js/legend.js` | Glyphenlegenden aus einer Quelle (Vorspann und Lehrheft) |
+| `app/js/primer.js`, `data/primer.js` | Lehrheft „Fibel der Kreise“: Aufbau und Lektionen |
 | `app/js/everyday.js` | Alltagszauber: erben fehlende Regelfelder vom Basiszauber |
 | `app/js/import.js` | Zauberlisten aus xlsx/csv/txt lesen |
 | `app/js/prepare.js` | Tagesvorbereitung, Abstreichen, Ingame-Datum, Nutzungsprotokoll |
@@ -80,6 +84,24 @@ Vorgehen: Vorlage nach `data/profile.local.js` kopieren, Felder anpassen, Seite 
 | `data/deities.js` | Gottheiten, nur beschreibende Angaben (erzeugt) |
 | `tools/parse_deities.py` | erzeugt `data/deities.js` aus AoN-Gottheitsseiten (`dieties/*.aspx`, nicht im Repository) |
 | `tools/parse_spells.py` | erzeugt `data/spells.js` aus AoN-Seiten (`spells/*.aspx`) und dem d20pfsrd-Export (`data/spell_full*.tsv`); beide Rohdaten sind nicht im Repository |
+| `tools/test-browser.mjs`, `test-cases.mjs`, `test-baseline.json` | Browser-Tests für Satz und Bedienung, Testfälle, Sollwerte (siehe unten) |
+
+## Browser-Tests
+
+Satz und Bedienung werden in einem headless Chrome geprüft. Nötig sind nur Node ab Version 22 und ein installiertes Chrome oder Chromium (sonst Pfad über `CHROME=…`), kein `npm install`.
+
+```sh
+node tools/test-browser.mjs                  # alle Fälle (rund 20 Sekunden)
+node tools/test-browser.mjs --only lehrheft  # nur Fälle mit „lehrheft“ im Namen; auch: --only satz, --only ui
+node tools/test-browser.mjs --update         # geänderte Seiten bewusst als neue Sollwerte übernehmen
+node tools/test-browser.mjs --pdf /tmp/pdf   # je Satz-Fall ein PDF zum Durchblättern
+```
+
+- **Satz-Fälle** setzen Buch, Regelband, Schriftrollen, Lehrheft, Prüfbogen und Brevier mit festen Testbüchern und verschiedenen Einstellungen, genau wie die Druckknöpfe. Immer geprüft: kein Überlauf, fortlaufende Seitenzahlen, keine leere Folgeseite, keine Überschrift allein am Seitenende, eine Seite je kleiner Formel, Lochrand und rechte Seiten, Höchstseitenzahl je Band, Zeitgrenze. Dazu Vergleich mit `tools/test-baseline.json`: Seitenzahl und womit jede Seite beginnt; gemeldet wird die erste abweichende Seite.
+- **Bedienungsfälle** klicken sich durch Buch, Lehre und Lehrheft (blättern, Seitenzahl, nächster Zauber, Verzeichnis, Seitenleisten, schmales Fenster, Einstellungsdialog) und prüfen den sichtbaren Zustand.
+- `--update` nur nach einer gewollten Änderung an Satz oder Texten, nachdem die gemeldete Seite in der App angesehen wurde; die neuen Sollwerte gehören in denselben Commit.
+- Der Lauf nutzt ein frisches Browserprofil (der eigene `localStorage` bleibt unberührt) und blendet `data/profile.local.js` aus; mit `--with-profile` wird es geladen, die Sollwerte stehen dann in `tools/test-baseline.local.json` (nicht im Repository).
+- Neue Fälle kommen in `tools/test-cases.mjs`; die Selektoren der Bedienungsfälle stehen dort gesammelt (`UI`).
 
 ## Planung
 

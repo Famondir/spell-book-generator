@@ -18,5 +18,12 @@ data/profile.local.js
 *.swp
 .DS_Store
 gemini_talk.md
+backstory.md
 dieties/
 classes/
+
+# Quellenstudien aus dem privaten PnP-Archiv (eigene Zusammenfassungen, nicht zur Weitergabe)
+data/research/
+tools/test-baseline.local.json
+data/rules.de.local.js
+data/domains.de.local.js
