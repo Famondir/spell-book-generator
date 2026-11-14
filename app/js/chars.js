@@ -4,7 +4,7 @@
 // Ein Listeneintrag: { id, name, profile, cls, deity } – ohne cls gilt der Charakter als Magier.
 window.CHARS = (function () {
   const P = "spellbook.";
-  const OWN = ["settings", "book", "bookPos", "bookVol", "prep", "prepPresets", "prepLog", "prepDays", "prayers"]; // je Charakter
+  const OWN = ["settings", "book", "bookPos", "bookVol", "prep", "prepPresets", "prepLog", "prepDays", "prayers", "journal"]; // je Charakter
   const ls = {
     get(k) {
       try {
@@ -71,7 +71,7 @@ window.CHARS = (function () {
     const c = { id: newId(), name: name || I18N.t("char.newName"), profile, ...(src ? { cls: src.cls, deity: src.deity } : {}), ...extra };
     list.push(c);
     save();
-    if (copyFrom) for (const k of OWN) if (k !== "prepLog" && k !== "prepDays") ls.set(`${P}c.${c.id}.${k}`, ls.get(`${P}c.${copyFrom}.${k}`));
+    if (copyFrom) for (const k of OWN) if (k !== "prepLog" && k !== "prepDays" && k !== "journal") ls.set(`${P}c.${c.id}.${k}`, ls.get(`${P}c.${copyFrom}.${k}`));
     return c;
   }
   function update(id, fields) {

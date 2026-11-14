@@ -6,6 +6,9 @@
   const removed = new Set(P.remove || []);
   const list = [...(window.EVERYDAY_SPELLS || []), ...(P.add || [])].filter((e) => !removed.has(e.name));
   const sources = window.EVERYDAY_SOURCES || {};
+  // Englische Fassung (data/everyday_spells.en.js): Schlüssel = deutscher Name, die Id bleibt
+  const EN = window.EVERYDAY_SPELLS_EN || {};
+  const sourcesEn = window.EVERYDAY_SOURCES_EN || {};
   const byName = new Map(window.SPELLS.map((s) => [s.name.toLowerCase(), s]));
   const slug = (n) => n.toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   const INHERIT = ["casting_time", "components", "range", "duration", "saving_throw", "spell_resistance"];
@@ -39,6 +42,10 @@
       description: e.description,
       flavor: (P.flavor && P.flavor[e.name]) || e.flavor || "",
       inspiration: e.inspiration ? sources[e.inspiration] || null : null,
+      inspirationEn: e.inspiration && sources[e.inspiration] ? { ...sources[e.inspiration], ...(sourcesEn[e.inspiration] || {}) } : null,
+      // Flavour aus dem Profil gilt nur in der Sprache des Profils (localization: einsprachige Profiltexte)
+      ownFlavor: !!(P.flavor && P.flavor[e.name]),
+      en: EN[e.name] || null,
       baseSource: base.source,
       essHint: e.ess || null,
       signHint: e.signs || null,

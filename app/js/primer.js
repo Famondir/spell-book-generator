@@ -8,7 +8,32 @@
   const T = window.THEORY;
   const G = window.G;
   const { S, polar, poly } = G;
-  const P = () => window.PRIMER;
+  // Lehrplan in der Buchsprache: Struktur aus data/primer.js, Texte aus data/primer.en.js (gleiche Ids);
+  // fehlende englische Felder bleiben deutsch und werden in I18N.untranslated gezählt
+  const TEXT_FIELDS = ["title", "read", "glosses", "task", "check", "box", "sentences"];
+  let enCache = null;
+  function primerEn() {
+    const D = window.PRIMER, E = window.PRIMER_EN || { lessons: {} };
+    if (enCache && enCache.src === D) return enCache.val;
+    const pick = (de, en, where) => I18N.pick(de, en, "primer:" + where);
+    const val = {
+      ...D,
+      title: pick(D.title, E.title, "title"),
+      subtitle: pick(D.subtitle, E.subtitle, "subtitle"),
+      parts: D.parts.map((p) => ({ ...p, title: pick(p.title, (E.parts || {})[p.id], "part." + p.id) })),
+      boxes: Object.fromEntries(Object.entries(D.boxes || {}).map(([k, b]) => [k, Object.fromEntries(Object.entries(b).map(([f, v]) => [f, pick(v, ((E.boxes || {})[k] || {})[f], `box.${k}.${f}`)]))])),
+      lessons: D.lessons.map((L) => {
+        const x = (E.lessons || {})[L.id] || {};
+        const out = { ...L };
+        for (const f of TEXT_FIELDS) if (L[f] != null) out[f] = pick(L[f], x[f], `${L.id}.${f}`);
+        if (typeof L.taskFirst === "string") out.taskFirst = pick(L.taskFirst, x.taskFirst, `${L.id}.taskFirst`);
+        return out;
+      }),
+    };
+    enCache = { src: D, val };
+    return val;
+  }
+  const P = () => (I18N.lang.book === "en" ? primerEn() : window.PRIMER);
   const prof = () => (window.PROFILE && PROFILE.primer) || {};
   // Beinamen aus dem Profil (z. B. Namen der eigenen Welt), in Klammern hinter dem irdischen Namen
   const alias = (k) => { const a = (prof().aliases || {})[k]; return a ? ` <span class="alias">(${e(a)})</span>` : ""; };
@@ -22,28 +47,47 @@
     for (let i = 0; i < items.length; i += n) out.push(`<div class="pr-grid g${n}">${items.slice(i, i + n).join("")}</div>`);
     return out.join("");
   };
+  // Tafel der Schnellglyphen-Teile (Kreise, Gestaltstriche): kleine Vorschau mit Name und Strichname
+  const qparts = (items, n) => rows(items.map((x) => `<figure>${x.glyph}<figcaption>${e(x.name)}<br><span class="rn">${e(x.sub)}</span></figcaption></figure>`), n).replace(/class="pr-grid /g, 'class="pr-grid qparts ');
   const svg = (inner, vb = "-50 -50 100 100", cls = "") => `<svg class="pr-svg ${cls}" viewBox="${vb}" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
   const mview = (inner, cls = "") => `<figure class="mview ${cls}">${inner}<figcaption>Ansicht des Meisters · nicht nachfahren – abzeichnen</figcaption></figure>`;
 
-  // Lesestück: [[Begriff]] → Rubrik; Glosse beim ersten Vorkommen im ganzen Heft an den Rand
+  // Lektionsnummern: Stelle unter den nummerierten Lektionen in der Reihenfolge der Teile (die Ids
+  // bleiben fest, damit Randnotizen und Ersatz im Profil an ihrer Lektion bleiben)
+  let NUM = new Map();
+  function numberLessons() {
+    NUM = new Map();
+    let n = 0;
+    for (const pt of P().parts) for (const L of P().lessons) if (L.part === pt.id && !L.unnumbered && !L.template) NUM.set(L.id, ++n);
+  }
+  const lessonNo = (L) => (L.unnumbered ? "" : String(NUM.get(L.id) || ""));
+  // Verweis {{lesson:<id>}} im Text → „Lektion <Nummer>“
+  const refs = (t) => String(t).replace(/\{\{lesson:([\w-]+)\}\}/g, (m, id) => {
+    if (!NUM.has(id)) { console.warn("Lehrheft: unbekannter Lektionsverweis", id); return m; }
+    return `Lektion ${NUM.get(id)}`;
+  });
+
+  // Lesestück: [[Begriff]] → Rubrik; Glosse beim ersten Vorkommen im ganzen Heft an den Rand, verankert
+  // in der Zeile des Begriffs (Float vor dem Begriff). Randnotizen der Stimmen weichen ihr aus (TYPESET.placeNotes).
   function readHTML(L, b) {
     return (L.read || [])
+      .map((p) => (typeof p === "function" ? p() : p))
       .map((p) => {
-        const asides = [];
-        const html = e(p).replace(/\[\[([^\]]+)\]\]/g, (_, w) => {
+        const html = e(refs(p)).replace(/\[\[([^\]]+)\]\]/g, (_, w) => {
           const g = (L.glosses || {})[w];
+          let note = "";
           if (g && !b.gloss.has(w)) {
             b.gloss.set(w, { text: g, lesson: b.label(L) });
-            asides.push(`<aside class="pr-note"><b>${e(w)}</b> ${e(g)}</aside>`);
+            note = `<span class="pr-note"><b>${e(w)}</b> ${e(g)}</span>`;
           }
-          return `<b class="term">${e(w)}</b>`;
+          return `${note}<b class="term">${e(w)}</b>`;
         });
-        return `<div class="par">${asides.join("")}<p>${html}</p></div>`;
+        return `<div class="par"><p>${html}</p></div>`;
       })
       .join("");
   }
   // Abhakkästchen am Ende einer Aufgabe stehen zusammen auf einer eigenen Zeile
-  const tickLine = (t) => { const m = t.match(/^(.*?)\s*((?:☐\s*)+)$/); return m ? `${e(m[1])}<br><span class="ticks">${e(m[2].trim())}</span>` : e(t); };
+  const tickLine = (t) => { t = refs(t); const m = t.match(/^(.*?)\s*((?:☐\s*)+)$/); return m ? `${e(m[1])}<br><span class="ticks">${e(m[2].trim())}</span>` : e(t); };
   // note: Verweis unter der Aufgabe, wenn sie vor dem Stoff steht (taskFirst)
   const taskHTML = (list, note) => (list && list.length ? `<div class="task"><h4>Aufgabe</h4><ol>${list.map((t) => `<li>${tickLine(t)}</li>`).join("")}</ol>${note ? `<p class="hint">${e(note)}</p>` : ""}</div>` : "");
   // Prüfbogen: eine Zeile je Lektion (Kriterien mit Skala 0–3, Urteil, Datum, Zeichen)
@@ -80,7 +124,9 @@
   }
 
   // Weltinfo-Kasten einer Lektion
-  const worldBox = (bx) => (bx ? `<div class="pr-world"><b>${e(bx.title)}</b>${(bx.text || []).map((t) => `<p>${e(t)}</p>`).join("")}</div>` : "");
+  const worldBox = (bx) => (bx ? `<div class="pr-world"><b>${e(bx.title)}</b>${(bx.text || []).map((t) => `<p>${e(refs(t))}</p>`).join("")}</div>` : "");
+  // eine Lektion kann einen oder mehrere Kästen tragen
+  const worldBoxes = (bx) => [].concat(bx || []).map(worldBox).join("");
   function boxHTML(part) {
     const bx = { ...(P().boxes || {}), ...(prof().boxes || {}) }[part];
     if (!bx) return "";
@@ -140,6 +186,37 @@
   ];
   const tagParts = (tag) => T.parts(Object.entries(T.TAG_ESS[tag] || {}).map(([id, w]) => ({ id, pct: Math.round(w * 100) })));
 
+  // Strichbuchstaben für Sigillen: Großbuchstaben aus Geraden und Bögen im Feld 8 × 12
+  const O_ = "M4,0 Q0,0 0,6 Q0,12 4,12 Q8,12 8,6 Q8,0 4,0Z", P_ = "M0,12 L0,0 L5,0 Q8,0 8,3.5 Q8,7 5,7 L0,7";
+  const STROKE = {
+    A: "M0,12 L4,0 L8,12 M1.5,7.5 L6.5,7.5", B: "M0,12 L0,0 L5,0 Q8,0 8,3 Q8,6 5,6 L0,6 M5,6 Q8,6 8,9 Q8,12 5,12 L0,12",
+    C: "M8,2 Q6,0 4,0 Q0,0 0,6 Q0,12 4,12 Q6,12 8,10", D: "M0,0 L0,12 L4,12 Q8,12 8,6 Q8,0 4,0Z",
+    E: "M8,0 L0,0 L0,12 L8,12 M0,6 L6,6", F: "M8,0 L0,0 L0,12 M0,6 L6,6", G: "M8,2 Q6,0 4,0 Q0,0 0,6 Q0,12 4,12 Q8,12 8,7 L4.5,7",
+    H: "M0,0 L0,12 M8,0 L8,12 M0,6 L8,6", I: "M4,0 L4,12", J: "M8,0 L8,9 Q8,12 4,12 Q1,12 0,9", K: "M0,0 L0,12 M8,0 L0,7 M3,4.5 L8,12",
+    L: "M0,0 L0,12 L8,12", M: "M0,12 L0,0 L4,7 L8,0 L8,12", N: "M0,12 L0,0 L8,12 L8,0", O: O_, P: P_, Q: O_ + " M5,9 L8,12", R: P_ + " M4,7 L8,12",
+    S: "M8,1.5 Q6.5,0 4,0 Q0,0 0,3 Q0,6 4,6 Q8,6 8,9 Q8,12 4,12 Q1.5,12 0,10.5", T: "M0,0 L8,0 M4,0 L4,12",
+    U: "M0,0 L0,8 Q0,12 4,12 Q8,12 8,8 L8,0", V: "M0,0 L4,12 L8,0", W: "M0,0 L2,12 L4,5 L6,12 L8,0", X: "M0,0 L8,12 M8,0 L0,12",
+    Y: "M0,0 L4,6 L8,0 M4,6 L4,12", Z: "M0,0 L8,0 L0,12 L8,12",
+  };
+  const BASE = { Ä: "A", Ö: "O", Ü: "U", ß: "S" };
+  const VOWELS = new Set(["A", "E", "I", "O", "U", "Y"]);
+  // Streichschritte: wiederholte Buchstaben, dann Vokale; Rest = Buchstaben der Sigille
+  function sigilSteps(sentence) {
+    const up = sentence.toUpperCase();
+    const seen = new Set();
+    const s1 = [...up].map((ch) => {
+      const c = BASE[ch] || ch;
+      if (!STROKE[c]) return e(ch);
+      if (seen.has(c)) return `<s>${e(ch)}</s>`;
+      seen.add(c);
+      return e(ch);
+    }).join("");
+    const uniq = [...seen];
+    const s2 = uniq.map((c) => (VOWELS.has(c) ? `<s>${c}</s>` : c)).join(" ");
+    const rest = uniq.filter((c) => !VOWELS.has(c));
+    return { s1, s2, rest };
+  }
+
   // Formel in drei Durchgängen mit wachsenden Lücken
   function clozePasses(text) {
     const words = text.split(/\s+/);
@@ -194,13 +271,15 @@
     mixtures: (L, b) => `<dl class="pr-dl">${b.small.slice(0, 5).map((x) => `<dt>${smallTitle(x)} ${essRow(x.m.essences)}</dt><dd>${e(U.cap(T.parts(x.m.essences)))}.</dd>`).join("")}</dl>`,
     quickderive: (L, b) => {
       const x = b.small[0];
-      const core = svg(`<g class="quick-g">${S.circle(0, 0, 50)}${(QUICK_SCHOOL[x.m.school] || QUICK_SCHOOL.universal)()}<g class="accent">${G.ESSENCE[x.m.primary](0, 0, 11)}</g></g>`, "-75 -75 150 150", "quick");
+      const core = svg(`<g class="quick-g">${S.circle(0, 0, 50)}${(QUICK_SCHOOL[x.m.school] || QUICK_SCHOOL.universal)()}<g class="accent">${G.ESSENCE[x.m.primary](0, 0, 11)}</g></g>`, "-80 -80 160 160", "quick");
       return `<div class="pr-steps"><figure>${renderCircle(x.m, { text: x.t.formula.band })}<figcaption>1 · voller Kreis</figcaption></figure><span>→</span><figure>${core}<figcaption>2 · Kern: Schule und Hauptessenz</figcaption></figure><span>→</span><figure>${quickGlyph(x.m)}<figcaption>3 · Schnellglyphe</figcaption></figure></div><p class="hint">${smallTitle(x)}</p>` +
-        `<h4>Was die Striche sagen</h4>${LEGEND.quickRules()}` +
+        `<h4 class="keep-next">Was die Striche sagen</h4>${LEGEND.quickRules(true)}${LEGEND.quickSource(x.m)}` +
+        `<h4 class="keep-next">Kreise nach der Dauer</h4>` + qparts(LEGEND.quickRings(), 4) +
+        `<h4 class="keep-next">Gestaltstriche</h4>` + qparts(LEGEND.quickShapes(), 5) +
         `<h4 class="keep-next">Schlüssel der Schulfiguren</h4>` +
         rows(LEGEND.quickSchools(12).map((x) => `<figure class="qkey">${x.full}<span>→</span>${x.glyph}<figcaption>${e(x.name)}</figcaption></figure>`), 3);
     },
-    quicklist: (L, b) => rows(b.small.map((x) => `<figure>${quickGlyph(x.m)}<figcaption>${e(x.t.title)}<br><span class="rn">${e(RULES.name(x.m))}</span></figcaption></figure>`), 4),
+    quicklist: (L, b) => rows(b.tricks.map((x) => `<figure>${quickGlyph(x.m)}<figcaption>${e(x.t.title)}<br><span class="rn">${e(RULES.name(x.m))}</span></figcaption></figure>`), 4),
     anatomy: (L, b) => {
       const x = b.small.find((y) => y.m.components.V) || b.small[0];
       return mview(renderCircle(x.m, { text: x.t.formula.band, annotate: true }), "duo") + `<p class="hint">${smallTitle(x)}</p><ol class="annot-list">${circleAnnotations(x.m).map((a) => `<li value="${a.n}"><b>${e(a.k)}:</b> ${e(a.t)}</li>`).join("")}</ol>`;
@@ -295,10 +374,33 @@
       return rows(figs, 3);
     },
     // --- Zeichen der Stoffe ---
+    sealBlank: () => {
+      const seal = svg(S.circle(0, 0, 40) + S.circle(0, 0, 34, "thin"), "-44 -44 88 88", "seal");
+      return rows([`<figure>${seal}<figcaption>Entwurf des eigenen Zeichens</figcaption></figure>`, `<figure>${seal}<figcaption>Abdruck · gesiegelt am __________</figcaption></figure>`], 2);
+    },
+    sigil: (L) => {
+      const list = (L.sentences || []).slice(0, 3);
+      return list.map((t, i) => {
+        const st = sigilSteps(t);
+        const steps = `<ol class="sigil-steps"><li>${st.s1}</li><li>${st.s2}</li><li>${st.rest.join(" ")}</li></ol>`;
+        if (i > 0) return `<div class="sigil-row"><h4>${e(t)}</h4>${steps}<div class="sigil-blank"></div></div>`;
+        const fig = svg(`<g class="sigil-g">${st.rest.map((c) => `<path d="${STROKE[c]}"/>`).join("")}</g>`, "-2 -2 12 16", "sigil");
+        return `<div class="sigil-row"><h4>${e(t)}</h4>${steps}${mview(fig, "inline")}</div>`;
+      }).join("");
+    },
+    inks: () => {
+      const TG = window.TEXTGEN || {};
+      const rows = T.ESSENCES.map((x) => {
+        const c = TG.CORRESPOND[x.id], pg = TG.PIGMENTS[c.color] || { name: c.color }, mt = TG.INK_METALS[c.metal] || {};
+        const gift = [pg.poison && pg.name, mt.poison].filter(Boolean).join(", ");
+        return `<tr><td>${glyphSVG("essence", x.id, { s: 7 })}</td><td>${e(x.latin)}</td><td>${e(c.color)}</td><td>${e(pg.name)}</td><td>${e(c.metal)}</td><td class="gift">${e(gift)}</td></tr>`;
+      });
+      return `<table class="pr-mat pr-inks"><tr><th></th><th>Essenz</th><th>Farbe</th><th>Farbstoff</th><th>Metall</th><th>Gift</th></tr>${rows.join("")}</table>`;
+    },
     tria: () => {
       const t = [["sulfur", "Sulfur · Flamme"], ["mercurius", "Mercurius · Rauch"], ["sal", "Sal · Asche"]];
       return rows(t.map(([k, n]) => `<figure>${glyphSVG("alch", k, { s: 12 })}<figcaption>${n}</figcaption></figure>`), 3) +
-        `<div class="solution">Lösung: Wachs – Sulfur · Salz – Sal · Quecksilber – Mercurius · Kohle – Sulfur · Kreide – Sal · Weingeist – Mercurius</div>`;
+        `<div class="solution">Lösung: Wachs – Sulfur · Salz – Sal · Quecksilber – Mercurius · Kohle – Sulfur · Kreide – Sal · Weingeist – Mercurius · Seife – Sulfur und Sal zu gleichen Teilen · Siegellack – Sulfur</div>`;
     },
     elements: () => {
       const els = [["ignis", "Feuer"], ["aer", "Luft"], ["aqua", "Wasser"], ["terra", "Erde"]];
@@ -315,6 +417,20 @@
       const signs = pts.map((a, i) => { const q = polar(0, 0, 44, (360 / 7) * i); return `<circle cx="${G.f(q[0])}" cy="${G.f(q[1])}" r="7" class="bg"/>` + G.ALCH[order[i]](q[0], q[1], 4.5); }).join("");
       const days = ["Sonntag ☉", "Montag ☽", "Dienstag ♂", "Mittwoch ☿", "Donnerstag ♃", "Freitag ♀", "Samstag ♄"];
       return mview(svg(star + signs, "-54 -54 108 108"), "medium") + `<p class="hint">${days.join(" · ")}</p>`;
+    },
+    // --- Tafel der Zeit: Tage, Jahr mit Monaten und Festen, Himmel; zwischen Bild und Einträgen steht Text ---
+    timeWeek: () => window.TIME.weekEntries().join(""),
+    timeYear: () => {
+      const TM = window.TIME;
+      return mview(svg(TM.yearRing(), "-104 -104 208 208", "ring"), "ring") +
+        `<div class="par"><p>So liest man den Ring: Suche außen den Monat und gehe nach innen. Dort steht, welches Zeichen in diesem Teil des Monats regiert. Weil der Himmel sich nicht nach dem Kalender der Menschen richtet, wechselt das Zeichen fast immer mitten im Monat. Die Monate selbst, mit ihren Schutzgöttern und Farben:</p></div>` +
+        TM.monthEntries().join("");
+    },
+    timeSky: () => {
+      const TM = window.TIME;
+      return mview(svg(TM.starMap(), "-118 -112 236 224", "ring"), "ring") +
+        `<div class="par"><p>Jedes Zeichen hat ein Bild, und jedes Bild eine Geschichte. Hier sind sie in der Folge, in der die Sonne sie durchwandert, mit ihrer Zeit im Jahr und dem, wozu sie nach altem Brauch neigen.</p></div>` +
+        TM.signEntries().join("");
     },
     // --- Gesellenstück ---
     tailor: (L, b) => {
@@ -370,18 +486,20 @@
   };
 
   // Lektion zu einer kleinen Formel (Teil VII)
-  function formulaLesson(x, i, b, tpl) {
+  function formulaLesson(x, i, b, tpl, kicker = "Kleine Formel", withGlyph = false) {
     const m = x.m, t = x.t;
     const mat = m.components.materialTags || [];
+    // Alltagszauber: die Schnellglyphe steht neben dem Kreis (kommt in der Schnellglyphen-Übersicht nicht vor)
+    const side = withGlyph ? `<figure class="qside">${quickGlyph(m)}<figcaption>Schnellglyphe</figcaption></figure>` : "";
     const body =
-      mview(renderCircle(m, { text: t.formula.band }), "fit") +
+      mview(renderCircle(m, { text: t.formula.band }) + side, "fit") +
       `<h4>Die Formel</h4>${clozePasses(t.formula.lines.join(" "))}` +
       `<h4>Geste</h4><p>${(t.gestures || []).map(e).join(" · ") || "Keine Geste."}</p>` +
       (m.components.M ? `<h4>Stoff</h4><p>${mat.length ? mat.map((g) => `${glyphSVG("alch", g.tag, { s: 6 })} ${e(g.noun)}`).join(" · ") : e(m.components.material || "")}</p>` : "") +
       `<h4>Mischung</h4><p>${essRow(m.essences)} ${e(U.cap(T.parts(m.essences)))}.</p>` +
       `<div class="ladder"><span>☐ mit Buch</span><span>☐ aus dem Gedächtnis</span><span>☐ unter Ablenkung</span><span class="thrice">dreimal in Folge ☐ ☐ ☐</span></div>`;
     const L = { ...tpl, id: "f-" + m.id, title: t.title };
-    return section(L, `Kleine Formel ${i + 1}`, `<div class="ls-sub">${e(RULES.name(m))} · ${m.spell.everyday ? "Alltagszauber" : "Zaubertrick"}</div>` + readHTML(i === 0 ? tpl : {}, b) + body, b, tpl.check);
+    return section(L, `${kicker} ${i + 1}`, `<div class="ls-sub">${e(RULES.name(m))} · ${m.spell.everyday ? "Alltagszauber" : "Zaubertrick"}</div>` + readHTML(i === 0 ? tpl : {}, b) + body, b, tpl.check);
   }
 
   function section(L, kicker, inner, b, check, tail = "") {
@@ -392,8 +510,8 @@
   }
 
   function lessonHTML(L, b) {
-    const kicker = L.unnumbered ? "" : `Lektion ${L.id.replace(/^l/, "")}`;
-    let inner = readHTML(L, b) + worldBox(L.box) + (L.taskFirst ? taskHTML(L.task, L.taskFirst) : "");
+    const kicker = L.unnumbered ? "" : `Lektion ${lessonNo(L)}`;
+    let inner = readHTML(L, b) + worldBoxes(L.box) + (L.taskFirst ? taskHTML(L.task, L.taskFirst) : "");
     if (L.text && !L.read) inner += `<p class="hint">Dieser Abschnitt wird noch geschrieben.</p>`;
     let tail = "";
     if (L.gen && GEN[L.gen]) {
@@ -411,6 +529,7 @@
   // ---------------------------------------------------------------------------
   // ctx: { entries: [{ m, t }] (Buch), settings }
   function build(ctx = {}) {
+    numberLessons();
     const settings = ctx.settings || {};
     const pr = prof();
     const entries = ctx.entries || [];
@@ -422,7 +541,7 @@
       entries,
       small,
       checks: [],
-      label: (L) => (L.unnumbered ? L.title : `Lektion ${L.id.replace(/^l/, "")}`),
+      label: (L) => (L.unnumbered ? L.title : `Lektion ${lessonNo(L)}`),
     };
     const master = (settings.primerMaster || (pr.master && pr.master.name) || "").trim();
     b.master = master;
@@ -433,16 +552,23 @@
     const bind = settings.primerGutter === false ? "" : " bind";
     const parts = [];
     const roman = (pt) => pt.roman || pt.id;
+    // Zaubertricks (offizieller Kanon) stehen in Teil VII, Alltagszauber als eigener Abschnitt hinter dem Anhang
+    let tricks = small.filter((x) => !x.m.spell.everyday);
+    if (!tricks.length) tricks = BASE_SMALL.map(byName).filter(Boolean).map(modelOf);
+    b.tricks = tricks;
+    const everyday = small.filter((x) => x.m.spell.everyday);
+    const tail = (pt) => pt.id === "A" || pt.id === "W";
     for (const pt of P().parts) {
-      b.part = pt.id === "V" ? pt.title : pt.id === "A" ? "Anhang" : `Teil ${roman(pt)} · ${pt.title}`;
+      if (pt.id === "W" && !everyday.length) continue;
+      b.part = pt.id === "V" ? pt.title : tail(pt) ? pt.title : `Teil ${roman(pt)} · ${pt.title}`;
       const lessons = lessonsOf(pt.id);
       const pages = [];
       if (pt.id === "V") {
         pages.push({ cls: "title-page primer-title" + bind, running: "", html: `<div class="tp"><div class="tp-sigil pr-sigil">${svg(orderFig(7, 34) + S.circle(0, 0, 46) + S.circle(0, 0, 12, "thin"), "-52 -52 104 104")}</div><h1>${e(title)}</h1><div class="tp-owner">${e(pr.subtitle || P().subtitle)}</div><div class="tp-sub">${master ? "aus der Werkstatt " + e(master) : ""}</div></div>` });
         if (pr.handover && (!pr.handover.level || b.level >= pr.handover.level)) pages.push({ cls: "primer-page flow handover" + bind, running: "An den, der nach mir liest", html: voiceHTML({ voice: pr.handover.voice, text: (pr.handover.text || []).join("\n\n") }, "handover-text") });
       }
-      const running = pt.id === "V" ? "Vorspann" : pt.id === "A" ? "Anhang" : `Teil ${roman(pt)} · ${pt.title}`;
-      let html = pt.id === "V" ? "" : `<h3>${pt.id === "A" ? "Anhang" : `Teil ${roman(pt)} · ${e(pt.title)}`}</h3>${boxHTML(pt.id)}`;
+      const running = pt.id === "V" ? "Vorspann" : tail(pt) ? pt.title : `Teil ${roman(pt)} · ${pt.title}`;
+      let html = pt.id === "V" ? "" : `<h3>${tail(pt) ? e(pt.title) : `Teil ${roman(pt)} · ${e(pt.title)}`}</h3>${boxHTML(pt.id)}`;
       // Satz: dicht (fortlaufend), ausgewogen (Lektion möglichst ganz auf einer Seite; Vorspann und
       // Werkstatt je Lektion eine neue Seite) oder seitenweise (jede Lektion auf neuer Seite)
       const layout = settings.primerLayout || "balanced";
@@ -459,15 +585,28 @@
           // jede kleine Formel auf genau einer Seite: feste Seite, die sich wie eine Zauberseite einpasst
           const tpl = P().lessons.find((x) => x.template);
           pages.push({ cls: "primer-page flow" + bind, running, html });
-          small.forEach((x, i) => pages.push({ cls: "primer-page formula-page" + bind, spell: "f-" + x.m.id, running, html: formulaLesson(x, i, b, tpl) }));
+          tricks.forEach((x, i) => pages.push({ cls: "primer-page formula-page" + bind, spell: "f-" + x.m.id, running, html: formulaLesson(x, i, b, tpl) }));
           html = "";
         }
+      }
+      if (pt.id === "W") {
+        // Hausformeln des Buches: jede auf einer Seite wie die Zaubertricks, der Abschnitt kann wachsen
+        const tpl = P().lessons.find((x) => x.template);
+        html += `<p>Eigene Formeln des Hauses, keine Zaubertricks des Regelwerks. Sie werden wie diese gelernt: dreimal, mit wachsenden Lücken.</p>`;
+        pages.push({ cls: "primer-page flow" + bind, running, html });
+        everyday.forEach((x, i) => pages.push({ cls: "primer-page formula-page" + bind, spell: "f-" + x.m.id, running, html: formulaLesson(x, i, b, { ...tpl, read: [] }, "Alltagszauber", true) }));
+        html = "";
       }
       if (html) pages.push({ cls: "primer-page flow" + bind, running, html });
       pages.forEach((pg) => (pg.cls += " part-" + pt.id));
       // mit Lochrand beginnt jeder Teil wie im Buch auf einer rechten Seite
       if (pages[0] && bind) pages[0].cls += " recto-start";
-      parts.push({ id: pt.id, title: pt.id === "V" ? pt.title : pt.id === "A" ? "Anhang" : `${roman(pt)} · ${pt.title}`, lessons: lessons.map((L) => ({ id: L.id, title: L.title, label: L.unnumbered ? "" : L.id.replace(/^l/, "") })).concat(pt.id === "VII" ? small.map((x, i) => ({ id: "f-" + x.m.id, title: x.t.title, label: "·" })) : []), pages });
+      parts.push({ id: pt.id, title: pt.id === "V" ? pt.title : tail(pt) ? pt.title : `${roman(pt)} · ${pt.title}`, lessons: lessons.map((L) => ({ id: L.id, title: L.title, label: lessonNo(L) })).concat(pt.id === "VII" ? tricks.map((x) => ({ id: "f-" + x.m.id, title: x.t.title, label: "·" })) : pt.id === "W" ? everyday.map((x) => ({ id: "f-" + x.m.id, title: x.t.title, label: "·" })) : []), pages });
+    }
+    // eigene Ergänzung, kein Teil des klassischen Lehrhefts: hinter dem Anhang, vor den Alltagszaubern
+    if (window.DEVOTION && DEVOTION.enabled()) {
+      const at = parts.findIndex((p) => p.id === "A");
+      parts.splice(at < 0 ? parts.length : at + 1, 0, prayersPart(bind));
     }
     // das Glossar kennt erst jetzt alle Begriffe: Anhang neu erzeugen
     const A = parts.find((p) => p.id === "A");
@@ -490,6 +629,33 @@
       return [{ cls: "pb-page flow", running: "Prüfbogen" + (master ? " · Werkstatt " + master : ""), html }];
     };
     return { title, parts, sheet };
+  }
+
+  // Teil „Gebete für den Tag“ (nur mit Gottheit bzw. Schutzgottheit): Morgen- und Abendgebet als feste Form,
+  // Anlass-Gebete und Festtage aus dem Profil; steht hinter dem Anhang
+  function prayersPart(bind) {
+    const G_TITLE = "Gebete für den Tag";
+    const sec = (id, kicker, title, inner) => `<section class="lesson splittable keep-whole" data-lesson="${e(id)}"><div class="ls-head keep-next"><div class="ls-k">${e(kicker)}</div><h4 class="ls-t">${e(title)}</h4></div>${inner}</section>`;
+    const steps = (P) => P.steps.map((s) => `<div class="dv-step"><h5>${e(s.label)}${s.optional ? " <i>(wenn Zeit bleibt)</i>" : ""}</h5><p>${s.lines.map(e).join("<br>")}</p></div>`).join("");
+    const M = DEVOTION.morning(null), E = DEVOTION.evening(null);
+    const occ = DEVOTION.OCCASIONS.map((k) => DEVOTION.occasion(k));
+    const months = ((window.PROFILE && PROFILE.calendar) || {}).months || [];
+    const feasts = DEVOTION.cfg().feasts || [];
+    const lessons = [
+      { id: "g-morning", title: M.title, kicker: "Am Morgen", html: steps(M) },
+      { id: "g-evening", title: E.title, kicker: "Am Abend", html: steps(E) },
+      ...occ.map((o) => ({ id: "g-" + o.kind, title: o.title, kicker: "Zum Anlass", html: `<p>${o.lines.map(e).join("<br>")}</p>` })),
+      ...(feasts.length ? [{ id: "g-feasts", title: "Festtage", kicker: "Im Jahr", html: `<ul>${feasts.map((f) => `<li><b>${e(f.d)}. ${e(months[f.m] || "")}</b> · ${e(f.name)}</li>`).join("")}</ul>` }] : []),
+    ];
+    const deity = window.DEITY ? window.DEITY.name : "";
+    const html = `<h3>${e(G_TITLE)}</h3><p class="hint">Gebete an ${e(deity)} für den Morgen, den Abend und besondere Anlässe. Am Morgen und am Abend gilt die feste Form; das Andachtsblatt des Tages füllt sie mit dem, was der Tag bringt.</p>` +
+      lessons.map((L) => sec(L.id, L.kicker, L.title, L.html)).join("");
+    return {
+      id: "G",
+      title: G_TITLE,
+      lessons: lessons.map((L) => ({ id: L.id, title: L.title, label: "·" })),
+      pages: [{ cls: "primer-page flow part-G" + bind + (bind ? " recto-start" : ""), running: G_TITLE, html }],
+    };
   }
 
   window.PRIMER_BOOK = { build };

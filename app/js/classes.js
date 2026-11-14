@@ -35,4 +35,12 @@ window.CLASS = (function () {
 })();
 
 window.deityById = (id) => (window.DEITIES || []).find((d) => d.id === id) || null;
-window.DEITY = window.CLASS.deity ? window.deityById((window.CHARS && CHARS.current().deity) || (window.PROFILE || {}).deity || "iomedae") || window.deityById("iomedae") : null;
+// Göttliche Klassen: Gottheit (Standard Iomedae). Arkane Klassen: optionale Schutzgottheit, die nur Gebete für den
+// Tag, Andachtsblatt und Andachtsbuch betrifft; deity "" am Charakter = ausdrücklich keine (dann gilt auch das Profil nicht)
+window.DEITY = (function () {
+  const ch = (window.CHARS && CHARS.current()) || {};
+  const prof = (window.PROFILE || {}).deity;
+  if (window.CLASS.deity) return window.deityById(ch.deity || prof || "iomedae") || window.deityById("iomedae");
+  const id = ch.deity === "" ? null : ch.deity || prof;
+  return id ? window.deityById(id) : null;
+})();

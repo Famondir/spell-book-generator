@@ -43,7 +43,8 @@
   }
   const circleBox = (m, t, cls, opts = {}) => `<figure class="circle-box ${cls}">${renderCircle(m, { text: t.formula.band, ...opts })}</figure>`;
   function formulaBlock(t, withTone = true) {
-    return `<div class="formula">${t.formula.lines.map((l) => `<div class="fl">${e(l)}</div>`).join("")}${withTone ? `<div class="tone">Vortrag: ${e(t.formula.tone)}.</div>` : ""}</div>`;
+    const tech = t.formula.tech ? `<div class="tech">Fachformel: <i>${e(t.formula.tech)}</i></div>` : "";
+    return `<div class="formula">${t.formula.lines.map((l) => `<div class="fl">${e(l)}</div>`).join("")}${tech}${withTone ? `<div class="tone">Vortrag: ${e(t.formula.tone)}.</div>` : ""}</div>`;
   }
   function componentsBlock(m, t) {
     const c = m.components;
@@ -77,7 +78,7 @@
   }
   function correspondBlock(t) {
     const c = t.correspond;
-    return `<h4>Entsprechungen</h4><table class="corr"><tr><th>Stunde</th><td>${e(c.hour)}</td><th>Gestirn</th><td>${e(c.planet)}</td></tr><tr><th>Farbe</th><td>${e(c.color)}</td><th>Metall</th><td>${e(c.metal)}</td></tr><tr><th>Richtung</th><td>${e(c.dir)}</td><th>Himmel</th><td>${e(c.body)}</td></tr></table>`;
+    return `<h4>Entsprechungen</h4><table class="corr"><tr><th>Stunde</th><td>${e(c.hour)}</td><th>Gestirn</th><td>${e(c.planet)}</td></tr><tr><th>Farbe</th><td>${e(c.color)}</td><th>Metall</th><td>${e(c.metal)}</td></tr><tr><th>Richtung</th><td>${e(c.dir)}</td><th>Himmel</th><td>${e(c.body)}</td></tr></table>${t.ink ? `<p class="ink"><b>Tinte</b> ${e(t.ink)}</p>` : ""}`;
   }
   const failureBlock = (t) => `<h4>Fehlerbilder und Rückschlag</h4><dl class="struct">${t.failure.map((f) => `<dt>${e(f.k)}</dt><dd>${e(f.t)}</dd>`).join("")}</dl>`;
   const counterBlock = (m, t) =>
@@ -109,8 +110,11 @@
     return `<h4>${e(h)}</h4><figure class="circle-box annotated-box">${renderCircle(m, { text: t.formula.band, annotate: true })}</figure>
       <ol class="annot-list">${list.map((a) => `<li value="${a.n}"><b>${e(a.k)}:</b> ${e(a.t)}</li>`).join("")}</ol>`;
   }
+  const QUICK_RING_DE = { instant: "oben offener Kreis", rounds: "Kreis mit zwei Zeitmarken", minutes: "gestrichelter Kreis", hours: "doppelter Kreis", days: "dreifacher Kreis", permanent: "Kreis mit Schwanz", concentration: "Kreis mit Faden" };
+  // Absichtszeichen mit Herkunft: Anlaute der gedruckten Kernzeile in der Schrift ihrer Sprache
+  const quickLettersDe = (m) => `${quickMarksHTML(m).join(" und ")} aus der Kernzeile`;
   function quickBlock(m) {
-    return `<h4>Schnellglyphe</h4><div class="quick-row">${quickGlyph(m)}<p>Für das Zeichnen in Eile: ${m.duration.kind === "instant" ? "offener" : "geschlossener"} Kreis, darin ${m.schoolInfo.de === "Universalmagie" ? "das Kreuz" : "die Kurzfigur der " + e(m.schoolInfo.de)} und ${THEORY.ESS[m.primary].latin} im Zentrum${m.level ? `, ${m.level} Punkt${m.level > 1 ? "e" : ""} für die Ordnung` : ""}. Wirkt nur für den, der den vollen Kreis schon einmal gezeichnet hat.</p></div>`;
+    return `<h4>Schnellglyphe</h4><div class="quick-row">${quickGlyph(m)}<p>Für das Zeichnen in Eile: ${QUICK_RING_DE[m.duration.kind] || "rechts offener Kreis"}, darin ${m.schoolInfo.de === "Universalmagie" ? "das Kreuz" : "die Kurzfigur der " + e(m.schoolInfo.de)} und ${THEORY.ESS[m.primary].latin} im Zentrum, daneben ${quickLettersDe(m)}${m.level ? `, ${m.level} Punkt${m.level > 1 ? "e" : ""} für die Ordnung` : ""}. Wirkt nur für den, der den vollen Kreis schon einmal gezeichnet hat.</p></div>`;
   }
   function submatricesBlock(m, t) {
     const parts = [
@@ -263,7 +267,7 @@
     const notesLeft = notePairs.map((_, i) => "note" + i).filter((k) => !used.has(k));
     for (const p of pages) {
       const keys = p.first || p.half ? notesLeft : [...opt, ...notesLeft];
-      p.html += keys.map((k) => `<div class="opt off" data-k="${k}">${B[k]()}</div>`).join("");
+      p.html += keys.map((k) => `<div class="opt off" data-k="${k}"${k === "note0" && n.lead ? " data-lead" : ""}>${B[k]()}</div>`).join("");
       p.spell = m.id;
     }
     return pages;
@@ -381,7 +385,14 @@
     pages.push({
       html: `<h3>Schnellglyphen</h3><p>Am Spieltisch bleibt keine Zeit für den vollen Kreis. Wer eine Formel einmal vollständig gezeichnet hat, kann sie mit ihrer Schnellglyphe abrufen – fünf Striche statt fünfzig:</p>
       ${LEGEND.quickRules()}
-      ${LEGEND.grid(LEGEND.quickSchools(), "quick-schools")}
+      ${ex[0] ? LEGEND.quickSource(ex[0]) : ""}
+      <h3>Kreise nach der Dauer</h3>${LEGEND.tiles(LEGEND.quickRings(), 4, "rings")}`,
+    });
+    pages.push({
+      html: `<h3>Gestaltstriche</h3>${LEGEND.tiles(LEGEND.quickShapes(), 4, "shapes")}`,
+    });
+    pages.push({
+      html: `<h3>Schulfiguren der Schnellglyphen</h3>${LEGEND.grid(LEGEND.quickSchools(), "quick-schools")}
       <div class="quick-ex">${ex.map((m) => `<figure>${quickGlyph(m)}<figcaption>${e(generateTexts(m).title)}<br><span>${e(RULES.name(m))}</span></figcaption></figure>`).join("")}</div>`,
     });
     pages.push({
@@ -450,9 +461,9 @@
       <figure class="dt-symbol"><svg viewBox="-12 -12 24 24">${VITRAIL.symbolSVG(d.symbol, 0, 0, 10, base)}</svg></figure>
       <dl class="struct">
         ${row("Gesinnung", e(ALIGN_DE[d.align] || d.align))}${row("Pantheon", e(d.pantheon))}
-        ${row("Zuständigkeiten", de(d.areas, PRAYER.AREA))}${row("Domänen", de(d.domains, PRAYER.DOMAIN))}
+        ${row("Zuständigkeiten", de(d.areas, PRAYER.AREA))}${row("Domänen", (d.domains || []).map((x) => e(RULES.domain(x))).join(", "))}${row("Unterdomänen", (d.subdomains || []).filter((x) => x !== "N/A").map((x) => e(RULES.domain(x))).join(", "))}
         ${row("Lieblingswaffe", e(d.weapon))}${row("Heiliges Symbol", e(d.symbol))}${row("Heiliges Tier", e(d.animal))}
-        ${row("Heilige Farben", d.colors.map((c) => `<span class="swatch" style="background:${c.hex}"></span>${e(c.name)}`).join(" "))}
+        ${row("Heilige Farben", d.colors.map((c) => `<span class="swatch" style="background:${c.hex}"></span>${e(c.de || c.name)}`).join(" "))}
       </dl>
       <p class="hint dt-legal">Angaben nach Archives of Nethys. Name und Angaben der Gottheit gehören Paizo Inc. und werden beschreibend unter Paizos Community Use Policy verwendet.</p>`;
   }
@@ -501,7 +512,7 @@
       ? "Jede Essenz hat ihren eigenen Stein. Er erscheint als Akzentstein, so oft wie ihr Anteil am Zauber, und im Medaillon, wenn sie die Hauptessenz ist."
       : "Jede Essenz hat ihr eigenes Glas. Es erscheint als Akzentscheibe, so oft wie ihr Anteil am Zauber, und im Medaillon, wenn sie die Hauptessenz ist.";
     const colors = d && d.colors.length
-      ? d.colors.map((c, i) => `<span class="swatch" style="background:${stone ? base[i] : c.hex}"></span>${e(c.name)}${stone ? ` (${e(VITRAIL.colorStoneName(c.name))})` : ""}`).join(" ")
+      ? d.colors.map((c, i) => `<span class="swatch" style="background:${stone ? base[i] : c.hex}"></span>${e(c.de || c.name)}${stone ? ` (${e(VITRAIL.colorStoneName(c.name))})` : ""}`).join(" ")
       : d ? "keine überliefert, daher eine Palette nach Gesinnung: " + base.map((c) => `<span class="swatch" style="background:${c}"></span>`).join("") : "";
     return `<h3>${stone ? "Die Steine" : "Die Gläser"}</h3><p class="hint">${intro}</p>
       <div class="legend-grid vt-glass">${T.ESSENCES.map((x) => `<div class="lg">${VITRAIL.essSwatch(x.id)}<div><b>${x.latin}</b> – ${e(x.de.replace(/ \(.*\)$/, ""))}${stone ? ` · <i>${e(VITRAIL.essStoneName(x.id))}</i>` : ""}<br><span>Gegenpol: ${T.ESS[x.opp].latin}</span></div></div>`).join("")}</div>
@@ -668,7 +679,7 @@
     for (const c of chapters) {
       (c.listPages || []).forEach((lp, i) => {
         const part = c.items.slice(i * c.perList, (i + 1) * c.perList);
-        lp.html = `<h3>${divine() ? "Gebete" : "Formeln"} dieses Kapitels${i ? " (Forts.)" : ""}</h3><div class="ch-list">${part.map((x) => `<div class="ch-row"><span class="tq">${quickGlyph(x.m)}</span><span class="ch-nm">${e(x.t.title)}<i>${e(RULES.name(x.m))}</i></span><span class="tp">${x.page}</span></div>`).join("")}</div>`;
+        lp.html = `<h3>${divine() ? "Gebete" : "Formeln"} dieses Kapitels${i ? " (Forts.)" : ""}</h3><div class="ch-list">${part.map((x) => `<div class="ch-row"><span class="tq">${quickGlyph(x.m, { marks: false })}</span><span class="ch-nm">${e(x.t.title)}<i>${e(RULES.name(x.m))}</i></span><span class="tp">${x.page}</span></div>`).join("")}</div>`;
       });
     }
     front.forEach((p, i) => pages.push({ ...p, no: i + 1, running: "" }));
@@ -679,7 +690,7 @@
           no: front.length + i + 1,
           running: "Verzeichnis",
           html: (i === 0 ? `<h3>Verzeichnis der ${divine() ? "Gebete" : "Formeln"}</h3>` : "") +
-            `<table class="toc">${chunk.map((x) => `<tr><td class="tq">${quickGlyph(x.m)}</td><td class="tg">${x.m.spell.everyday ? "A" : x.m.level === 0 ? "0" : U.ROMAN[x.m.level]}</td><td>${e(x.t.title)}<span class="tn">${e(RULES.name(x.m))}</span></td><td class="tp">${x.page}</td></tr>`).join("")}</table>`,
+            `<table class="toc">${chunk.map((x) => `<tr><td class="tq">${quickGlyph(x.m, { marks: false })}</td><td class="tg">${x.m.spell.everyday ? "A" : x.m.level === 0 ? "0" : U.ROMAN[x.m.level]}</td><td>${e(x.t.title)}<span class="tn">${e(RULES.name(x.m))}</span></td><td class="tp">${x.page}</td></tr>`).join("")}</table>`,
         });
       }
     }
@@ -907,5 +918,5 @@
     return pages;
   }
 
-  window.BOOK = { spellPages, prayerPages, scrollPages, assemble, volumes, rulesBook, rulesIndex, rulesBox, frontMatter, chapterKey, chapterName, rank };
+  window.BOOK = { spellPages, prayerPages, scrollPages, assemble, volumes, rulesBook, rulesIndex, rulesBox, frontMatter, chapterKey, chapterName, rank, deityPage };
 })();

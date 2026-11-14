@@ -116,7 +116,8 @@
       const tail = inner.lastElementChild;
       const next = page.nextElementSibling;
       if (tail && next && next.classList.contains("flow-cont") && inner.children.length > 1 && tail.classList.contains("splittable")) {
-        const kids = [...tail.children];
+        // Randnotizen, Glossen und Anker zählen nicht als Inhalt: ein Kopf mit Notiz bleibt trotzdem nicht allein stehen
+        const kids = [...tail.children].filter((c) => !c.matches(".mnote, .pr-note, .vm-anchor"));
         if (kids.length && kids.every((c) => c.classList.contains("keep-next"))) next.querySelector(".page-inner").prepend(tail);
         else if (kids.length > 1 && tail.lastElementChild.classList.contains("keep-next") && tail.dataset.splitId) {
           // Zwischenüberschrift am Seitenende: in die Fortsetzung des Abschnitts
@@ -225,6 +226,8 @@
           .map((inner) => ({ inner, o: inner.querySelector(`:scope > .opt[data-k="${k}"]`) }))
           .filter((c) => c.o && !(k.startsWith("note") && hasNote.has(c.inner)))
           .sort((a, b) => free(b.inner) - free(a.inner));
+        // Brückennotiz (data-lead): zuerst auf der ersten Seite des Zaubers versuchen
+        if (cands[0] && cands[0].o.hasAttribute("data-lead")) cands.sort((a, b) => (b.inner === inners[0]) - (a.inner === inners[0]));
         let placed = null;
         // gleichlautende Randnotizen nur einmal im ganzen Buch
         const text = k.startsWith("note") && cands[0] ? cands[0].o.textContent.trim() : null;
@@ -244,10 +247,52 @@
   }
   // Setzen in Häppchen: Seiten eines Zaubers bleiben zusammen; zwischen den Häppchen bekommt der Browser Luft
   // und onProgress(erledigt, gesamt) wird aufgerufen. pages: Array von Seitenobjekten oder fertiges HTML.
+  // Randnotizen der Stimmen (.mnote) im Lehrheft: Glossen (.pr-note) haben Vorrang und stehen in der
+  // Zeile ihres Begriffs. Jede Notiz wandert an die früheste Stelle ihres Abschnitts, an der sie keine
+  // Glosse nach unten schiebt; geht das nirgends, an die Stelle, die am wenigsten schiebt.
+  function placeNotes(root) {
+    for (const sec of root.querySelectorAll(".lesson")) {
+      const notes = [...sec.querySelectorAll(":scope > .mnote")];
+      const inner = sec.closest(".page-inner");
+      const glosses = inner ? [...inner.querySelectorAll(".pr-note")] : [];
+      if (!notes.length || !glosses.length) continue;
+      // gleiche Schriftgröße wie beim Umbruch fließender Seiten (flow setzt --fit 0.95)
+      if (inner.closest(".page.flow")) inner.style.setProperty("--fit", "0.95");
+      notes.forEach((n) => n.remove());
+      const kids = [...sec.children];
+      const base = glosses.map((g) => g.getBoundingClientRect().top);
+      const push = () => glosses.reduce((s, g, i) => s + Math.max(0, g.getBoundingClientRect().top - base[i] - 1), 0);
+      // Einfügestellen: nach dem Kopf (Index 1) vor jedem Kind, zuletzt am Ende
+      let from = Math.min(1, kids.length);
+      for (const n of notes) {
+        let best = null;
+        for (let i = from; i <= kids.length; i++) {
+          if (i < kids.length) kids[i].before(n);
+          else sec.append(n);
+          const p = push();
+          if (!best || p < best.p) best = { i, p };
+          if (p === 0) break;
+        }
+        if (best.i < kids.length) kids[best.i].before(n);
+        else sec.append(n);
+        from = best.i;
+      }
+    }
+  }
+
+  // Handschriften der Randnotizen werden erst geladen, wenn sie gebraucht werden: vor dem Messen anfordern
+  async function noteFonts(root) {
+    if (!document.fonts) return;
+    const fams = new Set([...root.querySelectorAll(".mnote")].map((n) => getComputedStyle(n).fontFamily));
+    await Promise.all([...fams].map((f) => document.fonts.load(`16px ${f}`).catch(() => {})));
+  }
+
   async function typeset(root, pages, onProgress, chunk = 12) {
     if (document.fonts) await document.fonts.ready;
     if (typeof pages === "string") {
       root.innerHTML = pages;
+      await noteFonts(root);
+      placeNotes(root);
       fit(root);
       onProgress && onProgress(1, 1);
       return;
@@ -267,6 +312,8 @@
       const box = document.createElement("div");
       root.appendChild(box);
       box.innerHTML = part.map(pageHTML).join("");
+      await noteFonts(box);
+      placeNotes(box);
       fit(box, seen);
       box.replaceWith(...box.childNodes);
       done += part.length;
@@ -277,6 +324,19 @@
     let pos = 0;
     for (const p of root.querySelectorAll(":scope > .page")) {
       if (++pos % 2 === 0 && p.classList.contains("recto-start")) {
+        // statt einer Leerseite: endet davor eine fließende Seite mit mehreren Abschnitten, wandert der letzte dort
+        // beginnende Abschnitt (mit allem danach) auf eine Fortsetzungsseite; das lockert den Satz auf
+        const prev = p.previousElementSibling;
+        const kids = prev && prev.classList.contains("flow") ? [...prev.querySelector(".page-inner").children] : [];
+        const k = kids.findLastIndex((c) => c.tagName === "SECTION" && !c.dataset.splitOf && !c.dataset.splitId);
+        // nicht, wenn davor nur Köpfe stünden, die nie allein bleiben (.keep-next, z. B. ein Kapitelkopf)
+        if (k > 0 && !kids.slice(0, k).every((c) => c.classList.contains("keep-next"))) {
+          const cont = contPage(prev);
+          cont.style.contentVisibility = "";
+          cont.querySelector(".page-inner").append(...kids.slice(k));
+          pos++;
+          continue;
+        }
         const blank = p.cloneNode(false);
         blank.classList.remove("recto-start", "flow");
         blank.classList.add("blank");
@@ -300,5 +360,5 @@
     return p.spell ? ` data-spell="${e(p.spell)}"` : "";
   }
 
-  window.TYPESET = { pageHTML, typeset, autofit, fit, flow };
+  window.TYPESET = { pageHTML, typeset, autofit, fit, flow, placeNotes };
 })();

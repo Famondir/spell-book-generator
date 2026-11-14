@@ -18,6 +18,15 @@ window.PROFILE_LOCAL = {
     year: "im 7. Jahr nach der Flut",
     // optional: irdische Entsprechung und Länge der Monate, z. B. für ein Jahr, das im Sommer beginnt:
     // earth: ["Juli", "August", …], days: [31, 31, …],
+    // Tafel der Zeit: eigene Tagesnamen (Sonntag … Samstag), Schutzgottheit je Monat (Ids aus data/deities.js)
+    // und eigene Zeichen des Himmels; ohne Angabe gelten irdische Tagesnamen und der Tierkreis
+    // dayNames: ["Sonnentag", "Mondtag", "Eisentag", "Quecktag", "Zinntag", "Kupfertag", "Bleitag"],
+    // patrons: ["torag", null, …],
+    // signs: [{ id: "krug", name: "Der Krug", from: { m: 0, d: 1 }, to: { m: 0, d: 31 }, ess: ["aqua"],
+    //           fig: { pts: [[-4, -6], [4, -6], [5, 4], [-5, 4]], links: [[0, 1], [1, 2], [2, 3], [3, 0]] } }],
+    // poleStar: "der Nagel",
+    // dayTexts: ["Am Sonnentag ruht die Mühle.", …], monthTexts: ["Im Frostmond friert der Moorsee zu …", …],
+    // seasons: ["Winter", …]; jedes Zeichen kann ein text-Feld mit Bild und Geschichte haben
   },
   places: ["die Hütte am Moor", "der Markt in Ellbach", "der alte Steinkreis", "die Mühle", "das Kräuterbeet"],
 
@@ -27,7 +36,40 @@ window.PROFILE_LOCAL = {
     "von der Großmutter mündlich überliefert und erst spät aufgeschrieben.",
     "aus einem verregneten Buch eines durchreisenden Magiers abgeschrieben.",
   ],
+  // Formelsprachen: die Formeln der Großmutter in einer alten Inselsprache, der Rest aus dem Buch des Magiers
+  formulaOrigins: [
+    { id: "oma", label: "Großmutter", lang: "oldirish", hand: "oma", share: 60, levels: [0, 2], essences: { vita: 3, terra: 2, aqua: 2 } },
+    { id: "buch", label: "Buch des Magiers", lang: "latin", hand: "magier", share: 40 },
+  ],
+  formulaLangNames: { oldirish: "Moorsprache" },
+  // Hausregel „Entziffern“ (mit der Spielleitung abgesprochen): Großmutters Schrift ist schwer zu lesen
+  decipher: { enabled: true, hands: { oma: 2 }, known: ["latin"] },
   everydayOrigins: ["ein Rezeptbuch vom Markt", "ein Tausch gegen drei Gläser Moorbeerenmarmelade"],
+
+  // Andacht: Schutzgottheit (id aus data/deities.js; im Charakter änderbar) und Ablauf des Tages
+  deity: "gozreh",
+  devotion: {
+    morning: [
+      { step: "invoke" },
+      { step: "fetchBook", text: "Ich nehme das Kräuterbuch vom Brett über dem Herd und wische den Ruß vom Deckel." },
+      { step: "obedience" },
+      { step: "prepare" },
+      { step: "returnBook", text: "Das Buch kommt zurück aufs Brett. Was ich heute brauche, trage ich im Kopf." },
+      { step: "close" },
+    ],
+    evening: [
+      { step: "invoke" },
+      { step: "studyBook", optional: true, text: "Wenn das Feuer noch brennt, lese ich eine Seite, nur zum Lernen." },
+      { step: "review" },
+      { step: "keep" },
+      { step: "close" },
+    ],
+    obedience: "fragment",
+    feasts: [{ d: 21, m: 5, name: "Mittsommer am Steinkreis", text: "Heute ist der Tag am längsten.\nWas wächst, wachse; was blüht, sei gesegnet." }],
+    occasions: { dead: "Wind trage sie, Wasser wasche sie.\nWas von ihnen bleibt, gehört dem Moor." },
+    voice: "Ich-Form, Mirla: bodenständig, ein wenig spöttisch, schreibt kurz und mit Kräuternamen.",
+    log: false, // Mirla zählt nicht mit; true = Protokoll mit Zahlen des Tages auf der Rückseite
+  },
 
   notes: [
     "Großmutter hätte {essence} nie so offen gezeichnet. Großmutter ist nicht mehr hier.",
@@ -60,7 +102,7 @@ window.PROFILE_LOCAL = {
   // Sprache der eigenen Texte (ab Werk Deutsch)
   lang: "de",
   // Deutsche Regeldaten (tools/import-rules-de.mjs): Handzuordnungen, wo der Import nicht sicher ist
-  // rulesDe: { overrides: { "Magisches Geschoss": "magic-missile" } },
+  // rulesDe: { overrides: { "Magisches Geschoss": "magic-missile" }, domainOverrides: { "Unterdomäne der Ritterlichkeit": "Chivalry (Glory)" } },
 
   // Lehrheft („Lehre“ → Fibel der Kreise); alles optional
   primer: {
@@ -71,6 +113,7 @@ window.PROFILE_LOCAL = {
     // Randnotizen je Lektion; level = erst ab dieser Charakterstufe sichtbar
     notes: {
       l29: [{ voice: "hedda", text: "Hier am Moor sieht man den roten Stern nur im Herbst." }, { voice: "mirla", level: 3, text: "Im Frühjahr auch. Man muss nur früher aufstehen." }],
+      "w-soap": [{ voice: "mirla", text: "Ob die Seife des Meisters besser reinigt oder nur schneller glänzt, weiß keiner. Hedda wäscht sich trotzdem nur mit der." }],
     },
     // Übergabeschreiben nach dem Titelblatt (ab Stufe level)
     // handover: { level: 1, voice: "hedda", text: ["Für Mirla, …"] },

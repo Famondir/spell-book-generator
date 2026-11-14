@@ -5,6 +5,11 @@
 @font-face { font-family: "Kalam"; src: url("fonts/kalam.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
 @font-face { font-family: "Covered By Your Grace"; src: url("fonts/covered.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
 @font-face { font-family: "Caveat"; src: url("fonts/caveat.woff2") format("woff2"); font-weight: 400 700; font-style: normal; font-display: swap; }
+/* Originalschriften der Formelsprachen (gekürzt, tools/subset-fonts.py); block, damit der Druck nie Kästchen zeigt */
+@font-face { font-family: "Formel Keilschrift"; src: url("fonts/cuneiform.woff2") format("woff2"); font-display: block; }
+@font-face { font-family: "Formel Hieroglyphen"; src: url("fonts/hieroglyphs.woff2") format("woff2"); font-display: block; }
+@font-face { font-family: "Formel Ogham"; src: url("fonts/ogham.woff2") format("woff2"); font-display: block; }
+@font-face { font-family: "Formel Griechisch"; src: url("fonts/greek.woff2") format("woff2"); font-display: block; }
 
 /* ---------------------------------------------------------------------------
    Farben: Oberfläche folgt Hell/Dunkel, die Buchseiten bleiben immer Pergament.
@@ -181,6 +186,12 @@ main { flex: 1; min-height: 0; }
 #view-book { gap: 0; }
 .book-main { flex: 1; min-width: 0; overflow-y: auto; padding: 16px 30px; }
 .book-bar { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
+.seg-switch { display: inline-flex; margin-right: 8px; }
+.seg-switch[hidden] { display: none; }
+.seg-switch button { border-radius: 0; margin: 0; }
+.seg-switch button:first-child { border-radius: 6px 0 0 6px; }
+.seg-switch button + button { border-radius: 0 6px 6px 0; border-left: none; }
+.seg-switch button.on { background: var(--ui-hover); outline: 1px solid var(--ui-line); outline-offset: -1px; font-weight: 600; }
 .spell-list .pg { font-size: 12px; color: var(--ui-muted); white-space: nowrap; }
 
 /* Blättern */
@@ -197,9 +208,14 @@ main { flex: 1; min-height: 0; }
 .vol-tabs button.on { background: var(--ui-hover); outline: 1px solid var(--ui-line); }
 #book-stats .warn { color: var(--ui-accent); font-size: 0.9em; }
 input.num { width: 6em; display: inline-block; }
-.pages.spread { justify-content: center; flex-wrap: nowrap; }
+.pages.spread { justify-content: safe center; flex-wrap: nowrap; overflow-x: auto; }
 .pages.spread .page.offstage { display: none; }
 .pages.spread.fitting { visibility: hidden; height: 210mm; overflow: hidden; }
+/* Seitenzoom: nur die Seiten, gemessen wird bei 100 % */
+.pages.spread > .page, .pages.spread > .page-ghost { zoom: var(--page-zoom, 1); }
+.pages.spread.fitting > .page { zoom: 1; }
+.pager-zoom { display: inline-flex; gap: 2px; margin-left: 10px; }
+.pager-zoom .pager-zoom-val { min-width: 4.2em; font-variant-numeric: tabular-nums; }
 
 /* Seitenleisten: links Filter, rechts Inhalt. Eine angedockte Lasche am Außenrand klappt sie ein und aus;
    eingeklappt bleibt nur die Lasche sichtbar, nichts verschiebt sich. */
@@ -350,7 +366,8 @@ dialog#settings { max-width: 760px; height: min(640px, calc(100vh - 32px)); padd
 .formula { text-align: center; margin: 0.2em 0 0.4em; }
 .formula .fl { font-family: var(--font-title); font-size: 1em; letter-spacing: 0.06em; color: var(--ink); }
 .formula .fl:first-child { color: var(--rubric); font-weight: 600; }
-.formula .tone { font-style: italic; font-size: 0.85em; color: var(--ink-soft); margin-top: 0.15em; }
+.formula .tone { font-style: italic; font-size: 0.85em; color: var(--ink-soft); margin-top: 0.15em; text-wrap: balance; }
+.formula .tech { font-size: 0.78em; color: var(--ink-soft); margin-top: 0.1em; letter-spacing: 0.02em; }
 .comp { font-size: 0.9em; border-top: 1px solid color-mix(in srgb, var(--ink) 30%, transparent); padding-top: 0.25em; }
 .comp-tags { font-family: var(--font-title); font-weight: 600; letter-spacing: 0.1em; }
 .comp-time { float: right; font-style: italic; }
@@ -384,6 +401,8 @@ dialog#settings { max-width: 760px; height: min(640px, calc(100vh - 32px)); padd
 table.calib, table.corr, table.toc, table.aff { border-collapse: collapse; width: 100%; font-size: 0.9em; margin-bottom: 0.5em; }
 table.calib th, table.corr th { font-family: var(--font-title); font-weight: 600; text-align: left; font-size: 0.85em; }
 table.calib th, table.calib td, table.corr th, table.corr td { border-bottom: 1px solid color-mix(in srgb, var(--ink) 25%, transparent); padding: 0.15em 0.4em; }
+p.ink { font-size: 0.9em; margin: 0.2em 0 0.5em; }
+p.ink b { font-family: var(--font-title); font-weight: 600; font-size: 0.85em; margin-right: 0.3em; }
 table.toc td { padding: 0.12em 0.3em; border-bottom: 1px dotted color-mix(in srgb, var(--ink) 35%, transparent); }
 table.toc .tg { font-family: var(--font-title); width: 2.5em; color: var(--rubric); }
 table.toc .tn { display: block; font-size: 0.8em; color: var(--ink-soft); }
@@ -409,6 +428,13 @@ table.aff td { text-align: center; font-size: 0.8em; background: color-mix(in sr
 .quick-row svg { width: 18mm; height: 18mm; flex-shrink: 0; }
 .legend-grid.quick-schools { grid-template-columns: repeat(3, 1fr); }
 .legend-grid.quick-schools svg { width: 30px; height: 30px; }
+.legend-tiles { display: grid; gap: 0.5em 0.6em; text-align: center; font-size: 0.8em; }
+.legend-tiles.c4 { grid-template-columns: repeat(4, 1fr); } .legend-tiles.c5 { grid-template-columns: repeat(5, 1fr); }
+.legend-tiles figure { margin: 0; }
+.legend-tiles span { color: var(--ink-soft); font-style: italic; }
+.legend-tiles.rings svg { width: 12mm; height: 12mm; }
+.legend-tiles.shapes svg { width: 20mm; height: 9mm; }
+.pr-grid.qparts svg { width: auto; max-width: 100%; height: 11mm; }
 .quick-ex { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2mm; margin-top: 0.6em; }
 .quick-ex figure { margin: 0; text-align: center; font-size: 0.8em; }
 .quick-ex svg { width: 20mm; height: 20mm; }
@@ -437,6 +463,8 @@ table.aff td { text-align: center; font-size: 0.8em; background: color-mix(in sr
 .rules-en { font-size: 0.85em; font-family: Georgia, serif; color: var(--ink-soft); }
 
 .laws li { margin-bottom: 0.3em; }
+ol.laws:has(+ ol.laws) { margin-bottom: 0; }
+ol.laws + ol.laws { margin-top: 0; }
 .legend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35em 0.8em; font-size: 0.88em; }
 .legend-grid.schools, .legend-grid.signs { grid-template-columns: 1fr; }
 .legend-grid .lg { display: flex; gap: 0.5em; align-items: center; }
@@ -461,10 +489,19 @@ svg .annot text { fill: #fff !important; stroke: none !important; font-family: A
 svg.quick { color: var(--ink); overflow: visible; }
 svg.quick * { fill: none; stroke: currentColor; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
 svg.quick .fill { fill: currentColor; stroke: none; }
+svg.quick .thin { stroke-width: 2.4; }
+svg.quick .dash { stroke-dasharray: 9 7; }
+svg.quick text.ql { fill: currentColor; stroke: none; font-family: Georgia, "Times New Roman", serif; font-weight: 700; }
+svg.quick text.ql.script-greek, svg.quick text.ql.script-cuneiform, svg.quick text.ql.script-hieroglyphs, svg.quick text.ql.script-ogham { font-weight: 400; }
+svg.quick path.ql-proto { stroke-width: 2.4; }
+/* Hieroglyphen sind als Umrisszeichnung sehr fein: in der Schnellglyphe mit Strich verstärkt */
+svg.quick text.ql.script-hieroglyphs { stroke: currentColor; stroke-width: 0.9; paint-order: stroke; }
+svg.quick text.ql.script-cuneiform { stroke: currentColor; stroke-width: 0.3; }
+svg.quick text.ql.script-greek { stroke: currentColor; stroke-width: 0.6; }
 svg.quick .accent { color: var(--rubric); }
 .sp-head { position: relative; }
-.sp-quick { position: absolute; top: -0.2em; right: 0; width: 13mm; height: 13mm; }
-.sp-head.small .sp-quick { width: 10mm; height: 10mm; }
+.sp-quick { position: absolute; top: -0.2em; right: 0; width: 18mm; height: 18mm; }
+.sp-head.small .sp-quick { width: 14mm; height: 14mm; }
 .spell-list .quick { width: 22px; height: 22px; }
 table.toc .tq svg { width: 7mm; height: 7mm; display: block; }
 
@@ -502,6 +539,19 @@ svg text { stroke: none; fill: currentColor; font-family: var(--font-title); }
 svg textPath { stroke: none; fill: currentColor; }
 svg .guide { stroke: none; fill: none; }
 svg .band-text { letter-spacing: 0.5px; }
+svg .script-cuneiform { font-family: "Formel Keilschrift"; letter-spacing: 0; }
+svg .script-hieroglyphs { font-family: "Formel Hieroglyphen"; letter-spacing: 0; }
+svg .script-ogham { font-family: "Formel Ogham"; letter-spacing: 0; }
+svg .script-greek { font-family: "Formel Griechisch"; }
+/* Das Band erbt Strich ohne Füllung (svg.circle *): bei der dünnen Cinzel wirkt das voll, bei der Noto Serif hohl */
+svg.circle .band-text.script-greek, svg.circle .band-text.script-greek textPath { fill: currentColor; stroke: currentColor; stroke-width: 0.35; }
+/* Absichtszeichen im Fließtext (Erklärsatz zur Schnellglyphe) */
+.mark.script-cuneiform { font-family: "Formel Keilschrift"; font-weight: normal; }
+.mark.script-hieroglyphs { font-family: "Formel Hieroglyphen"; font-weight: normal; font-size: 1.2em; line-height: 1; -webkit-text-stroke: 0.04em currentColor; }
+.mark.script-ogham { font-family: "Formel Ogham"; font-weight: normal; }
+.mark.script-greek { font-family: "Formel Griechisch"; }
+.mark-proto { display: inline-block; width: 0.55em; height: 0.95em; vertical-align: -0.1em; }
+.mark-proto path { fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
 svg .order-num { font-size: 6px; }
 svg .corner-label { font-family: var(--font-body); }
 svg .gilded { color: var(--gold); }
@@ -616,6 +666,12 @@ label.toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 1
   border-radius: 50%; border: 1px solid var(--ink-soft); color: var(--ink); background: var(--parch); /* genaue Tönung: tintToPage() */
   font: italic 700 13px/1 Georgia, serif; cursor: pointer;
 }
+.rules-i.full-i { top: 31px; font: 700 16px/1 Georgia, serif; }
+.full-modal { max-width: 98vw; width: 98vw; max-height: 94vh; overflow: hidden; flex-direction: column; }
+.full-modal[open] { display: flex; }
+.full-modal .fm-head h3 { margin: 0; }
+.full-modal #full-pages { flex: 1; min-height: 0; overflow: auto; }
+.full-modal form { flex-direction: row; gap: 8px; }
 .rules-i:hover { background: var(--rubric); color: #fff; border-color: var(--rubric); }
 .rb-no { color: var(--rubric); font-weight: 800; }
 .rules-modal { max-width: 640px; max-height: 88vh; }
@@ -623,6 +679,11 @@ label.toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 1
 .rules-modal form { flex-direction: row; }
 fieldset.refs { border: 1px solid var(--ui-line); border-radius: 6px; padding: 6px 10px; display: flex; flex-direction: column; gap: 4px; }
 fieldset.refs legend { font-size: 0.9em; color: var(--ui-muted); }
+fieldset.known-langs { border: 1px solid var(--ui-line); border-radius: 6px; padding: 6px 10px; display: flex; flex-direction: column; gap: 4px; }
+fieldset.known-langs[hidden] { display: none; }
+fieldset.known-langs legend { font-size: 0.9em; color: var(--ui-muted); }
+.known-langs .kl-list { display: flex; flex-wrap: wrap; gap: 2px 14px; }
+.formula-fact .decipher, #prep .decipher { color: var(--ui-muted); }
 
 /* --- Fortschritt ---------------------------------------------------------------- */
 .progress { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 1000; background: var(--ui-panel); color: var(--ui-text); border: 1px solid var(--ui-line); border-radius: 10px; padding: 10px 16px; box-shadow: 0 4px 18px rgb(0 0 0 / 0.25); display: flex; align-items: center; gap: 10px; min-width: 260px; }
@@ -630,7 +691,7 @@ fieldset.refs legend { font-size: 0.9em; color: var(--ui-muted); }
 .progress .pg-bar { flex: 1; min-width: 80px; height: 6px; background: var(--ui-line); border-radius: 3px; overflow: hidden; }
 .progress .pg-bar i { display: block; height: 100%; background: var(--ui-accent); }
 .progress .pg-count { font-variant-numeric: tabular-nums; }
-@media print { .rules-i, .progress, .legal-bar { display: none !important; } }
+@media print { .full-modal, .rules-i, .progress, .legal-bar { display: none !important; } }
 .legal-bar { flex: none; padding: 3px 16px; font-size: 11px; color: var(--ui-muted); background: var(--ui-panel); border-top: 1px solid var(--ui-line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .legal-bar .linkish { border: none; background: none; padding: 0; font: inherit; color: var(--ui-accent); text-decoration: underline; cursor: pointer; }
 .legal-modal { max-width: 600px; max-height: 88vh; overflow-y: auto; }
@@ -703,6 +764,7 @@ fieldset.refs legend { font-size: 0.9em; color: var(--ui-muted); }
 body.divine .arcane-only { display: none !important; }
 .deity-row { display: flex; flex-direction: column; gap: 6px; }
 .deity-row[hidden] { display: none; }
+.deity-row .divine-only[hidden] { display: none; }
 .swatch { display: inline-block; width: 0.9em; height: 0.9em; border: 1px solid rgba(0, 0, 0, 0.35); border-radius: 2px; vertical-align: -0.1em; margin-right: 3px; }
 .essrow .swatch { width: 14px; height: 14px; flex-shrink: 0; }
 .own-edit { display: flex; flex-direction: column; gap: 4px; margin: 10px 0; font-size: 14px; }
@@ -751,20 +813,22 @@ svg.vitrail { display: block; width: 100%; height: auto; }
    --------------------------------------------------------------------------- */
 .primer-view { display: flex; gap: 16px; align-items: flex-start; min-height: 0; }
 .primer-view[hidden] { display: none; }
-#primer-side { position: sticky; top: 0; max-height: calc(100vh - 140px); width: 260px; }
-#primer-side.collapsed { width: 0; }
+#primer-side, #vm-side { position: sticky; top: 0; max-height: calc(100vh - 140px); width: 260px; }
+#primer-side.collapsed, #vm-side.collapsed { width: 0; }
 .primer-toc { flex: 1; min-height: 0; overflow-y: auto; font-size: 13px; }
 .toc-list .no { color: var(--ui-muted); min-width: 1.6em; text-align: right; font-variant-numeric: tabular-nums; font-size: 12px; }
 /* aktueller Abschnitt beim Blättern (Verzeichnis-Baustein) */
 .toc-group.on > .toc-grade { background: var(--ui-hover); }
 .primer-main { flex: 1; min-width: 0; }
-@media (max-width: 900px) { .primer-view { flex-direction: column; } #primer-side { width: 100%; position: static; max-height: none; } }
+@media (max-width: 900px) { .primer-view { flex-direction: column; } #primer-side, #vm-side { width: 100%; position: static; max-height: none; } }
 
 /* Seiten: rechts eine Randspalte für Glossen und Stimmen */
 .primer-page .page-inner { padding-right: 34mm; }
 .primer-page h3 { margin-right: -34mm; }
 .lesson { margin: 0 0 0.9em; }
 .lesson[data-split-of] { margin-top: 0; }
+/* Kopf auf die Folgeseite gewandert: steht dort direkt über seiner Fortsetzung */
+.lesson:has(+ .lesson[data-split-of]) { margin-bottom: 0; }
 .ls-head { border-top: 1px solid var(--ink-soft); padding-top: 0.25em; margin-bottom: 0.3em; }
 .lesson[data-split-of] > .ls-head { display: none; }
 .ls-k { font-family: var(--font-title); font-size: 0.72em; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); }
@@ -871,6 +935,11 @@ svg.vitrail { display: block; width: 100%; height: auto; }
 /* kleine Formeln: eine Seite je Formel, der Kreis schrumpft mit der Schrift */
 .mview.fit { margin: 0.2em -34mm 0.3em 0; }
 .mview.fit svg { width: calc(84mm * var(--fit) * var(--fit)); }
+.mview.fit { position: relative; }
+.formula-page .qside { position: absolute; left: 0; bottom: 1.5em; width: 20mm; margin: 0; text-align: center; }
+.formula-page .qside svg { width: 20mm; height: auto; display: block; }
+.formula-page .qside figcaption { font-size: 0.68em; font-style: italic; color: var(--ink-soft); }
+.primer-page.bind.verso .qside { left: auto; right: 0; }
 .formula-page .cloze { margin: 0.1em 0 0.25em; }
 /* Lochrand fürs Ringbuch: Bindungsseite breiter, Satzbreite bleibt gleich (Umbruch hängt nicht von der Seite ab) */
 .page.bind { padding-left: 18mm; padding-right: 6mm; }
@@ -885,7 +954,7 @@ svg.vitrail { display: block; width: 100%; height: auto; }
 .primer-page.bind.verso .mview.wide, .primer-page.bind.verso .mview.duo, .primer-page.bind.verso .mview.fit { margin-right: 0; margin-left: -34mm; }
 .primer-page.bind.verso .pr-note { border-left: none; padding-left: 0; border-right: 2px solid var(--rubric); padding-right: 2mm; }
 .page.blank .page-foot span:last-child { visibility: hidden; }
-.primer-view:has(#primer-side.collapsed) .primer-main { padding-right: 28px; }
+.primer-view:has(#primer-side.collapsed) .primer-main, .primer-view:has(#vm-side.collapsed) .primer-main { padding-right: 28px; }
 .qkey { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; justify-items: center; gap: 1mm; margin: 0; }
 .qkey svg { width: 11mm; height: 11mm; }
 .qkey figcaption { grid-column: 1 / -1; font-size: 0.75em; }
@@ -906,6 +975,15 @@ svg.vitrail { display: block; width: 100%; height: auto; }
 .pr-world { border: 1px solid var(--ink-soft); border-left: 3px solid var(--rubric); padding: 0.3em 0.6em; margin: 0.5em 0; font-size: 0.86em; break-inside: avoid; }
 .pr-world > b { font-family: var(--font-title); color: var(--rubric); letter-spacing: 0.04em; }
 .pr-world p { margin: 0.2em 0; }
+.pr-svg.seal { width: 24mm; }
+.sigil-row { break-inside: avoid; margin: 0.4em 0; }
+.sigil-row h4 { margin: 0.2em 0; }
+.sigil-steps { font-family: var(--font-title); letter-spacing: 0.12em; margin: 0.2em 0; }
+.sigil-steps s { color: var(--rubric); }
+.mview.inline svg.sigil { width: 34mm; }
+.sigil-g path { fill: none; stroke: currentColor; stroke-width: 0.18; stroke-linecap: round; stroke-linejoin: round; }
+.sigil-blank { height: 28mm; border: 1px dotted var(--ink-soft); }
+.pr-inks td.gift { color: var(--rubric); font-size: 0.9em; }
 .pr-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3em 1em; font-size: 0.88em; margin: 0.4em 0; }
 .pr-cols.three { grid-template-columns: 1fr 1fr 1fr; }
 .pr-cols ol { margin: 0; padding-left: 1.2em; }
@@ -925,3 +1003,171 @@ svg.vitrail { display: block; width: 100%; height: auto; }
 .pr-checklist li { padding-left: 1.1em; text-indent: -1.1em; }
 .ticks { white-space: nowrap; letter-spacing: 0.15em; }
 .alias { font-weight: normal; font-style: italic; }
+
+/* ---------------------------------------------------------------------------
+   ANDACHT (devotion.js): Zeilen im Reiter „Heute“, Unterreiter „Andacht“, Andachtsblatt und Andachtsbuch
+   --------------------------------------------------------------------------- */
+.seal-btn { font-size: 1.1em; color: var(--rubric); }
+.dv-today { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 12px; padding: 8px 10px; border: 1px solid var(--ui-line); border-radius: 6px; }
+.dv-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.dv-row > b { min-width: 9em; }
+.dv-row button.on, .dv-panel button.on { background: var(--ui-hover); box-shadow: inset 0 0 0 1px var(--ui-accent); }
+/* Unterreiter „Andacht“: Vorbereitung als einklappbare Seitenleiste links, Betrachter füllt den Rest */
+.prep-side { display: contents; }
+.prep-side > .side-toggle { display: none; }
+#view-prepare.dv-mode { overflow: hidden; }
+#view-prepare.dv-mode .prep-side { display: block; width: 340px; flex-shrink: 0; border-right: 1px solid var(--ui-line); }
+#view-prepare.dv-mode .prep-side > .side-toggle { display: flex; left: 100%; border-left: none; border-radius: 0 6px 6px 0; }
+#view-prepare.dv-mode .prep-side > .side-toggle::before { content: "‹"; }
+#view-prepare.dv-mode #prep { height: 100%; overflow-y: auto; padding: 12px; box-sizing: border-box; }
+#view-prepare.dv-mode .prep-side.collapsed { width: 0; border-right: none; }
+#view-prepare.dv-mode .prep-side.collapsed > #prep { display: none; }
+#view-prepare.dv-mode .prep-side.collapsed > .side-toggle { left: 0; border-left: 1px solid var(--ui-line); }
+#view-prepare.dv-mode .prep-side.collapsed > .side-toggle::before { content: "›"; }
+.dv-panel { display: flex; flex-direction: column; gap: 14px; margin: 4px 0 8px; }
+.dv-panel h4 { margin: 0 0 5px; font-size: 0.8em; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ui-muted); }
+.dv-panel h4 .muted { text-transform: none; letter-spacing: 0; font-weight: 400; margin-left: 4px; }
+.dv-panel select { width: 100%; }
+.dv-panel .muted:is(p) { margin: 6px 0 0; font-size: 0.85em; }
+.dv-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.dv-col { display: flex; flex-direction: column; gap: 6px; }
+.dv-col > *, .dv-edit > button { width: 100%; text-align: center; }
+.dv-col > .filebtn { background: var(--ui-panel); }
+.dv-col > .filebtn:hover { background: var(--ui-hover); }
+.dv-code { display: flex; gap: 6px; margin-bottom: 6px; }
+.dv-code input { flex: 1; min-width: 0; }
+.dv-edit summary { cursor: pointer; }
+.dv-edit label { display: flex; flex-direction: column; gap: 4px; margin: 6px 0; }
+.dv-edit textarea { width: 100%; font: inherit; }
+.devotion-view { flex: 1; min-width: 0; overflow-y: auto; padding: 16px 30px; }
+.devotion-view[hidden] { display: none; }
+@media (max-width: 900px) {
+  #view-prepare.dv-mode { flex-direction: column; overflow-y: auto; }
+  #view-prepare.dv-mode .prep-side { width: 100%; border-right: none; border-bottom: 1px solid var(--ui-line); }
+  #view-prepare.dv-mode .prep-side.collapsed { width: 100%; border: none; }
+  #view-prepare.dv-mode #prep { height: auto; padding: 12px 16px; }
+  #view-prepare.dv-mode .prep-side > .side-toggle, #view-prepare.dv-mode .prep-side.collapsed > .side-toggle { transform: none; top: 100%; left: auto; right: 16px; width: 40px; height: 22px; border: 1px solid var(--ui-line); border-top: none; border-radius: 0 0 6px 6px; }
+  #view-prepare.dv-mode .prep-side > .side-toggle::before { content: "▴"; }
+  #view-prepare.dv-mode .prep-side.collapsed > .side-toggle::before { content: "▾"; }
+  .devotion-view { flex: none; overflow: visible; padding: 16px; }
+}
+.dv-dialog { max-width: min(96vw, 360mm); max-height: 92vh; overflow: auto; }
+.dv-dialog .dv-pages { display: flex; gap: 18px; justify-content: center; }
+.devotion-page .page-inner { font-size: 0.98em; }
+.devotion-page .page-foot span:last-child { visibility: hidden; }
+.dv-head { text-align: center; margin-bottom: 0.4em; }
+.dv-date { font-family: var(--font-title); font-size: 0.8em; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); }
+.dv-feast { font-style: italic; color: var(--rubric); }
+.dv-head h3 { margin: 0.15em 0 0.2em; }
+.dv-step h4 { margin: 0.55em 0 0.1em; }
+.dv-step p { margin: 0; line-height: 1.35; }
+.dv-opt { font-family: var(--font-body); font-weight: normal; letter-spacing: 0; font-style: italic; color: var(--ink-soft); }
+.dv-frag { display: grid; grid-template-columns: 32mm 1fr; gap: 4mm; align-items: center; margin: 0.3em 0; }
+.dv-frag figure { margin: 0; }
+.dv-frag svg { width: 32mm; height: 32mm; }
+.dv-frag-k { font-family: var(--font-title); font-size: 0.72em; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-soft); }
+.dv-formula { font-family: var(--font-title); letter-spacing: 0.05em; margin: 0.2em 0 0; }
+.dv-stub { stroke-dasharray: 6 4; }
+.dv-fields { margin-top: 0.7em; font-size: 0.9em; }
+.page p.dv-invoke { margin: 0.2em 0 0.5em; font-style: italic; text-align: center; line-height: 1.35; }
+/* großes Bruchstück: der Kreis füllt die Satzbreite, damit man die Glyphen ohne Lupe erkennt */
+.dv-frag-big { text-align: center; margin: 0.6em 0 0.3em; }
+.dv-frag-big figure { margin: 0.4em auto; width: 100%; max-width: 100mm; }
+.dv-frag-big svg { width: 100%; height: auto; display: block; }
+.dv-frag-big .dv-formula { font-size: 1.05em; text-align: center; }
+.dv-log { border-collapse: collapse; width: 100%; font-size: 0.85em; font-variant-numeric: tabular-nums; }
+.dv-log th { text-align: left; font-weight: normal; font-variant: small-caps; color: var(--ink-soft); padding: 0.1em 0.8em 0.1em 0; width: 6.5em; vertical-align: top; white-space: nowrap; }
+.dv-log td { padding: 0.1em 0; border-bottom: 1px solid color-mix(in srgb, var(--ink) 15%, transparent); }
+.dv-line { display: block; min-height: 1.3em; border-bottom: 1px solid var(--ink-soft); padding: 0 0.3em; }
+.dv-lines i { display: block; height: 1.55em; border-bottom: 1px solid color-mix(in srgb, var(--ink) 30%, transparent); }
+.dv-facts { margin: 0; padding-left: 1.1em; font-size: 0.9em; }
+.dv-diary p { margin: 0 0 0.4em; }
+.dv-gm { margin-top: 0.8em; padding: 0.4em 0.6em; border-left: 2px solid var(--rubric); }
+.dv-gm h4, .dv-gm h3 { margin-top: 0; }
+.dv-own p { margin: 0 0 0.3em; }
+
+/* Tafel der Zeit: Jahresring und Sternkarte */
+.pr-svg .dash { stroke-dasharray: 2 2; stroke-width: 0.5; opacity: 0.6; }
+.pr-svg .dim { opacity: 0.5; }
+.pr-svg .ecl { stroke: var(--rubric); stroke-width: 0.9; }
+.pr-svg .rub { fill: var(--rubric); stroke: none; }
+.pr-svg .hair { stroke: var(--ink); stroke-width: 0.35; }
+.pr-svg .hand-dot { stroke: none; }
+.pr-svg .fig { stroke-width: 0.6; }
+.pr-svg .lbl.faint-l { opacity: 0.75; }
+.tt-entry { margin: 0.35em 0 0.5em; break-inside: avoid; }
+.tt-entry .tt-head { border-bottom: 0.5px solid var(--parch-edge); padding-bottom: 0.1em; }
+.tt-entry .tt-head svg { width: 5mm; height: auto; vertical-align: middle; }
+.tt-entry .tt-head .ess-g svg { width: 3.6mm; }
+.tt-entry p { margin: 0.2em 0 0; font-size: 0.92em; text-align: left; }
+.tt-entry .tt-aff { font-size: 0.92em; color: var(--ink-soft); font-style: italic; }
+.tt-sw { display: inline-block; width: 0.8em; height: 0.8em; border: 0.5px solid var(--ink-soft); vertical-align: -0.05em; margin-right: 0.2em; }
+.mview.ring svg { width: 100mm; max-width: 100%; }
+
+/* --- Vademecum ------------------------------------------------------------------- */
+/* Tempelfarben (--vm-primary/-secondary/-accent) setzt die Ansicht am Behälter der Seiten */
+.vm-page, .vm-title { --rubric: var(--vm-primary, #8b1e1e); }
+.vm-title .tp h1 { color: var(--vm-primary, var(--rubric)); }
+.vm-title .tp-vol { color: var(--vm-secondary, var(--rubric)); }
+.vm-mark { font-size: 1.2em; }
+.vm-orn { width: 40mm; height: 40mm; margin: 0 auto 4mm; border-radius: 50%; border: 3px double var(--vm-accent, var(--ink-soft)); box-shadow: inset 0 0 0 5mm color-mix(in srgb, var(--vm-primary, var(--ink)) 12%, transparent); }
+.vm-author { font-size: 0.9em; }
+.vm-ch { text-align: center; margin: 2mm 0 5mm; padding-bottom: 3mm; border-bottom: 2px solid var(--vm-accent, var(--ink-soft)); }
+.primer-page.vm-page .vm-ch { margin-right: -34mm; }
+.primer-page.vm-page.bind.verso .vm-ch { margin-right: 0; margin-left: -34mm; }
+.primer-page.vm-page .vm-ch h3 { margin: 0.1em 0 0; color: var(--vm-primary, var(--rubric)); font-size: 1.6em; }
+.vm-ch .ch-kicker { color: var(--vm-secondary, var(--ink-soft)); }
+.vm-ow { font-style: italic; font-size: 0.85em; color: var(--ink-soft); margin: 0.3em 0 0; }
+.vm-otherworldly { background-image: repeating-linear-gradient(-45deg, transparent 0 6mm, color-mix(in srgb, var(--ink) 3%, transparent) 6mm 7mm); }
+/* Initiale am ersten Absatz eines Abschnitts */
+/* initial-letter statt float: ein Float dürfte nicht höher stehen als die Randnotizen davor und rutschte nach unten */
+.vm-page .lesson:not([data-split-of]) > .par:first-of-type > p::first-letter { font-family: var(--font-title); color: var(--vm-primary, var(--rubric)); initial-letter: 2; margin-right: 0.1em; }
+.vm-page .vm-prayer .par > p::first-letter, .vm-page .vm-hymn .par > p::first-letter { initial-letter: normal; margin: 0; color: inherit; font-family: inherit; }
+.vm-epigraph { margin: 0 8mm 0.8em; text-align: center; font-style: italic; font-size: 0.92em; }
+.vm-epigraph p { margin: 0; }
+.vm-src { font-size: 0.85em; color: var(--ink-soft); margin-top: 0.2em; }
+.vm-src::before { content: "– "; }
+.vm-aside { float: right; clear: right; width: 30mm; margin: 0 -34mm 0.4em 0; font-size: 0.78em; font-style: italic; color: var(--vm-secondary, var(--ink-soft)); border-top: 1px solid var(--vm-accent, var(--ink-soft)); padding-top: 0.2em; }
+.primer-page.bind.verso .vm-aside { float: left; clear: left; margin: 0 0 0.4em -34mm; }
+.vm-use { font-style: italic; font-size: 0.9em; color: var(--ink-soft); margin: 0 0 0.4em; }
+.vm-verse { text-align: center; margin: 0.3em 0 0.6em; }
+.vm-line { line-height: 1.45; }
+.vm-hymn-k { font-family: var(--font-title); font-size: 0.72em; letter-spacing: 0.12em; text-transform: uppercase; color: var(--vm-secondary, var(--ink-soft)); margin-bottom: 0.2em; }
+.vm-hymn .vm-verse { font-family: var(--font-title); letter-spacing: 0.04em; }
+/* Lücke einer gestrichenen Silbe: feste Breite, damit niemand die Silbe aus der Länge errät */
+.vm-gap { display: inline-block; width: 1.6em; border-bottom: 1px solid var(--vm-primary, var(--rubric)); margin: 0 0.08em; vertical-align: 0.1em; }
+.vm-feast { margin: 0 0 0.5em; break-inside: avoid; }
+.vm-feast b { color: var(--vm-primary, var(--rubric)); font-family: var(--font-title); font-weight: 600; }
+.vm-feast-t { font-style: italic; font-size: 0.9em; margin-left: 1em; }
+.vm-toc { font-size: 0.95em; margin-right: -34mm; }
+.primer-page.bind.verso .vm-toc { margin-right: 0; margin-left: -34mm; }
+.vm-toc-row { display: flex; gap: 2mm; align-items: baseline; padding: 0.35em 0; border-bottom: 1px dotted color-mix(in srgb, var(--ink) 35%, transparent); }
+.vm-toc-row .no { width: 3em; font-family: var(--font-title); color: var(--vm-primary, var(--rubric)); }
+.vm-toc-row .nm { flex: 1; }
+/* Verweis: der Platzhalter „☐ 000“ ist breiter als jede echte Angabe, das Einsetzen macht Zeilen nur kürzer */
+.vref { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.vm-toc-row .vref { display: inline-block; min-width: 3em; text-align: right; }
+.vm-middle .page-inner { display: flex; flex-direction: column; justify-content: center; text-align: center; }
+.vm-middle h3 { color: var(--vm-primary, var(--rubric)); }
+/* kopfüber: die ganze Seite dreht sich, damit auch der Lochrand auf die andere Kante wandert */
+.page.upside-down { transform: rotate(180deg); transform-origin: 50% 50%; } /* Drehpunkt fest: schmale Ansicht und Druck setzen sonst top left */
+.lehre-switch { display: flex; gap: 0; margin: 0 0 10px; }
+.lehre-switch[hidden] { display: none; }
+.lehre-switch button { border-radius: 0; }
+.lehre-switch button:first-child { border-radius: 6px 0 0 6px; }
+.lehre-switch button:last-child { border-radius: 0 6px 6px 0; border-left: none; }
+.lehre-switch button.on { background: var(--ui-accent); color: var(--ui-accent-text); border-color: var(--ui-accent); }
+.vm-half[hidden] { display: none; }
+.vm-stanza { height: 0.7em; }
+.vm-response { text-align: center; font-style: italic; font-size: 0.92em; margin: 0.2em 0 0.6em; }
+.vm-response b { font-style: normal; font-family: var(--font-title); font-weight: 600; font-size: 0.85em; color: var(--vm-secondary, var(--rubric)); }
+.vm-motto { margin-top: 1.4em; font-style: italic; font-size: 0.95em; }
+.vm-motto p { margin: 0; }
+.vm-list { margin: 0.3em 0 0.6em; padding-left: 1.2em; }
+.vm-list li { margin-bottom: 0.25em; }
+.vm-table { width: 100%; border-collapse: collapse; font-size: 0.82em; margin: 0.4em 0 0.7em; }
+.vm-table th, .vm-table td { border-bottom: 1px solid color-mix(in srgb, var(--ink) 30%, transparent); padding: 0.2em 0.3em; text-align: left; vertical-align: top; }
+.vm-table th { font-family: var(--font-title); font-weight: 600; color: var(--vm-primary, var(--rubric)); }
+.mnote-desc { display: block; font-family: var(--font-body, inherit); font-style: italic; font-size: 0.78em; opacity: 0.85; margin-bottom: 0.15em; }
+.vm-anchor { display: inline; }
+.vm-hooks { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; white-space: nowrap; }

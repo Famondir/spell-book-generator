@@ -100,15 +100,16 @@
     conjuration: (R) => S.circle(0, 0, R) + S.star(0, 0, R, 5, 2) + S.polygon(poly(0, 0, R * 0.38, 5, 36)) + S.circle(0, 0, R * 0.3),
     divination: (R) =>
       S.circle(0, 0, R) + S.polygon(poly(0, 0, R, 3)) + S.polygon(poly(0, 0, R * 0.5, 3, 60)) +
-      S.path(`M${-R * 0.42},0 Q0,${-R * 0.3} ${R * 0.42},0 Q0,${R * 0.3} ${-R * 0.42},0Z`),
-    enchantment: (R) => S.circle(0, 0, R) + S.star(0, 0, R, 7, 3) + S.star(0, 0, R * 0.62, 7, 2, 180 / 7) + S.circle(0, 0, R * 0.33),
+      S.path(`M${-R * 0.22},0 Q0,${-R * 0.16} ${R * 0.22},0 Q0,${R * 0.16} ${-R * 0.22},0Z`),
+    enchantment: (R) => S.circle(0, 0, R) + S.star(0, 0, R, 7, 2) +
+      // Spirale: zweieinhalb Windungen im Siebeneck, das der Stern freilässt
+      S.polyline(Array.from({ length: 121 }, (_, i) => polar(0, 0, (R * 0.55 * i) / 120, i * 7.5))),
     evocation: (R) =>
       S.circle(0, 0, R) + S.star(0, 0, R, 6, 2) + S.polygon(poly(0, 0, R * 0.577, 6, 30)) +
       poly(0, 0, 1, 12).map((_, i) => { const a = polar(0, 0, R, i * 30 + 15), b = polar(0, 0, R * 1.14, i * 30 + 15); return S.line(a[0], a[1], b[0], b[1]); }).join(""),
-    illusion: (R) => S.circle(0, 0, R) + S.star(0, 0, R, 8, 3, 22.5) + S.circle(0, 0, R * 0.38) + S.line(0, -R, 0, R, "dash"),
+    illusion: (R) => S.circle(0, 0, R) + S.star(0, 0, R, 8, 2) + S.circle(0, 0, R * 0.5) + S.line(0, -R, 0, R, "dash"),
     necromancy: (R) =>
-      S.circle(0, 0, R) + S.circle(-R * 0.3, -R * 0.08, R * 0.55) + S.circle(R * 0.3, -R * 0.08, R * 0.55) +
-      S.polygon(tri(0, R * 0.25, R * 0.75, false)) + S.line(-R * 0.86, R * 0.5, R * 0.86, R * 0.5),
+      S.circle(0, 0, R) + S.circle(-R * 0.3, -R * 0.08, R * 0.55) + S.circle(R * 0.3, -R * 0.08, R * 0.55) + S.polygon(tri(0, R * 0.25, R * 0.75, false)),
     transmutation: (R) => S.circle(0, 0, R) + S.polygon(poly(0, 0, R, 3)) + S.polygon(poly(0, 0, R * 0.5, 4, 45)) + S.circle(0, 0, R * 0.35) + S.polygon(poly(0, 0, R * 0.707, 4, 45), "faint"),
     universal: (R) => S.circle(0, 0, R) + S.circle(0, 0, R * 0.3) + poly(0, 0, 1, 8).map((_, i) => { const a = polar(0, 0, R * 0.3, i * 45), b = polar(0, 0, R, i * 45); return S.line(a[0], a[1], b[0], b[1]); }).join(""),
   };

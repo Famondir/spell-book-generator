@@ -54,7 +54,7 @@ Die aktuelle Vorbereitung SHALL unter einem Namen gespeichert und später gelade
 - **DANN** sind die Plätze mit deren Zaubern belegt und nichts ist abgestrichen
 
 ### Requirement: Nutzungsprotokoll
-Die App SHALL jedes Vorbereiten, Entfernen, Wirken, Zurücknehmen und jeden Tageswechsel mit Zeitstempel, Zauber und Platzgrad protokollieren; auch Zaubertricks und Joker MUST beim Wirken protokolliert werden.
+Die App SHALL jedes Vorbereiten, Entfernen, Wirken, Zurücknehmen und jeden Tageswechsel mit Zeitstempel, Zauber und Platzgrad protokollieren; auch Zaubertricks und Joker MUST beim Wirken protokolliert werden. Bei Charakteren mit Gottheit MUST die App außerdem Morgenandacht (mit dem Zauber des Formelfragments und dem zum Abschluss gewirkten Zauber, falls eingetragen; der abschließende Zauber wird nur vermerkt und MUST NOT abgestrichen werden, ein Zaubertrick genügt), Abendgebet und die Freigabe von Einträgen des Spielleiters protokollieren.
 
 #### Scenario: Zaubertrick gewirkt
 - **WENN** bei einem vorbereiteten Zaubertrick „gewirkt“ gewählt wird
@@ -63,6 +63,10 @@ Die App SHALL jedes Vorbereiten, Entfernen, Wirken, Zurücknehmen und jeden Tage
 #### Scenario: Abstrich zurückgenommen
 - **WENN** ein Abstrich wieder entfernt wird
 - **DANN** protokolliert die App eine Rücknahme, sodass der Zauber nicht als gewirkt zählt
+
+#### Scenario: Morgenandacht
+- **WENN** bei einem Charakter mit Gottheit „Morgenandacht gehalten“ gewählt und als abschließender Zauber Detect Magic eingetragen wird
+- **DANN** entsteht ein Protokolleintrag „Andacht“ mit Fragment-Zauber und Detect Magic beim laufenden Spieltag
 
 ### Requirement: Dauerhaftigkeit
 Plätze, Vorbereitung, Abstriche, Vorlagen und Protokoll MUST einen Neustart des Browsers überstehen und im json-Export enthalten sein.

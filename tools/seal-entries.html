@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Einträge versiegeln</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 860px; margin: 24px auto; padding: 0 16px; color: #2b2118; background: #f6f0e2; }
+    h1 { font-size: 1.4em; }
+    textarea { width: 100%; min-height: 260px; font: 13px/1.4 ui-monospace, monospace; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 10px 0; }
+    button { padding: 6px 12px; }
+    .muted { color: #6b5640; font-size: 0.92em; }
+    table { border-collapse: collapse; margin-top: 10px; }
+    td, th { border-bottom: 1px solid #c9b896; padding: 3px 10px; text-align: left; }
+    code { background: #ece2cc; padding: 0 3px; }
+    .err { color: #8b1e1e; }
+  </style>
+</head>
+<body>
+  <h1>Einträge des Spielleiters versiegeln</h1>
+  <p class="muted">Läuft nur hier im Browser, nichts wird verschickt. Eingabe: eine Liste wie in <code>gm-entries.example.json</code>
+    (<code>id</code>, <code>title</code>, <code>text</code>, optional <code>code</code>). Fehlt ein Code, wird ein gut sprechbarer erzeugt.
+    Heraus kommen zwei Dateien: <b>Spielerdatei</b> (Titel und Text verschlüsselt, im Zauberbuch-Generator unter
+    „Heute vorbereitet → Andacht → Einträge importieren“) und <b>Spickzettel</b> (Kennung, Titel, Code – nur für dich).</p>
+  <div class="row">
+    <label>Vorlage laden <input type="file" id="file" accept=".json"></label>
+  </div>
+  <textarea id="src" spellcheck="false">[
+  { "id": "1", "title": "Eine Erinnerung", "text": "Hier steht, was der Charakter plötzlich weiß.\n\nAbsätze mit Leerzeile." }
+]</textarea>
+  <div class="row">
+    <button id="go">Versiegeln</button>
+    <span id="msg" class="muted"></span>
+  </div>
+  <div id="out"></div>
+
+  <script>
+    // Gleiches Verfahren wie app/js/devotion.js: Code normalisieren, PBKDF2 (SHA-256, 200 000 Runden) → AES-GCM 256
+    const ITER = 200000;
+    const b64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+    const normCode = (c) => String(c || "").trim().toLowerCase().replace(/\s+/g, "-");
+    async function keyOf(code, salt) {
+      const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(normCode(code)), "PBKDF2", false, ["deriveKey"]);
+      return crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: ITER, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["encrypt"]);
+    }
+    async function seal(entry, code) {
+      const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+      const data = new TextEncoder().encode(JSON.stringify({ title: entry.title || "", text: entry.text || "" }));
+      const cipher = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await keyOf(code, salt), data);
+      return { id: String(entry.id), salt: b64(salt), iv: b64(iv), cipher: b64(cipher) };
+    }
+    // sprechbarer Code: zwei Kunstwörter aus Silben und eine Zahl, z. B. „asker-molin-7“
+    const ON = ["b", "d", "f", "g", "k", "l", "m", "n", "p", "r", "s", "t", "v", "z", "br", "dr", "kr", "st"];
+    const NU = ["a", "e", "i", "o", "u", "ai", "au"];
+    const CO = ["", "", "n", "r", "s", "l", "k"];
+    const rnd = (n) => crypto.getRandomValues(new Uint32Array(1))[0] % n;
+    const pick = (a) => a[rnd(a.length)];
+    const word = () => pick(NU.slice(0, 5)) + pick(ON) + pick(NU) + pick(CO) + (rnd(2) ? pick(ON) + pick(NU) + pick(CO) : "");
+    const makeCode = () => `${word()}-${word()}-${2 + rnd(98)}`;
+
+    const $ = (s) => document.querySelector(s);
+    const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+    function download(name, text, type) {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([text], { type }));
+      a.download = name;
+      a.click();
+    }
+    $("#file").onchange = async (ev) => {
+      const f = ev.target.files[0];
+      if (f) $("#src").value = await f.text();
+    };
+    $("#go").onclick = async () => {
+      $("#msg").textContent = "";
+      $("#msg").className = "muted";
+      try {
+        if (!(window.crypto && crypto.subtle)) throw new Error("Dieser Browser kann hier nicht verschlüsseln (WebCrypto fehlt).");
+        const list = JSON.parse($("#src").value);
+        if (!Array.isArray(list) || !list.length) throw new Error("Erwartet wird eine Liste von Einträgen.");
+        const ids = new Set();
+        for (const x of list) {
+          if (!x || x.id == null || !x.text) throw new Error("Jeder Eintrag braucht id und text.");
+          if (ids.has(String(x.id))) throw new Error(`Kennung ${x.id} kommt doppelt vor.`);
+          ids.add(String(x.id));
+        }
+        $("#msg").textContent = "versiegle …";
+        const codes = list.map((x) => normCode(x.code || makeCode()));
+        if (new Set(codes).size !== codes.length) throw new Error("Zwei Einträge haben denselben Code.");
+        const entries = [];
+        for (let i = 0; i < list.length; i++) entries.push(await seal(list[i], codes[i]));
+        const player = JSON.stringify({ kind: "gm-entries", entries }, null, 2);
+        const sheet = ["# Spickzettel – Einträge des Spielleiters", "", "| Kennung | Titel | Code |", "|---|---|---|", ...list.map((x, i) => `| ${x.id} | ${x.title || ""} | ${codes[i]} |`), ""].join("\n");
+        download("eintraege-spieler.json", player, "application/json");
+        download("eintraege-spickzettel.md", sheet, "text/markdown");
+        $("#out").innerHTML = `<table><tr><th>Kennung</th><th>Titel</th><th>Code</th></tr>${list.map((x, i) => `<tr><td>${esc(x.id)}</td><td>${esc(x.title || "")}</td><td><code>${esc(codes[i])}</code></td></tr>`).join("")}</table>`;
+        $("#msg").textContent = `${entries.length} Einträge versiegelt; zwei Dateien heruntergeladen.`;
+      } catch (err) {
+        $("#msg").textContent = err.message;
+        $("#msg").className = "err";
+      }
+    };
+  </script>
+</body>
+</html>

@@ -2,7 +2,9 @@
 // Deutsche Zauberdaten (MyPFDB-PDF, lokal in spells/) einlesen und den englischen Zaubern zuordnen.
 // Ergebnis (beides gitignoriert):
 //   data/rules.de.local.js            window.RULES_DE = { [spellId]: { name, source, fields, text } }
-//   data/research/rules-de-review.md  mehrdeutige, fehlende und überzählige Einträge
+//   data/research/rules-de-review.md  mehrdeutige, fehlende und überzählige Einträge; Gegenprobe der Regeltexte
+//                                     (Zahlen, Würfel, Längen über tools/lib/textcheck.mjs, Werte unter 0,5)
+// Nachträge aus data/research/prd-de.json (tools/fetch-prd-de.mjs) füllen Zauber, die im PDF fehlen.
 // Aufruf: node tools/import-rules-de.mjs [--pdf spells/zauber_alphabetisch.pdf] [--dump einträge.json]
 // Braucht pdftohtml (poppler-utils).
 import { execFileSync } from "node:child_process";
@@ -11,6 +13,7 @@ import { join, dirname } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
+import { compare } from "./lib/textcheck.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
@@ -22,6 +25,8 @@ const PDF = join(ROOT, arg("--pdf", "spells/zauber_alphabetisch.pdf"));
 const ENT = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
 const decode = (s) => s.replace(/<[^>]+>/g, "").replace(/&(#x?[0-9a-f]+|\w+);/gi, (m, c) => c[0] === "#" ? String.fromCodePoint(c[1] === "x" ? parseInt(c.slice(2), 16) : +c.slice(1)) : ENT[c] ?? m);
 
+// Gesperrt gesetzte Stücke („w a h r n e h m e n   u n d“): Wortabstand = mehrere Leerzeichen
+const unspace = (raw) => raw.replace(/<[^>]+>/g, "").replace(/(?:(?<!\S)\S {1,3}){5,}\S(?!\S)/g, (seg) => seg.replace(/ {2,}/g, "\u0000").replace(/ /g, "").replace(/\u0000/g, " "));
 function readLines(pdf) {
   const dir = mkdtempSync(join(tmpdir(), "rules-de-"));
   execFileSync("pdftohtml", ["-xml", "-i", "-q", pdf, join(dir, "out")]);
@@ -34,7 +39,7 @@ function readLines(pdf) {
     const [, no, w, body] = pm;
     const items = [];
     for (const t of body.matchAll(/<text top="(\d+)" left="(\d+)" width="(\d+)" height="(\d+)" font="(\d+)">([\s\S]*?)<\/text>/g)) {
-      const it = { page: +no, top: +t[1], left: +t[2], width: +t[3], size: size[t[5]], text: decode(t[6]) };
+      const it = { page: +no, top: +t[1], left: +t[2], width: +t[3], size: size[t[5]], text: decode(unspace(t[6])) };
       it.col = it.left < +w / 2 ? 0 : 1;
       items.push(it);
     }
@@ -343,7 +348,8 @@ const twinKey = (n) => n.toLowerCase().replace(/\b(i{1,3}|iv|v|vi{1,3}|ix)\b/g, 
 const res = entries.map((x) => {
   const d = fpDe(x);
   // Übersetzungstabelle: englischer Name bekannt → Treffer, wenn der Fingerabdruck nicht widerspricht
-  const enName = tableMap.get(tableKey(x.name, x.source));
+  // Volkszusatz („Nixenruf (Undine)“) steht in der Tabelle oft nicht
+  const enName = tableMap.get(tableKey(x.name, x.source)) || tableMap.get(tableKey(x.name.replace(/\s*\([^)]*\)\s*$/, ""), x.source));
   const hit = enName && findEn(enName);
   if (hit) {
     const p = score(d, fpEn(hit));
@@ -384,7 +390,15 @@ for (const r of res) {
   } else if (r.best.p >= MIN) amb.push(r);
   else weak.push(r);
 }
+// Nachträge vom deutschen PRD (tools/fetch-prd-de.mjs) für Zauber, die im PDF fehlen
+const prdFile = join(ROOT, "data/research/prd-de.json");
+const prd = existsSync(prdFile) ? JSON.parse(readFileSync(prdFile, "utf8")) : {};
+let prdAdded = 0;
+for (const [id, x] of Object.entries(prd)) if (!out[id] && byId.has(id)) { out[id] = x; prdAdded++; }
 const unmatchedEn = SPELLS.filter((s) => !out[s.id]);
+// Gegenprobe: Zahlen, Würfel und Längen des deutschen gegen den englischen Regeltext
+const check = Object.entries(out).map(([id, x]) => ({ id, x, ...compare(x.text, (byId.get(id) || {}).description) })).filter((c) => c.score != null);
+const suspect = check.filter((c) => c.score < 0.5).sort((a, b) => a.score - b.score);
 
 // ---------------------------------------------------------------------------------------------
 // 5. Ausgabe
@@ -398,11 +412,14 @@ writeFileSync(join(ROOT, "data/research/rules-de-review.md"),
   `# Prüfliste deutsche Regeldaten\n\nErzeugt von tools/import-rules-de.mjs. Handzuordnungen: \`PROFILE_LOCAL.rulesDe.overrides = { "Deutscher Name": "english-id" }\`.\n\n` +
   `- zugeordnet: ${Object.keys(out).length} von ${entries.length} deutschen Einträgen (${SPELLS.length} englische Zauber)\n- mehrdeutig: ${amb.length}\n- schwach (unter ${MIN} Punkten): ${weak.length}\n- englisch ohne deutschen Eintrag: ${unmatchedEn.length}\n\n` +
   `## Mehrdeutig\n\n| Deutsch | beste Treffer |\n|---|---|\n${amb.map(row).join("\n")}\n\n## Schwach\n\n| Deutsch | beste Treffer |\n|---|---|\n${weak.map(row).join("\n")}\n\n` +
+  `## Gegenprobe Regeltext (Zahlen, Würfel, Längen)\n\n${check.length} Zuordnungen bewertbar, ${suspect.length} unter 0,5. Niedrige Werte entstehen auch durch Tabellen, die nur in einer Fassung stehen.\n\n| Deutsch | Englisch | Wert | nur deutsch | nur englisch |\n|---|---|---|---|---|\n${suspect.map((c) => `| ${c.x.name} | ${byId.get(c.id).name} | ${c.score.toFixed(2)} | ${c.onlyDe.slice(0, 6).join(" ")} | ${c.onlyEn.slice(0, 6).join(" ")} |`).join("\n")}\n\n` +
   `## Englisch ohne deutschen Eintrag\n\n${unmatchedEn.map((s) => `- ${s.name} (${s.source})`).join("\n")}\n`);
 console.log(`Übersetzungstabelle: ${table.length} Zeilen, ${res.filter((r) => r.table).length} Einträge darüber zugeordnet`);
 console.log(`${entries.length} deutsche Einträge · zugeordnet ${Object.keys(out).length} · mehrdeutig ${amb.length} · schwach ${weak.length} · englisch offen ${unmatchedEn.length}`);
+console.log(`Gegenprobe Regeltext: ${check.length} bewertbar, ${suspect.length} unter 0,5`);
+console.log(`PRD-Nachträge: ${prdAdded} von ${Object.keys(prd).length} übernommen`);
 const dump = arg("--dump");
-if (dump) writeFileSync(dump, JSON.stringify(res.map((r) => ({ de: r.x.name, src: r.x.source, top: r.top })), null, 1));
+if (dump) writeFileSync(dump, JSON.stringify(res.map((r) => ({ de: r.x.name, name: r.x.name, source: r.x.source, src: r.x.source, text: r.x.text, top: r.top })), null, 1));
 if (process.argv.includes("--table-misses")) {
   const miss = table.filter((r) => r.en && !findEn(r.en));
   console.log(`Tabelle ohne englischen Treffer: ${miss.length}`);

@@ -7,6 +7,9 @@
   const browser = /^de/i.test(navigator.language || "de") ? "de" : "en";
   const lang = { ui: "de", book: "de", rules: "de", units: "m" };
   const missing = new Set();
+  // Lange Prosa je Sprache (Lehrheft, Alltagszauber, Gottheitstexte …): fehlt die Fassung der Buchsprache,
+  // gilt die deutsche, und die Stelle wird hier gezählt (Test: 0 bei bookLang = en)
+  const untranslated = new Set();
   const fmt = (s, vars) => (vars ? String(s).replace(/\{(\w+)\}/g, (m, k) => (vars[k] != null ? vars[k] : m)) : s);
   function tr(l, key, vars) {
     const T = window.LANG || {};
@@ -41,7 +44,14 @@
   const len = (ft) => (lang.units === "m" ? `${num(Math.round(ft * 0.3 * 100) / 100)} m` : `${ft} ft.`);
 
   window.I18N = {
-    lang, browser, missing, configure, apply, len, num,
+    lang, browser, missing, untranslated, configure, apply, len, num,
+    // Wert in der Buchsprache: en-Fassung, wenn die Buchsprache Englisch ist und sie vorliegt; sonst de (und zählen)
+    pick: (de, en, where) => {
+      if (lang.book !== "en") return de;
+      if (en != null) return en;
+      if (de != null && where) untranslated.add(where);
+      return de;
+    },
     t: (k, v) => tr(lang.ui, k, v),
     // Mehrzahl: Schlüssel.one / Schlüssel.other, {n} ist die Zahl
     tn: (k, n, v) => tr(lang.ui, `${k}.${n === 1 ? "one" : "other"}`, { n, ...(v || {}) }),

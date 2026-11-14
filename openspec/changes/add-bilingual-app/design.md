@@ -28,7 +28,7 @@ Die App läuft ohne Build über `file://`. Daten kommen per `<script>`, Zustand 
 **Non-Goals:**
 - Keine dritte Sprache. Das Gerüst soll eine erlauben, aber es gibt keine Übersetzungen.
 - Keine maschinelle Übersetzung zur Laufzeit.
-- Lateinische Namen (Essenzen, Schulen) und der Formeltext bleiben in beiden Sprachen gleich. Sie sind In-Game-Fachsprache.
+- Lateinische Namen (Essenzen, Schulen) und der Formeltext bleiben in beiden Sprachen gleich. Sie sind In-Game-Fachsprache. Präzisiert durch `add-formula-languages`: Die Wörter fremder Formelsprachen bleiben gleich, ihre Umschrift folgt der Buchsprache (deutsch „dschwala“, englisch „jvala“); Latein bleibt unverändert.
 - Handgeschriebene Texte aus dem Profil (Kirran, `custom_texts`) werden nicht übersetzt.
 - Deutsche Regeltexte werden nicht veröffentlicht, auch nicht teilweise.
 
@@ -115,7 +115,7 @@ Die Maßeinheit ist eine eigene Funktion, `units.len`. Sie rechnet 5 ft in 1,5 m
 
 `index.html` lädt `data/rules.de.local.js` optional, genauso wie heute `profile.local.js`. Die App liest Namen, Felder und Text aus `RULES_DE`, wenn `rulesLang = de` gilt. Sonst nimmt sie die Begriffsübersetzung.
 
-*Alternative*: 5footstep.de abrufen. Die Seite war im Oktober 2026 nicht erreichbar. Sie bleibt als zweite Quelle für dasselbe Format offen (gleiches Ziel-Schema).
+*Nachtrag*: Das deutsche PRD (prd.5footstep.de) ist wieder erreichbar. Sein Zauberindex (1.901 Einträge) wurde Ende Oktober 2026 gegen `RULES_DE` abgeglichen. Nur 9 Zauber fehlten im PDF wirklich (Abenteurerkompendium, Almanach der Götter und Magie, Weltenband der Inneren See). `tools/fetch-prd-de.mjs` holt sie einzeln, die Zuordnung steht fest im Werkzeug, und der Import übernimmt sie, wo das PDF nichts liefert.
 
 *Alternative*: Zuordnung über übersetzte Namen. Verworfen, weil deutsche Namen frei übertragen sind („Magic Missile“ → „Magisches Geschoss“). Der Fingerabdruck ist robuster, und der Name dient nur zum Brechen von Gleichständen.
 

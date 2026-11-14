@@ -123,6 +123,43 @@ window.PRAYER = (function () {
     return "dein Zeichen, " + (back ? `${bare(MOTIF_DE[front])} und ${bare(MOTIF_DE[back])}` : MOTIF_DE[front]) + ",";
   }
 
+  // Zwiespalt: gegensätzliche Domänen oder Zuständigkeiten → ein Doppelvers, der beide Seiten anruft.
+  // Zweite Person ohne Relativpronomen, damit das Geschlecht der Gottheit offen bleibt.
+  const DUAL = [
+    ["Destruction", "Protection", "Du zerbrichst, was nicht trägt", "du bewahrst, was trägt"],
+    ["Death", "Healing", "Du nimmst, was endet", "du gibst, was fehlt"],
+    ["Law", "Chaos", "Du bindest, was frei sein will", "du löst, was gebunden ist"],
+    ["Good", "Evil", "Du erbarmst dich", "du strafst ohne Erbarmen"],
+    ["Darkness", "Sun", "Du verbirgst im Dunkel", "du enthüllst im Licht"],
+    ["Knowledge", "Madness", "Du weißt alles", "und dein Wissen bricht den Verstand"],
+    ["Fire", "Water", "Du entzündest", "du löschst"],
+  ];
+  // tone: "" automatisch, "dual" erzwingen (ohne Paar: Geben und Nehmen), "plain" abschalten
+  function dual(d, tone = "") {
+    if (!d || tone === "plain") return null;
+    const has = new Set([...(d.domains || []), ...(d.areas || []).map((a) => U.cap(String(a).toLowerCase()))]);
+    const hit = DUAL.find(([a, b]) => has.has(a) && has.has(b));
+    if (hit) return `${hit[2]}, ${hit[3]}.`;
+    return tone === "dual" ? "Du gibst, was du willst, du nimmst, was du willst." : null;
+  }
+  // Heiliges Zeichen als deutscher Satzteil („der Schlüssel“, „das Auge und der Stern“) oder "" (unbekanntes Motiv)
+  function symbolName(d) {
+    if (!d || !d.symbol || !window.VITRAIL) return "";
+    const { front, back } = VITRAIL.symbolMotifs(d.symbol);
+    if (!MOTIF_DE[front]) return "";
+    return back && MOTIF_DE[back] ? `${MOTIF_DE[front]} und ${MOTIF_DE[back]}` : MOTIF_DE[front];
+  }
+  const tone = () => ((window.PROFILE && PROFILE.devotion) || {}).tone || "";
+  // Paar des Zwiespalts (z. B. ["Destruction","Protection"]) oder null; ohne tone gilt der Profilton.
+  // Erzwungener Zwiespalt ohne gegensätzliche Domänen: ["Give","Take"].
+  function dualPair(d, t = tone()) {
+    if (!d || t === "plain") return null;
+    const has = new Set([...(d.domains || []), ...(d.areas || []).map((a) => U.cap(String(a).toLowerCase()))]);
+    const hit = DUAL.find(([a, b]) => has.has(a) && has.has(b));
+    if (hit) return [hit[0], hit[1]];
+    return t === "dual" ? ["Give", "Take"] : null;
+  }
+
   // Kehrvers je Gottheit fest – wie in einer echten Liturgie
   function refrain(d) {
     const r = U.rng("refrain|" + d.id);
@@ -135,6 +172,16 @@ window.PRAYER = (function () {
         ? [`${pair} – so steht es geschrieben.`, `${pair}: So sei es, und so bleibe es.`, `Um ${pair} willen: So sei es.`]
         : [`${pair} – so sei es.`, `${d.name}, höre uns.`];
     return r.pick(forms);
+  }
+
+  const callOf = (d) => `${d.name}${epithet(d) ? ", " + epithet(d) : ""},`;
+  // Lob: Zuständigkeiten der Gottheit („Wissen und Magie sind dein.“)
+  function praiseOf(d) {
+    const c = concerns(d);
+    const sind = (xs) => `${words(xs)} ${xs.length > 1 ? "sind" : "ist"} dein`;
+    return c.length
+      ? `${sind(c.slice(0, 2))}${c.length > 2 ? `, und dein ${c.slice(2, 4).length > 1 ? "sind" : "ist"} ${words(c.slice(2, 4))}` : ""}.`
+      : axes(d).good === "evil" ? "Dein ist, was sich beugt." : "Dein ist mein Dienst.";
   }
 
   function texts(m, d) {
@@ -152,13 +199,8 @@ window.PRAYER = (function () {
     const kraft = /Kraft/.test(E.gen) ? "deine Kraft" : `die Kraft ${E.gen}`;
     const ziel = TARGET[m.shape && m.shape.kind] || "hier";
     const fill = (s) => s.replace("{E}", kraft).replace("{Z}", ziel);
-    const c = concerns(d);
-    const ep = epithet(d);
-    const call = `${d.name}${ep ? ", " + ep : ""},`;
-    const sind = (xs) => `${words(xs)} ${xs.length > 1 ? "sind" : "ist"} dein`;
-    const praise = c.length
-      ? `${sind(c.slice(0, 2))}${c.length > 2 ? `, und dein ${c.slice(2, 4).length > 1 ? "sind" : "ist"} ${words(c.slice(2, 4))}` : ""}.`
-      : good === "evil" ? "Dein ist, was sich beugt." : "Dein ist mein Dienst.";
+    const call = callOf(d);
+    const praise = praiseOf(d);
     const pleas = r.sample((m.subschools || []).includes("healing") ? HEAL : PLEA[school], 2).map(fill);
     const dur = DURATION[m.duration && m.duration.kind];
     const weapon = WEAPON[String(d.weapon || "").toLowerCase()] || "meine Waffe";
@@ -169,26 +211,51 @@ window.PRAYER = (function () {
         ? r.pick(["Beuge, die sich mir widersetzen.", "Gib mir Macht über die Zaudernden.", "Lass die Schwachen spüren, wem sie gehören."])
         : r.pick(["Halte das Maß, auch in mir.", "Lass geschehen, was geschehen muss.", "Gib mir Gleichmut für das, was folgt."]);
     const ref = refrain(d);
+    const two = dual(d, tone());
     let lines;
     if (law === "law") {
       // Litanei: Kehrvers nach jedem Abschnitt
-      lines = [{ t: call }, { t: praise }, { t: ref, r: true }, { t: pleas[0] }, { t: pleas[1] }, { t: ref, r: true }];
+      lines = [{ t: call }, { t: praise }, ...(two ? [{ t: two, dual: true }] : []), { t: ref, r: true }, { t: pleas[0] }, { t: pleas[1] }, { t: ref, r: true }];
       if (dur) lines.push({ t: dur });
       lines.push({ t: vow }, { t: close }, { t: ref, r: true });
     } else if (law === "chaos") {
       const cry = r.pick(["Hör mich!", "Jetzt!", "Komm!", "Brenn in mir!"]);
-      lines = [{ t: call.replace(/,$/, "!") }, { t: praise.replace(/\.$/, "!") }, { t: cry }, { t: pleas[0] }, { t: r.pick(["Ja!", "Mehr!", "Hier!"]) + " " + pleas[1] }, { t: vow }, { t: close }];
+      lines = [{ t: call.replace(/,$/, "!") }, { t: praise.replace(/\.$/, "!") }, ...(two ? [{ t: two.replace(/\.$/, "!"), dual: true }] : []), { t: cry }, { t: pleas[0] }, { t: r.pick(["Ja!", "Mehr!", "Hier!"]) + " " + pleas[1] }, { t: vow }, { t: close }];
     } else {
-      lines = [{ t: call }, { t: praise }, { t: pleas[0] }, ...(dur ? [{ t: dur }] : []), { t: vow }, { t: close }, { t: "So sei es.", r: true }];
+      lines = [{ t: call }, { t: praise }, ...(two ? [{ t: two, dual: true }] : []), { t: pleas[0] }, ...(dur ? [{ t: dur }] : []), { t: vow }, { t: close }, { t: "So sei es.", r: true }];
     }
     return {
       title,
       epithet: `${m.schoolInfo.de} · ${E.latin}`,
-      canon: { lines, refrain: ref, tone: law === "law" ? "Litanei" : law === "chaos" ? "Anrufung" : "Bitte" },
+      canon: { lines, refrain: ref, tone: (law === "law" ? "Litanei" : law === "chaos" ? "Anrufung" : "Bitte") + (two ? " im Zwiespalt" : ""), dual: !!two },
       deity: d,
       custom: false,
     };
   }
 
-  return { texts, concerns, epithet, axes, DOMAIN, AREA };
+  // Stimme der Gottheit für die Tagesgebete (devotion.js): Anrede, Lob, Zwiespalt, Kehrvers, Schluss je Ton.
+  // seed macht die Auswahl unter mehreren Fassungen deterministisch (z. B. je Spieltag).
+  function voice(d, seed = "") {
+    d = d || { id: "none", name: "Herr", align: "N", areas: [], domains: [], symbol: "" };
+    const r = U.rng(seed + "|voice|" + d.id);
+    const { law, good } = axes(d);
+    const close = good === "good"
+      ? r.pick(["Halte deine Hand über die, die mir anvertraut sind.", "Lass mich niemanden vergessen, der auf mich hofft.", "Gib mir Erbarmen, wo ich hart sein will."])
+      : good === "evil"
+        ? r.pick(["Lass mich stark sein, wo andere zaudern.", "Gib mir Macht über das, was mich heute erwartet.", "Beuge, was sich mir entgegenstellt."])
+        : r.pick(["Halte das Maß, auch in mir.", "Lass geschehen, was geschehen muss.", "Gib mir Gleichmut für das, was folgt."]);
+    return {
+      d, r, law, good,
+      call: callOf(d),
+      name: d.name,
+      praise: praiseOf(d),
+      dual: dual(d, tone()),
+      refrain: refrain(d),
+      close,
+      // Schlusswort: Litanei mit Kehrvers, freie Anrufung mit Ausruf, sonst schlicht
+      amen: law === "law" ? refrain(d) : law === "chaos" ? r.pick(["Hör mich!", "So soll es brennen!", "Jetzt!"]) : "So sei es.",
+    };
+  }
+
+  return { texts, concerns, epithet, axes, dual, dualPair, symbolName, voice, DOMAIN, AREA };
 })();

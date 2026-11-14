@@ -11,11 +11,15 @@ Für jeden Zauber SHALL ein deutsches Gebet aus Gottheit (Beiname, Zuständigkei
 - **DANN** ruft er die Gottheit beim Namen oder Beinamen an, nennt eine ihrer Zuständigkeiten und bittet um die Wirkung des Zaubers
 
 ### Requirement: Ton nach Gesinnung
-Rechtschaffene Gottheiten SHALL Litaneien mit festem Kehrvers erhalten, neutrale schlichte Bitten, chaotische freie Anrufungen; gute Gottheiten MUST um Schutz und Licht bitten, böse um Macht und Unterwerfung.
+Rechtschaffene Gottheiten SHALL Litaneien mit festem Kehrvers erhalten, neutrale schlichte Bitten, chaotische freie Anrufungen; gute Gottheiten MUST um Schutz und Licht bitten, böse um Macht und Unterwerfung. Hat eine Gottheit gegensätzliche Zuständigkeiten oder Domänen (z. B. Zerstörung und Schutz), SHALL ihr Gebet zusätzlich den Ton „Zwiespalt“ tragen: mindestens ein Doppelvers, der beide Seiten anruft. Das gilt für Brevier und Gebete für den Tag.
 
 #### Scenario: Litanei
 - **WENN** die Gottheit rechtschaffen ist
 - **DANN** wiederholt das Gebet einen Kehrvers mindestens zweimal
+
+#### Scenario: Zwiespalt
+- **WENN** die Gottheit die Domänen Zerstörung und Schutz hat
+- **DANN** enthält das Gebet einen Doppelvers, dessen eine Hälfte die zerstörende und dessen andere die schützende Seite anruft
 
 ### Requirement: Eigene Worte
 Je Zauber SHALL der Spieler ein eigenes Gebet eintragen können; es MUST je Charakter gespeichert und im Export enthalten sein. Ohne eigenes Gebet MUST die Brevierseite ein liniertes Feld zum Hineinschreiben zeigen.

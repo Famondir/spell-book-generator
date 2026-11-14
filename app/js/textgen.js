@@ -7,17 +7,6 @@
   // ---------------------------------------------------------------------------
   // Sprachmaterial
   // ---------------------------------------------------------------------------
-  const IMPERATIVE = {
-    abjuration: ["arce", "muni", "claude", "prohibe", "tuere", "obsera"],
-    conjuration: ["voca", "accerse", "crea", "adduc", "trahe", "aperi"],
-    divination: ["vide", "cerne", "revela", "intuere", "lege", "aperi"],
-    enchantment: ["liga", "iube", "mulce", "cape", "suade", "flecte"],
-    evocation: ["erumpe", "emitte", "arde", "frange", "fulmina", "effunde"],
-    illusion: ["finge", "simula", "vela", "abde", "pinge", "fallere"],
-    necromancy: ["exhauri", "excita", "marcesce", "exanima", "suge", "sepeli"],
-    transmutation: ["muta", "verte", "forma", "auge", "transfer", "solve"],
-    universal: ["fac", "scribe", "tene", "imple", "rege"],
-  };
   const PARTICIPLE = {
     abjuration: ["Arcens", "Muniens", "Claudens", "Tuens"],
     conjuration: ["Vocans", "Accersens", "Creans", "Aperiens"],
@@ -128,6 +117,66 @@
   };
   const PR = window.PROFILE;
   const CORRESPOND = Object.fromEntries(Object.entries(CORRESPOND_BASE).map(([k, v]) => [k, { body: "–", planet: "–", ...v, ...((PR.correspond || {})[k] || {}) }]));
+  // Zaubertinten (ohne Regelwirkung): Farbe und Metall der Hauptessenz, Beimischung aus der zweiten
+  // Essenz mit einer Begründung im Ton eines Werkstattbuchs. Farbstoffe über PROFILE.pigments ergänzbar.
+  const PIGMENTS = {
+    Zinnoberrot: { name: "Zinnober", poison: true }, Tiefblau: { name: "Ultramarin aus Lapislazuli" }, Himmelblau: { name: "Azurit" },
+    Ocker: { name: "Ocker" }, Grün: { name: "Grünspan", poison: true }, Aschgrau: { name: "Beinschwarz und Kreide" },
+    Weißgold: { name: "Muschelgold" }, Schiefer: { name: "Schieferschwarz" }, Violett: { name: "Folium" }, Stahlblau: { name: "Indigo und Ruß" },
+    Weiß: { name: "Kreideweiß" }, Schillernd: { name: "Perlmuttstaub" }, Schwarzrot: { name: "Drachenblut" }, Mitternachtsblau: { name: "Indigo" },
+    Bernstein: { name: "Safran in Eiweiß" },
+    ...(PR.pigments || {}),
+  };
+  // Metall → Form in der Tinte, Wochentag (Wandelstern), Name des giftigen Stoffs
+  const INK_METALS = {
+    Gold: { form: "Goldstaub", day: "der Sonne" }, Silber: { form: "Silberstaub", day: "des Mondes" }, Kupfer: { form: "Kupferstaub", day: "der Venus" },
+    Eisen: { form: "Eisenfeilspan", day: "des Mars" }, Zinn: { form: "Zinnstaub", day: "des Jupiter" }, Blei: { form: "Bleiweiß", day: "des Saturn", poison: "Bleiweiß" },
+    Quecksilber: { form: "Quecksilber, mit Zinn verrieben", day: "des Merkur", poison: "Quecksilber" }, Platin: { form: "Platinstaub" },
+    "Kaltes Eisen": { form: "Zunder vom kalten Eisen", day: "des Mars" },
+  };
+  // wie die zweite Essenz der ersten dient; {P} = Genitiv der Hauptessenz
+  const INK_WHY = {
+    ignis: ["Feuer gibt dem Werk {P} Hitze", "Glut hält das Werk {P} in Gang"],
+    aqua: ["Kälte zügelt das Werk {P}", "Wasser lässt das Werk {P} nachgeben, wo es muss"],
+    aer: ["Luft facht das Werk {P} an", "Wind trägt das Werk {P} weiter"],
+    terra: ["Erde gibt dem Werk {P} Gewicht", "Stein hält das Werk {P} am Ort"],
+    vita: ["Leben nährt das Werk {P}", "Wachstum lässt das Werk {P} reifen"],
+    mors: ["Verfall nimmt dem Werk {P} alles Überflüssige", "der Tod macht das Werk {P} rücksichtslos"],
+    lux: ["Licht lenkt das Werk {P} aufs Ziel", "Helle macht das Werk {P} sichtbar"],
+    umbra: ["Schatten verbirgt das Werk {P}", "Dunkel dämpft den Schein {P}"],
+    mens: ["Geist lenkt das Werk {P}", "Verstand hält das Werk {P} bei seiner Absicht"],
+    vis: ["Kraft treibt das Werk {P} vorwärts", "Wucht gibt dem Werk {P} Stoß"],
+    ordo: ["Ordnung hält das Werk {P} in der Form", "Maß bindet das Werk {P}"],
+    fluxus: ["Wandel macht das Werk {P} beweglich", "Fluss lässt das Werk {P} sich fügen"],
+    bonum: ["das Gute heiligt das Werk {P}", "Gnade mildert das Werk {P}"],
+    malum: ["das Böse schärft das Werk {P}", "Bosheit gibt dem Werk {P} Biss"],
+    spatium: ["Weite öffnet dem Werk {P} den Weg", "Ferne lässt das Werk {P} weit reichen"],
+    tempus: ["Zeit lässt das Werk {P} dauern", "die Stunde gibt dem Werk {P} den rechten Augenblick"],
+  };
+  const metalForm = (met) => (INK_METALS[met] || { form: `Staub von ${met}` });
+  function ink(m) {
+    if (m.level < 1) return "";
+    const r = U.rng(m.seed ^ 0x1c4);
+    const c = CORRESPOND[m.primary];
+    const pg = PIGMENTS[c.color] || { name: c.color };
+    const mt = metalForm(c.metal);
+    const out = [`Eisengallus, gefärbt mit ${pg.name}, dazu ${mt.form}`];
+    const poison = [pg.poison && pg.name, mt.poison];
+    const sec = m.essences[1] && CORRESPOND[m.essences[1].id];
+    if (sec && sec.metal !== c.metal) {
+      const ad = metalForm(sec.metal);
+      const why = r.pick(INK_WHY[m.essences[1].id] || ["{P}"]).replace("{P}", ess(m.primary).gen);
+      const combo = T.comboName(m.primary, m.essences[1].id);
+      out[0] += `; eine Messerspitze ${ad.form}, denn ${why}${combo ? ` – so wird ${combo} daraus` : ""}`;
+      poison.push(ad.poison);
+    }
+    out[0] += ".";
+    if (mt.day) out.push(`Am Tag ${mt.day} anreiben.`);
+    const warn = [...new Set(poison.filter(Boolean))];
+    if (warn.length) out.push(`${warn.join(" und ")} nur mit eigenem Pinsel, danach mit Seife waschen.`);
+    return out.join(" ");
+  }
+
   const MONTHS = PR.calendar.months;
   const PLACES = PR.places;
   const dateStr = (day, month) => `${day}. ${MONTHS[month % MONTHS.length]} ${PR.calendar.year}`;
@@ -162,40 +211,165 @@
     return `${n} ${ess(m.primary).gen}${suffix && r.chance(0.6) ? " " + suffix : ""}`;
   }
 
+  // ---------------------------------------------------------------------------
+  // Kernzeile als Absicht: Verb und Essenzwort der lateinischen Kernzeile so wählen, dass auf der
+  // Liste der aktiven Klasse (mit Alltagszaubern) keine zwei Zauber dieselbe Schnellglyphe haben.
+  // Die Anfangsbuchstaben stehen in der Schnellglyphe; Gleiches gilt dort für den Glyphenschlüssel.
+  // ---------------------------------------------------------------------------
+  const quickKey = (m) => [m.school, m.primary, m.level, m.duration.kind, m.shape.kind, Math.min(m.shape.count, 3)].join("|");
+  const latinLex = () => window.FORMULA.get("latin").lex;
+  // Wunschpaar aus eigenem Generator, unabhängig von der Ziehfolge der Texte
+  function wishPair(m) {
+    const X = latinLex(), r = U.rng(m.seed ^ 0x6b1c3e);
+    const nImp = (X.imp[m.school] || X.imp.universal).length, nEss = X.ess[m.primary].length;
+    return [Math.floor(r() * nImp), Math.floor(r() * nEss)];
+  }
+  const coreMaps = new Map(); // je Klassenliste
+  // Einzeilige Formeln (Zaubertricks) bestehen nur aus der Kernzeile: dort darf sich das Paar
+  // auch über die Dauer hinweg nicht wiederholen
+  const lineKey = (m) => [m.school, m.primary, m.shape.kind].join("|");
+  function buildCoreMap(list) {
+    const X = latinLex();
+    const groups = new Map(), lines = new Map();
+    for (const s of window.SPELLS) {
+      if (!(s.everyday || s.levels[list] != null)) continue;
+      const m = window.analyze(s), k = quickKey(m);
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(m);
+    }
+    const map = new Map();
+    for (const ms of groups.values()) {
+      ms.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+      const used = new Set();
+      for (const m of ms) {
+        const single = m.level === 0 ? lines.get(lineKey(m)) || lines.set(lineKey(m), new Set()).get(lineKey(m)) : null;
+        const free = (p) => !used.has(p) && !(single && single.has(p));
+        const imp = X.imp[m.school] || X.imp.universal, ess = X.ess[m.primary];
+        const [i0, j0] = wishPair(m), n = imp.length * ess.length;
+        // ab dem Wunschpaar in fester Reihenfolge das erste freie Buchstabenpaar
+        let pair = [i0, j0];
+        for (let k = 0; k < n; k++) {
+          const c = (i0 * ess.length + j0 + k) % n, i = Math.floor(c / ess.length), j = c % ess.length;
+          if (free(imp[i][0] + ess[j][0])) { pair = [i, j]; break; }
+        }
+        used.add(imp[pair[0]][0] + ess[pair[1]][0]);
+        if (single) single.add(imp[pair[0]][0] + ess[pair[1]][0]);
+        map.set(m.id, pair);
+      }
+    }
+    return { map, groups };
+  }
+  // Zweiter Durchgang nach Aussehen: Die Absichtszeichen erscheinen in der Schrift der Formelsprache. Lateinische
+  // (und nicht ausgerichtete) Zauber behalten ihre Plätze, damit sie nicht vom Buchinhalt abhängen; fremdsprachige
+  // Zauber weichen aus, wenn ihre Zeichen in der Glyphengruppe schon gleich aussehen oder ihre einzeilige Formel
+  // schon gedruckt wird.
+  const visualMaps = new Map(); // je Klassenliste und Buchinhalt
+  function buildVisualMap(base) {
+    const F = window.FORMULA, S = window.SCRIPTS;
+    const map = new Map(base.map), lines = new Map(), used = new Map();
+    const words = (lang, m, [i, j]) => [(lang.lex.imp[m.school] || lang.lex.imp.universal)[i], lang.lex.ess[m.primary][j]];
+    const vkey = (lang, m, p) => words(lang, m, p).map((w) => S.visualKey(lang, w)).join("|");
+    // dieselben Zeichen in Lateinschrift (Einstellung „Lateinschrift“): auch dort eindeutig
+    const lat = (lang, m, p) => words(lang, m, p).map((w) => S.latinKey(lang, w)).join("|");
+    const lkey = (lang, m, p) => lang.id + ":" + words(lang, m, p).join(" ");
+    const lineSet = (m) => lines.get(lineKey(m)) || lines.set(lineKey(m), new Set()).get(lineKey(m));
+    const todo = [];
+    for (const [k, ms] of base.groups) {
+      used.set(k, new Set());
+      for (const m of ms) {
+        const lang = F.langOf(m), own = lang.id !== "latin" && F.aligned(lang);
+        if (own) { todo.push([k, m, lang]); continue; }
+        const L = F.get("latin");
+        used.get(k).add(vkey(L, m, map.get(m.id)));
+        if (m.level === 0) lineSet(m).add(lkey(L, m, map.get(m.id)));
+      }
+    }
+    for (const [k, m, lang] of todo) {
+      const imp = lang.lex.imp[m.school] || lang.lex.imp.universal, ess = lang.lex.ess[m.primary];
+      const [i0, j0] = map.get(m.id), n = imp.length * ess.length;
+      let pair = [i0, j0];
+      for (let c = 0; c < n; c++) {
+        const x = (i0 * ess.length + j0 + c) % n, p = [Math.floor(x / ess.length), x % ess.length];
+        if (!used.get(k).has(vkey(lang, m, p)) && !used.get(k).has(lat(lang, m, p)) && !(m.level === 0 && lineSet(m).has(lkey(lang, m, p)))) { pair = p; break; }
+      }
+      used.get(k).add(vkey(lang, m, pair)).add(lat(lang, m, pair));
+      if (m.level === 0) lineSet(m).add(lkey(lang, m, pair));
+      map.set(m.id, pair);
+    }
+    return map;
+  }
+  // { imp, ess, letters, slot, marks } der lateinischen Kernzeile; slot = Plätze [Verb, Essenzwort] für ausgerichtete
+  // Sprachen, marks = Absichtszeichen der Schnellglyphe in der Schrift der Formelsprache
+  function coreChoice(m) {
+    const F = window.FORMULA, list = (window.CLASS && CLASS.list) || "wizard";
+    if (!coreMaps.has(list)) coreMaps.set(list, buildCoreMap(list));
+    const vk = list + "#" + F.bookKey();
+    if (!visualMaps.has(vk)) visualMaps.set(vk, buildVisualMap(coreMaps.get(list)));
+    const X = latinLex();
+    const [i, j] = visualMaps.get(vk).get(m.id) || wishPair(m);
+    const imp = (X.imp[m.school] || X.imp.universal)[i], ess = X.ess[m.primary][j];
+    const letters = [imp[0].toUpperCase(), ess[0].toUpperCase()];
+    const lang = F.langOf(m);
+    const own = lang.id !== "latin" && F.aligned(lang);
+    const ws = own ? [(lang.lex.imp[m.school] || lang.lex.imp.universal)[i], lang.lex.ess[m.primary][j]] : [imp, ess];
+    const L = own ? lang : F.get("latin");
+    // marks/keys in der eingestellten Darstellung (Original- oder Lateinschrift); keys: Vergleich nach Aussehen (Prüfwerkzeug)
+    return { imp, ess, letters, slot: [i, j], marks: ws.map((w) => SCRIPTS.mark(L, w)), keys: ws.map((w) => SCRIPTS.markKey(L, w)) };
+  }
+
+  // Formel in der Sprache der Herkunft (lang.js). Die Ziehfolge ist für alle Sprachen gleich,
+  // damit die übrigen Texte eines Zaubers nicht von der Formelsprache abhängen.
   function formula(m, r) {
-    const imp = IMPERATIVE[m.school] || IMPERATIVE.universal;
-    const words = (id) => ess(id).words;
+    const F = window.FORMULA, lang = F.langOf(m), X = lang.lex;
+    const imp = X.imp[m.school] || X.imp.universal;
+    const words = (id) => X.ess[id];
+    // Zeile in Umschrift; die rohe Lautschrift merken, aus ihr entsteht das Band in der Originalschrift
+    const raw = new Map(), own = SCRIPTS.shownOf(lang) !== SCRIPTS.LIST.latin;
+    const ln = (type, vals) => { const l = F.line(lang, type, vals); if (own) raw.set(l, F.line(lang, type, vals, true)); return l; };
     const lines = [];
     const L = m.level;
     const nLines = L === 0 ? 1 : Math.min(1 + Math.ceil(L * 0.75), 8);
     const prim = m.primary;
-    // Kernzeile: Verb – Essenz – Gestalt
-    lines.push(`${U.cap(r.pick(imp))} ${r.pick(words(prim))}, ${m.shape.latin}!`);
+    // Kernzeile: Verb – Essenz – Gestalt. Gezogen wird immer (Ziehfolge), Latein nimmt die eindeutige Wahl,
+    // ausgerichtete Sprachen die Wörter auf denselben Plätzen
+    let core = { imp: r.pick(imp), ess: r.pick(words(prim)) };
+    let tech = "";
+    if (lang.id === "latin") core = coreChoice(m);
+    else {
+      const c = coreChoice(m), XL = latinLex();
+      if (F.aligned(lang)) core = { imp: imp[c.slot[0]], ess: words(prim)[c.slot[1]] };
+      tech = F.line(F.get("latin"), "core", { imp: c.imp, ess: c.ess, shape: XL.shape[m.shape.kind] });
+    }
+    lines.push(ln("core", { imp: core.imp, ess: core.ess, shape: X.shape[m.shape.kind] }));
     const pool = [];
-    m.essences.slice(1).forEach((e) => pool.push(`${U.cap(r.pick(words(e.id)))} ${r.pick(["et", "cum", "in"])} ${r.pick(words(prim))}`));
-    if (m.range.tier > 0) pool.push(`${U.cap(m.range.latin)}, ${r.pick(["usque ad finem", "per circulos", "ad scopum", "trans spatium"])}`);
-    pool.push(`${U.cap(m.duration.latin)} ${r.pick(["maneat", "fiat", "sit", "duret"])}`);
-    for (const s of m.signs) pool.push(`${U.cap(r.pick(imp))} ${s.dir === "in" ? "intra" : "extra"} ${r.pick(["signum", "circulum", "limitem", "orbem"])}`);
-    if (m.save.type !== "none") pool.push(`${U.cap(T.SAVES[m.save.type].latin)} ${m.save.harmless ? "aperta" : r.pick(["frangatur", "cedat", "probetur"])}`);
-    if (m.components.M) pool.push(`${r.pick(["Materia", "Pretium", "Donum"])} ${r.pick(["datum", "solutum", "consumptum"])} est`);
-    if (m.sr.yes) pool.push(`${r.pick(["Sigillum", "Vinculum"])} ${r.pick(["ruptum", "transitum"])}`);
-    for (let i = 0; i < L; i++) pool.push(`${r.pick(["Ordine", "Gradu", "Nodo"])} ${["primo", "secundo", "tertio", "quarto", "quinto", "sexto", "septimo", "octavo", "nono"][i]} ${r.pick(imp)}`);
+    m.essences.slice(1).forEach((e) => pool.push(ln("pair", { ess2: r.pick(words(e.id)), conj: r.pick(X.conj), ess: r.pick(words(prim)) })));
+    if (m.range.tier > 0) pool.push(ln("range", { range: X.range[m.range.tier], rangeTail: r.pick(X.rangeTail) }));
+    pool.push(ln("duration", { duration: X.duration[m.duration.kind], durVerb: r.pick(X.durVerb) }));
+    for (const s of m.signs) pool.push(ln("sign", { imp: r.pick(imp), dir: X.dir[s.dir === "in" ? "in" : "out"], signObj: r.pick(X.signObj) }));
+    if (m.save.type !== "none") pool.push(ln("save", { save: X.save[m.save.type], saveVerb: m.save.harmless ? X.saveOpen : r.pick(X.saveVerb) }));
+    if (m.components.M) pool.push(ln("material", { material: r.pick(X.material), materialVerb: r.pick(X.materialVerb) }));
+    if (m.sr.yes) pool.push(ln("seal", { seal: r.pick(X.seal), sealVerb: r.pick(X.sealVerb) }));
+    for (let i = 0; i < L; i++) pool.push(ln("order", { ordWord: r.pick(X.ordWord), ord: X.ord[i], imp: r.pick(imp) }));
     // Auswahl zufällig, Reihenfolge aber wie im Aufbau (Ordnungen aufsteigend)
     const extra = r.sample(pool, nLines - 1).sort((a, b) => pool.indexOf(a) - pool.indexOf(b));
     lines.push(...extra);
     // Schlusssiegel
-    if (L >= 2) lines.push(`${r.pick(["Fiat", "Sic sit", "Clausum est", "Signatum est"])}!`);
-    return { lines, tone: TONE[m.school] || TONE.universal, band: lines.join(" · ").replace(/[!,]/g, "") };
+    if (L >= 2) lines.push(ln("close", { close: r.pick(X.close) }));
+    const sc = SCRIPTS.shownOf(lang);
+    const band = !own ? lines.join(" · ").replace(/[!,]/g, "") : lines.map((l) => SCRIPTS.write(lang, raw.get(l))).join(sc.sep);
+    return { lines, tech, tone: TONE[m.school] || TONE.universal, band, script: own ? lang.script : "latin", lang: lang.id };
   }
 
   function longFormula(m, r) {
     // Ausführliche Fassung mit Wechselrede zwischen Anrufung (A) und Antwort (R)
     const base = formula(m, U.rng(m.seed ^ 0x55)).lines;
     const out = [];
-    const imp = IMPERATIVE[m.school] || IMPERATIVE.universal;
+    const F = window.FORMULA, lang = F.langOf(m), X = lang.lex;
+    const imp = X.imp[m.school] || X.imp.universal;
     base.forEach((l, i) => {
       out.push({ k: "A", t: l });
-      out.push({ k: "R", t: `${U.cap(r.pick(ess(m.essences[i % m.essences.length].id).words))}, ${r.pick(imp)}${r.chance(0.5) ? ", " + r.pick(["audi", "veni", "esto", "sta"]) : ""}.` });
+      const ess = r.pick(X.ess[m.essences[i % m.essences.length].id]), im = r.pick(imp);
+      out.push({ k: "R", t: F.line(lang, "answer", { ess, imp: im, answer: r.chance(0.5) ? r.pick(X.answer) : "" }) });
     });
     return out;
   }
@@ -345,10 +519,21 @@
   }
 
   // Randnotizen im Ton des Besitzers (Profil frei konfigurierbar)
-  function notes(m, r, profile, n) {
+  const BRIDGE_SLOT = "\u0000bridge";
+  // Name in der Regelsprache (deutsche Regeldaten: deutscher Name), sonst der englische
+  const ruleName = (s) => (window.RULES ? RULES.name(s) : s.name);
+  // Basis einer Familie („stunning barrier“) als Zaubername in der Regelsprache, falls es den Basiszauber gibt
+  function familyName(base) {
+    const s = (window.SPELLS || []).find((x) => x.name.toLowerCase() === base.toLowerCase());
+    return s ? ruleName(s) : base;
+  }
+
+  function notes(m, r, profile, n, lines = []) {
     const sc = school(m);
     const e0 = ess(m.primary);
-    const vars = { owner: profile.name, name: m.name, essence: e0.latin, school: sc.de };
+    const name = ruleName(m.spell);
+    const vars = { owner: profile.name, name, essence: e0.latin, school: sc.de };
+    const bridge = bridgeNote(m, lines);
     const pool = [
       `Messung: Bei sauberem Kreis ${r.int(2, 9)} % weniger Restladung im Finger als bei der Vorlage. Die Vorlage war schlampig.`,
       `Der ${m.signs[0] ? "Zeichenring" : "Essenzring"} lässt sich um ${r.int(2, 7)}° drehen, ohne dass die Formel bricht. Toleranz notiert. Möglicher Ansatzpunkt.`,
@@ -360,16 +545,68 @@
       m.components.costly ? `Der Ausgleich (${m.components.costly.toLocaleString("de-DE")} GM) ist schmerzhaft. Suche nach einer günstigeren Entsprechung läuft.` : `Kein teurer Stoff nötig. Effizient.`,
       PR.fill(PR.noteOriginalName, vars),
       `Querverweis: ${m.combo ? "Verbindung „" + m.combo + "“ – siehe auch andere Formeln mit dieser Verbindung." : "Reine Essenz, keine benannte Verbindung."}`,
-      m.family.mod ? `Gehört zur Familie „${m.family.base}“. Grundaufbau identisch, nur ${/greater|major|improved/.test(m.family.mod) ? "ein zusätzlicher Verstärkungsring" : /lesser|minor/.test(m.family.mod) ? "der äußere Ring ist gelockert" : "weitere Knoten am Rand"}.` : `Keine bekannte Variante. Noch nicht.`,
+      m.family.mod ? `Gehört zur Familie „${familyName(m.family.base)}“. Grundaufbau identisch, nur ${/greater|major|improved/.test(m.family.mod) ? "ein zusätzlicher Verstärkungsring" : /lesser|minor/.test(m.family.mod) ? "der äußere Ring ist gelockert" : "weitere Knoten am Rand"}.` : `Keine bekannte Variante. Noch nicht.`,
       `${profile.name}: Siegel geprüft am ${dateStr(r.int(1, 28), r.int(0, 11))}.`,
-      `Tinte: ${r.pick(["Eisengallus", "Ruß mit Gummi arabicum", "Sepia", "Zinnober für die Tore", "verdünntes Blut – nicht wiederholen"])}. ${r.pick(["Hält.", "Verläuft bei Feuchtigkeit.", "Gut für feine Linien.", "Zu dick für das Schriftband."])}`,
+      `Feder: ${r.pick(["Gans, frisch geschnitten", "Rabe für das Schriftband", "Schwan für die Ringe", "die alte Gänsefeder, nachgeschnitten", "Stahlfeder vom Markt – nicht wiederholen"])}. ${r.pick(["Hält die Linie.", "Spritzt in den Bögen.", "Gut für feine Linien.", "Zu breit für das Schriftband."])}`,
       `Kontrollfrage an mich selbst: Welche Schicht trägt die Last? Antwort: ${m.level >= 3 ? "die Ordnungsknoten" : "der Essenzring"}.`,
       `${m.duration.kind === "instant" ? "Offene Matrix. Nach dem Wirken prüfen, ob Restladung im Raum hängt." : "Geschlossener Kreis. Vor dem Schlafen prüfen, ob noch Formeln an mir hängen."}`,
-      `Der Name „${m.name}“ klingt in der Handelssprache nach weniger, als die Formel ist.`,
+      `Der Name „${name}“ klingt in der Handelssprache nach weniger, als die Formel ist.`,
       `Nachtrag: ${r.pick(["Mit Kreide auf Stein funktioniert der Kreis ebenfalls, aber schwächer.", "Im Regen das Schriftband enger setzen.", "Die Gesten nicht übertreiben – Präzision schlägt Größe.", "Ein Fehler im Glossar korrigiert."])}`,
       ...(PR.notes || []).map((n) => PR.fill(n, vars)),
+      bridge.slot ? BRIDGE_SLOT : null,
     ];
-    return r.sample(pool.filter(Boolean), n);
+    const out = r.sample(pool.filter(Boolean), n);
+    // Platzhalter entfernen (er hält nur die Zufallsfolge); Brückennotiz mit Stamm immer zuerst, damit sie auch in der Normalfassung steht
+    const at = out.indexOf(BRIDGE_SLOT);
+    if (at >= 0) out.splice(at, 1);
+    if (bridge.text) out.unshift(bridge.text);
+    out.lead = !!bridge.text; // erstes Notizpaar gehört auf die erste Seite (book.js, autofit)
+    return out;
+  }
+
+  // Brückennotiz: fremdes Formelwort neben dem lateinischen Fachwort (nur bei fremder Formelsprache).
+  // Vorlage nach Seed statt Zufallsgenerator, damit die übrigen Texte nicht verrutschen.
+  const BRIDGE_NOTES = {
+    cognate: [
+      "„{word}“ – {latin}. Derselbe Stamm.",
+      "{word} und {latin}: kein Zufall. Beide Wörter wachsen aus einer Wurzel.",
+      "In dieser Fassung steht „{word}“. Man hört {latin} noch darin.",
+    ],
+    // Kernwort der gedruckten Formel neben dem Wort der Fachformel auf demselben Platz
+    coreStem: [
+      "„{word}“ – in der Fachformel {latin}. Beide aus {stem}.",
+      "{word} und {latin} stehen auf demselben Platz und wachsen aus einer Wurzel ({stem}).",
+    ],
+  };
+  // { text, slot }: text = Notiz mit gemeinsamem Stamm (oder keine); slot = Tabelleneintrag vorhanden (Platz im Notizpool)
+  // lines: gedruckte Formelzeilen; ein Eintrag der Brückentabelle zählt nur, wenn sein Wort darin vorkommt
+  function bridgeNote(m, lines = []) {
+    const F = window.FORMULA, lang = F.langOf(m);
+    if (lang.id === "latin") return {};
+    const own = PR.bridgeNotes || {};
+    const spelled = (w) => (lang.phonetic === false ? w : F.spell(w, F.readLang()));
+    const printed = lines.join(" ").toLowerCase();
+    const entries = lang.bridges ? m.essences.map((e) => lang.bridges[e.id]).filter(Boolean) : [];
+    const b = entries.find((x) => printed.includes(spelled(x.word).toLowerCase()));
+    // slot: die Sprache hat einen Tabelleneintrag für eine Essenz des Zaubers (auch ungedruckt);
+    // hält den Platz im Notizpool, damit die Zufallsfolge danach gleich bleibt
+    const slot = entries.length > 0;
+    // Nur Notizen mit gemeinsamem Stamm: Kernwort mit hinterlegtem Stamm (ausgerichtete Sprachen) oder verwandter Tabelleneintrag
+    let core = null;
+    if (F.aligned(lang)) {
+      const c = coreChoice(m), j = c.slot[1];
+      const stem = ((lang.stems || {}).ess || {})[m.primary];
+      if (stem && stem[j]) core = { word: spelled(lang.lex.ess[m.primary][j]), latin: c.ess, letter: c.letters[1], stem: stem[j], lang: F.name(lang.id, "de") };
+    }
+    const table = b && b.cognate ? b : null;
+    // beide möglich: meist das Kernwort (verknüpft Formel und Schnellglyphe)
+    if (core && (!table || (m.seed >>> 5) % 3)) {
+      const list = own.coreStem || BRIDGE_NOTES.coreStem;
+      return { text: U.cap(PR.fill(list[(m.seed >>> 3) % list.length], core)), slot };
+    }
+    if (!table) return { slot };
+    const list = own.cognate || BRIDGE_NOTES.cognate;
+    return { text: U.cap(PR.fill(list[(m.seed >>> 3) % list.length], { word: spelled(table.word), latin: table.latin, lang: F.name(lang.id, "de") })), slot };
   }
 
   function calibration(m) {
@@ -443,23 +680,29 @@
         ? "Eine seltene Formel – nur wenige Traditionen kennen sie."
         : "Eine weit verbreitete Formel; fast jede arkane Schule lehrt sie in eigener Notation.";
     const dc = 15 + m.level;
-    return `${src} Abschrift aus einem fremden Zauberbuch erfordert Zauberkunde SG ${dc}. Herkunft dieser Fassung: ${r.pick(PR.learningOrigins)}`;
+    // Station mit eigenem Herkunftstext ersetzt den Freitext (die Ziehung bleibt, damit nichts verrutscht)
+    const st = window.FORMULA.originOf(m), lang = window.FORMULA.langOf(m);
+    const from = r.pick(PR.learningOrigins);
+    const fass = lang.id === "latin" ? "" : ` Die Formel ist in ${window.FORMULA.name(lang.id, "de")} notiert.`;
+    return `${src} Abschrift aus einem fremden Zauberbuch erfordert Zauberkunde SG ${dc}. Herkunft dieser Fassung: ${st.origin || from}${fass}`;
   }
 
   // ---------------------------------------------------------------------------
   function generate(m, profile = { name: PR.owner }) {
     const r = U.rng(m.seed);
     const L = m.level;
+    // Reihenfolge der Aufrufe = Reihenfolge der Zufallszahlen; nicht umstellen
+    const title_ = title(m, r), epithet_ = epithet(m, r), formula_ = formula(m, r);
     const out = {
-      title: title(m, r),
-      epithet: epithet(m, r),
-      formula: formula(m, r),
+      title: title_,
+      epithet: epithet_,
+      formula: formula_,
       gestures: gestures(m, r),
       materials: materials(m),
       theory: theory(m, r),
       structure: structure(m),
       steps: steps(m, r),
-      notes: notes(m, r, profile, 99),
+      notes: notes(m, r, profile, 99, formula_.lines),
       calibration: calibration(m),
       failure: failure(m, r),
       counter: counter(m),
@@ -467,20 +710,22 @@
       longFormula: longFormula(m, r),
       learning: learning(m, r),
       correspond: CORRESPOND[m.primary],
+      ink: ink(m),
     };
     // Kurzfassung für Grad 0
     out.summary = `${school(m).de}, ${ess(m.primary).latin}${m.essences[1] ? " mit " + ess(m.essences[1].id).latin : ""}. ${U.cap(SHAPE_CASE[m.shape.kind][0])}, ${m.range.de.toLowerCase()}, ${m.duration.de.toLowerCase()}.`;
     if (m.spell.everyday) {
       // Alltagszauber: Beschreibung statt Kurzfassung, Flavour als erste Randnotiz
       out.summary = m.spell.description;
-      if (m.spell.flavor) out.notes = [m.spell.flavor, ...out.notes];
+      if (m.spell.flavor) out.notes = Object.assign([m.spell.flavor, ...out.notes], { lead: out.notes.lead });
       out.learning = `Eine Alltagsformel, abgeleitet aus ${m.spell.base}. Wer die Grundformel beherrscht, kann sie nach einem Nachmittag Übung wirken; die Abschrift gelingt mit Zauberkunde SG 15. Herkunft: ${r.pick(PR.everydayOrigins)}.`;
     }
-    const custom = (window.CUSTOM_TEXTS || {})[m.id];
-    if (custom) Object.assign(out, custom, { custom: true });
+    // origin/lang legen nur die Herkunft fest (lang.js) und zählen nicht als handgeschriebener Text
+    const { origin, lang, ...custom } = (window.CUSTOM_TEXTS || {})[m.id] || {};
+    if (Object.keys(custom).length) Object.assign(out, custom, { custom: true });
     return out;
   }
 
   window.generateTexts = generate;
-  window.TEXTGEN = { CORRESPOND, MONTHS, SCHOOL_GESTURE };
+  window.TEXTGEN = { coreChoice, quickKey, CORRESPOND, MONTHS, SCHOOL_GESTURE, PIGMENTS, INK_METALS };
 })();

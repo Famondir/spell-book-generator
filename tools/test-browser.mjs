@@ -3,7 +3,7 @@
 // Steuert ein headless Chrome über das DevTools-Protokoll; braucht nur Node ≥ 22 und Chrome/Chromium.
 //
 //   node tools/test-browser.mjs                 alle Fälle
-//   node tools/test-browser.mjs --only lehrheft nur Fälle, deren Name „lehrheft“ enthält (auch: satz, ui)
+//   node tools/test-browser.mjs --only lehrheft nur Fälle, deren Name „lehrheft“ enthält (auch: satz, ui, node)
 //   node tools/test-browser.mjs --update        Sollwerte der gelaufenen Satz-Fälle übernehmen
 //   --with-profile   data/profile.local.js laden (eigene Sollwerte in test-baseline.local.json)
 //   --json           Ergebnis maschinenlesbar     --pdf <ordner>   je Satz-Fall ein PDF ablegen
@@ -86,8 +86,9 @@ async function connect(url) {
   };
   const send = (method, params = {}) => new Promise((res, rej) => { pending.set(++id, { res, rej }); ws.send(JSON.stringify({ id, method, params })); });
   // Ausdruck in der Seite auswerten; Ausnahmen werden zu Fehlern in Node
-  const evaluate = async (expression) => {
-    const r = await send("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true });
+  // gesture: wie eine Nutzerhandlung (sonst überspringt Chrome per pushState angelegte Verlaufseinträge bei Zurück)
+  const evaluate = async (expression, gesture = false) => {
+    const r = await send("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true, userGesture: gesture });
     if (r.exceptionDetails) throw new Error((r.exceptionDetails.exception && r.exceptionDetails.exception.description) || r.exceptionDetails.text);
     return r.result.value;
   };
@@ -95,29 +96,33 @@ async function connect(url) {
 }
 
 // --- Seite laden ------------------------------------------------------------------------
-const PAGE_URL = pathToFileURL(join(ROOT, "index.html")).href;
+// PAGE_URL=http://localhost:8000/ prüft wie auf GitHub Pages (Server), sonst file://
+const PAGE_URL = process.env.PAGE_URL || pathToFileURL(join(ROOT, "index.html")).href;
 let initScript = null;
-// Vor jedem Laden: lokales Profil ausblenden, Charakter-Slot mit der Klasse des Falls anlegen
-function initSource(cls) {
+// Vor jedem Laden: lokales Profil ausblenden, Charakter-Slot mit Klasse und Gottheit des Falls anlegen
+// (göttliche Klassen: Iomedae; Magier ohne Schutzgottheit, außer der Fall nennt eine: deity)
+function initSource(cls, deity = cls === "wizard" ? "" : "iomedae") {
   return `(() => {
     // Browsersprache: Deutsch, damit die Sollwerte nicht vom Rechner abhängen
     Object.defineProperty(Navigator.prototype, "language", { get: () => "de-DE", configurable: true });
     ${WITH_PROFILE ? "" : `for (const k of ["PROFILE_LOCAL", "PROFILES_LOCAL"]) Object.defineProperty(window, k, { get: () => undefined, set: () => {}, configurable: false });
     // lokale Regeldaten: gesperrt, ein Testfall darf eigene setzen (Object.defineProperty)
-    Object.defineProperty(window, "RULES_DE", { get: () => undefined, set: () => {}, configurable: true });`}
+    for (const k of ["RULES_DE", "DOMAINS_DE"]) Object.defineProperty(window, k, { get: () => undefined, set: () => {}, configurable: true });
+    // lokale Vademecum-Texte (data/vademecum.local.js): Einträge je Gottheit werden verworfen
+    let vm; Object.defineProperty(window, "VADEMECUM", { get: () => vm, set: (v) => { vm = v; Object.defineProperty(v, "local", { value: Object.freeze({}), writable: false, configurable: true }); }, configurable: true });`}
     try {
       if (!sessionStorage.getItem("test.seeded")) {
         localStorage.clear();
-        localStorage.setItem("spellbook.chars", JSON.stringify([{ id: "c1", name: "Test", profile: ${WITH_PROFILE ? '"local"' : "null"}, cls: ${JSON.stringify(cls)}, deity: "iomedae" }]));
+        localStorage.setItem("spellbook.chars", JSON.stringify([{ id: "c1", name: "Test", profile: ${WITH_PROFILE ? '"local"' : "null"}, cls: ${JSON.stringify(cls)}, deity: ${JSON.stringify(deity)} }]));
         localStorage.setItem("spellbook.activeChar", "c1");
         sessionStorage.setItem("test.seeded", "1");
       }
     } catch (e) {}
   })();`;
 }
-async function loadApp(c, cls, fresh = true) {
+async function loadApp(c, cls, fresh = true, deity) {
   if (initScript) await c.send("Page.removeScriptToEvaluateOnNewDocument", { identifier: initScript });
-  initScript = (await c.send("Page.addScriptToEvaluateOnNewDocument", { source: initSource(cls) })).identifier;
+  initScript = (await c.send("Page.addScriptToEvaluateOnNewDocument", { source: initSource(cls, deity) })).identifier;
   // frischer Speicher je Laden: sessionStorage-Marke löschen, dann neu laden
   if (fresh) await c.evaluate(`try { sessionStorage.removeItem("test.seeded"); } catch (e) {}`).catch(() => {});
   await c.send("Page.navigate", { url: PAGE_URL });
@@ -155,8 +160,10 @@ function inspectInPage(info) {
       while (last && last.classList.contains("splittable") && last.lastElementChild) last = last.lastElementChild;
       if (last && last.classList.contains("keep-next")) errs.push({ rule: "keep-next", page: label(p, i), detail: last.textContent.trim().slice(0, 40) });
     }
-    // fortlaufende Nummern (nur Seiten mit Zahl)
-    const n = /^\d+$/.test(no(p)) ? +no(p) : null;
+    // fortlaufende Nummern (nur Seiten mit Zahl); die gedrehte zweite Hälfte eines Wendebuchs läuft rückwärts
+    const flip = p.classList.contains("upside-down");
+    const n = /^\d+$/.test(no(p)) ? (flip ? -no(p) : +no(p)) : null;
+    if (flip && prevNo != null && prevNo > 0) prevNo = n - 1;
     if (n != null) {
       if (prevNo != null && n !== prevNo + 1) errs.push({ rule: "nummerierung", page: label(p, i), detail: `nach ${prevNo}` });
       prevNo = n;
@@ -228,7 +235,7 @@ function helpers(c, errs) {
     eval: (js) => c.evaluate(js),
     sleep,
     click: async (sel) => {
-      await c.evaluate(`(() => { const el = document.querySelector(${JSON.stringify(sel)}); if (!el) throw new Error("nicht gefunden: " + ${JSON.stringify(sel)}); el.click(); })()`);
+      await c.evaluate(`(() => { const el = document.querySelector(${JSON.stringify(sel)}); if (!el) throw new Error("nicht gefunden: " + ${JSON.stringify(sel)}); el.click(); })()`, true);
       await sleep(60);
     },
     key: async (key) => {
@@ -239,6 +246,19 @@ function helpers(c, errs) {
       await c.evaluate(`(() => { const el = document.querySelector(${JSON.stringify(sel)}); if (!el) throw new Error("nicht gefunden: " + ${JSON.stringify(sel)}); el.focus(); el.value = ${JSON.stringify(String(text))}; el.dispatchEvent(new Event("input", { bubbles: true })); el.dispatchEvent(new Event("change", { bubbles: true })); el.blur(); })()`);
       await sleep(60);
     },
+    // neu laden, wahlweise mit anderer Adresse (hash: "#…", "" = ohne Hash, null = unverändert); Speicher bleibt
+    reload: async (hash = null) => {
+      await c.evaluate(`(() => { ${hash == null ? "" : `history.replaceState(null, "", ${JSON.stringify(hash)} || location.pathname);`} window.APP_TEST = null; setTimeout(() => location.reload(), 0); })()`);
+      await sleep(200);
+      await t.until(`!!(window.APP_TEST && document.readyState === "complete")`, 20000);
+      await c.evaluate(`document.fonts ? document.fonts.ready.then(() => true) : true`);
+      await sleep(100);
+    },
+    // Zurück/Vor des Browsers
+    back: async () => (await c.evaluate(`history.back()`), await sleep(250)),
+    forward: async () => (await c.evaluate(`history.forward()`), await sleep(250)),
+    // Bildschirmfoto für die Durchsicht von Hand (nicht für Sollwerte)
+    shot: async (file) => writeFileSync(file, Buffer.from((await c.send("Page.captureScreenshot", { format: "png" })).data, "base64")),
     resize: async (w, h = 1100) => {
       await viewport(c, w, h);
       await c.evaluate(`window.dispatchEvent(new Event("resize"))`);
@@ -266,7 +286,7 @@ function helpers(c, errs) {
 async function runUI(c, cs) {
   const errs = [];
   await viewport(c, cs.width || 1600, cs.height || 1100);
-  await loadApp(c, cs.cls || "wizard");
+  await loadApp(c, cs.cls || "wizard", true, cs.deity);
   const book = typeof cs.book === "string" ? BOOKS[cs.book] : cs.book || [];
   const loaded = await c.evaluate(`APP_TEST.load(${JSON.stringify({ book, settings: cs.settings || {} })})`);
   if (loaded.missing.length) errs.push({ rule: "testbuch", detail: "unbekannt: " + loaded.missing.join(", ") });
@@ -281,7 +301,7 @@ async function runUI(c, cs) {
 }
 
 // --- Ablauf -------------------------------------------------------------------------------
-const matches = (cs) => !ONLY || cs.name.includes(ONLY) || (ONLY === "satz" && cs.job) || (ONLY === "ui" && cs.run);
+const matches = (cs) => !ONLY || cs.name.includes(ONLY) || (ONLY === "satz" && cs.job) || (ONLY === "ui" && cs.run) || (ONLY === "node" && cs.node);
 const cases = CASES.filter(matches);
 if (!cases.length) {
   console.error("Keine Fälle für --only " + ONLY);
@@ -301,11 +321,12 @@ try {
   });
   if (base.chrome && base.chrome !== br.chrome && !UPDATE) log(`Hinweis: Sollwerte mit Chrome ${base.chrome}, jetzt Chrome ${br.chrome} – kleine Abweichungen im Umbruch sind möglich.`);
   // Satz-Fälle nach Klasse gruppiert (eine geladene Seite je Klasse), danach Bedienungsfälle
-  const satz = cases.filter((x) => x.job).sort((a, b) => (a.cls || "wizard").localeCompare(b.cls || "wizard"));
+  const who = (x) => `${x.cls || "wizard"}|${x.deity ?? ""}`;
+  const satz = cases.filter((x) => x.job).sort((a, b) => who(a).localeCompare(who(b)));
   let loadedCls = null;
   await viewport(c);
   for (const cs of satz) {
-    if (loadedCls !== (cs.cls || "wizard")) await loadApp(c, (loadedCls = cs.cls || "wizard"));
+    if (loadedCls !== who(cs)) await loadApp(c, cs.cls || "wizard", true, (loadedCls = who(cs)) && cs.deity);
     results.lastPageError = null;
     let r;
     try {
@@ -325,6 +346,13 @@ try {
     results.push({ name: cs.name, kind: "ui", ...r });
     report(results[results.length - 1]);
   }
+  // Fälle ohne Browser (Node): node: async ({ withProfile }) => [{ rule, detail }]
+  for (const cs of cases.filter((x) => x.node)) {
+    const t0 = Date.now();
+    const errs = await cs.node({ withProfile: WITH_PROFILE, root: ROOT }).catch((e) => [{ rule: "ausnahme", detail: e.message }]);
+    results.push({ name: cs.name, kind: "node", errs, ms: Date.now() - t0 });
+    report(results[results.length - 1]);
+  }
 } finally {
   c?.close();
   br.close();
@@ -332,7 +360,7 @@ try {
 
 function report(r) {
   const head = r.errs.length ? "FEHLER" : "ok    ";
-  const pages = r.kind === "satz" ? `${String(r.pages).padStart(4)} S.` : "   ui  ";
+  const pages = r.kind === "satz" ? `${String(r.pages).padStart(4)} S.` : r.kind === "node" ? "  node " : "   ui  ";
   log(`${head} ${r.name.padEnd(34)} ${pages} ${(r.ms / 1000).toFixed(1).padStart(5)} s${r.note ? "  (" + r.note + ")" : ""}`);
   const shown = r.errs.slice(0, 8);
   for (const e of shown) log(`         ${e.rule}${e.page ? ": Seite " + e.page : ""}${e.detail ? " – " + e.detail : ""}`);

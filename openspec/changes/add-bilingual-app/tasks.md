@@ -13,11 +13,12 @@
 
 ## 3. Regelbegriffe (Stufe 2)
 
-- [ ] 3.1 `app/js/rules-de.js`: Schulen, Unterschulen, Deskriptoren, Zeitaufwand, Komponenten-Kürzel, Reichweiten, Bereiche, Dauer, Rettungswurf, ZR; nicht Erkanntes bleibt englisch und wird gezählt
-- [ ] 3.2 Abdeckungsbericht über alle Zauber (`tools/`), Schwelle ≥ 95 %; Liste der häufigsten nicht erkannten Werte
+- [x] 3.1 Begriffe in `app/js/rules.js` (statt eigener Datei `rules-de.js`): Wert in Stücke an „;“, „,“, „or“, „and“ (Klammern geschützt), Phrasenparser für Ziele/Effekte (Menge, Adjektive, Nomen mit Geschlecht, „touched“), Flächen, Einheiten (m, km, m²); Schulen, Unterschulen, Deskriptoren, Zeitaufwand, Komponenten-Kürzel, Reichweiten, Bereiche, Dauer, Rettungswurf, ZR; nicht Erkanntes bleibt englisch und wird gezählt
+- [x] 3.2 Abdeckungsbericht über alle Zauber (`tools/rules-terms-coverage.mjs`), Schwelle ≥ 95 % (erreicht: 95,5 %; Ziel/Effekt/Bereich als Freitext am schwächsten); Liste der häufigsten nicht erkannten Werte; Bedienungstest „ui-regelbegriffe“
 - [x] 3.3 Regeltext auf Abruf, Regelband und Werte in der Detailansicht nach `rulesLang` und `units`; Hinweis bei Deutsch ohne Regeldaten
-- [ ] 3.4 Material-Komponenten: deutsche Fassung über `materialTags`, Rest englisch
-- [ ] 3.5 Lizenzprüfung der öffentlichen Begriffsübersetzung (allgemeine Spielbegriffe, kein Regeltext) dokumentieren; README
+- [x] 3.4 Material-Komponenten: deutsche Fassung über `materialTags`, Rest englisch
+- [x] 3.6 Freie Feldwerte: Tabelle `data/lang/rules-terms.de.js` (eigene Übersetzung, ~880 Werte, Längen als „N ft.“ für die Umrechnung); Durchsicht der regelbasierten Fassungen (Artikel, „touched“ für beide Glieder, Semikolon zwischen Rettungswürfen, 1W4, Kleinschreibung mitten im Wert); Zähler erkennt unveränderte englische Eingabewörter; Abdeckung 100 %
+- [x] 3.5 Lizenzprüfung der öffentlichen Begriffsübersetzung (allgemeine Spielbegriffe, kein Regeltext) dokumentieren; README
 
 ## 4. Deutsche Regeldaten lokal (Stufe 3)
 
@@ -30,19 +31,30 @@
 - [x] 4.7 Suche über deutsche und englische Namen, Anzeige nach `rulesLang`, Export unverändert englisch; Bedienungstest mit kleiner Test-Regeldatei
 - [x] 4.8 Kirrans Einstellungen und Profil: `lang: "de"`, alle drei Ebenen Deutsch, Meter; Handzuordnungen für seine Zauberliste (`character/Zauberliste-1.xlsx`) bis keine offenen Treffer bleiben (offen sind nur 32 Zauber aus Quellen, die MyPFDB nicht enthält: Paizo-Blog, Abenteuerpfade, Player Companions nach 2019)
 
+- [x] 4.9 `tools/import-domains-de.mjs`: MyPFDB „Alles zu Domänen“ → `data/domains.de.local.js` (gitignoriert); Zuordnung über Domänenzauber, Quellseite und Oberdomäne, eindeutig je englischer Unterdomäne; Prüfliste; Handzuordnungen `rulesDe.domainOverrides`
+- [x] 4.11 Gegenprobe ohne Übersetzung (`tools/lib/textcheck.mjs`): Zahlen, Würfel, Längen (m/cm → ft), Boni des deutschen gegen den englischen Text; Zauber (733 bewertbar, keine Fehlzuordnung) und Domänenkräfte (136 bewertbar, ein Fehltreffer behoben: doppelter Eintrag „Entropie“ ≠ Demodand)
+- [x] 4.10 `RULES.domain()`: Gottheitsseite mit Domänen und Unterdomänen in der Regelsprache (Begriffe ohne Daten); Bedienungstest mit kleiner Test-Domänendatei
+
 ## 5. Englische In-Game-Texte (Stufe 4)
 
-- [ ] 5.1 Stilnotiz `data/lang/README.md` mit Mustersätzen je Textart (Ton, klassische Lehre, keine Meta-Texte)
+- [x] 5.1 Stilnotiz `data/lang/README.md` mit Mustersätzen je Textart (Ton, klassische Lehre, keine Meta-Texte)
 - [ ] 5.2 `textgen.js` in Kern und Phrasenmodule teilen (`textgen.de.js`, `textgen.en.js`); deutsche Sollwerte unverändert
 - [ ] 5.3 Englische Pools: Titel, Beinamen, Zusammenfassung, Theorie, Gesten, Schritte, Fehlschläge, Aufbau, Randnotizen
 - [ ] 5.4 `theory.js`, `legend.js`, `book.js` (Kapitel, Vorspann, Füllseiten, Kolumnentitel): `en`-Felder bzw. Tabellen
 - [ ] 5.5 `prayer.js` und Gottheitstexte (`data/deities.js`) englisch; Brevier mit `bookLang = en`
 - [ ] 5.6 Neutrales Profil (`data/profile.js`) mit `en`-Unterobjekt; Profilregel „einsprachig“ mit Hinweis im Dialog
+- [ ] 5.8 Tafel der Zeit: `data/time.js` (Woche, Tierkreis, Jahreszeiten, Monatsüberlieferung) mit `en`-Feldern; `time.js` (Lektionstexte, Beschriftungen von Jahresring und Sternkarte) über Tabellen
+- [ ] 5.9 Vademecum und Andacht: `data/vademecum.js` (Kapitel, Lückensätze, Hälftennamen) mit `en`-Feldern; `vademecum.js` und `devotion.js` (Choräle, Festkalender, Andachtsbild) über Tabellen; lokale Vademecum-Daten bleiben einsprachig
+- [ ] 5.10 `vitrail.js` (Beschriftungen und Texte der Glasfenster) über Tabellen
+- [ ] 5.11 `scripts.js` und `lang.js`: Beschriftungen der Formelsprachen in der Buchsprache (Umschrift folgt schon der Buchsprache, prüfen)
 - [ ] 5.7 Test: Kreise in beiden Sprachen gleich (SVG-Fingerabdruck), Texte deterministisch; Sollwerte `buch-klein-en`, `brevier-paladin-en`
 
 ## 6. Lehrheft und Alltagszauber englisch (Stufe 5)
 
-- [ ] 6.1 `data/primer.en.js` (gleiche Ids): Vorspann, Lesestücke, Glossar, Kästen, Aufgaben, Prüfkriterien
+Lademodell: `data/primer.en.js` setzt `window.PRIMER_EN` (Teile, Kästen, Lektionen je Id); `data/everyday_spells.en.js` setzt `window.EVERYDAY_SPELLS_EN` (Schlüssel = deutscher Name, damit die Id bleibt). Fehlende Felder fallen auf Deutsch zurück und werden in `I18N.untranslated` gezählt. Prosa nach Stilnotiz und Glossar in `data/lang/README.md`.
+
+
+- [ ] 6.1 `data/primer.en.js` (gleiche Ids): Vorspann, Lesestücke, Glossar, Kästen, Aufgaben, Prüfkriterien; dazu die Lektionen `w-soap`, `w-seal`, `g-sigil` (eigene englische Beispielsätze für die Sigillen), `l-inks`; dazu Zaubertinten in `textgen.js` (Farbstoffe, Metallformen, Begründungen, Warnsatz) und Verweise als `{{lesson:<id>}}`
 - [ ] 6.2 Erzeugte Teile des Lehrhefts (Formulare, Zuschnitt, Prüfbogen) über Tabellen
 - [ ] 6.3 `data/everyday_spells.en.js`: Namen, Regeltext, Flavour; Suche findet beide Namen
 - [ ] 6.4 Zähler unübersetzter Felder im Test = 0; Sollwerte `lehrheft-klein-en`, `pruefbogen-klein-en`

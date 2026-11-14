@@ -16,6 +16,7 @@
     refQr: false,
     refSource: false,
     frontMatter: true,
+    scriptMode: "original", // Schriftband und Absichtszeichen: original (Schrift der Formelsprache) | latin
     onlyClass: true,
     material: "auto", // Andachtsbild: auto (nach Gottheit), glass, stone
     paper: "a5",
@@ -27,6 +28,7 @@
     primerLayout: "balanced", // Lehrheft: dense | balanced | pages
     charLevel: "", // Charakterstufe: schaltet Randnotizen im Lehrheft frei (leer: nur Notizen ohne Stufe)
     primerMaster: "", // Name des Meisters im Lehrheft (leer: aus dem Profil, sonst „der Meister“)
+    knownLangs: null, // Hausregel Entziffern: beherrschte Formelsprachen (null: Vorgabe aus dem Profil)
     // Sprachen: Oberfläche, Buch (In-Game-Texte), Regeln; Maßeinheit (leer: nach Regelsprache)
     uiLang: I18N.browser,
     bookLang: I18N.browser,
@@ -69,19 +71,31 @@
   };
   I18N.configure(state.settings);
   I18N.apply();
+  SCRIPTS.setMode(state.settings.scriptMode);
   const DIVINE = CLASS.tradition === "divine";
   VITRAIL.setMaterial(state.settings.material);
   document.body.classList.add(DIVINE ? "divine" : "arcane");
   const save = () => {
     store.set("settings", state.settings);
     store.set("book", [...state.book]);
+    // Formelsprache hängt bei mehreren Stationen von der Verteilung über das ganze Buch ab
+    if (FORMULA.stations().length > 1) ALL.forEach((x) => (x.t = null));
   };
 
   // --- Daten vorbereiten -----------------------------------------------------------
   const ALL = window.SPELLS.map((s) => ({ s, m: null, t: null }));
   const byId = new Map(ALL.map((x) => [x.s.id, x]));
   const model = (x) => (x.m = x.m || analyze(x.s));
-  const texts = (x) => (x.t = x.t || (DIVINE ? PRAYER.texts(model(x), window.DEITY) : generateTexts(model(x), { name: state.settings.owner })));
+  // Texte je Darstellung (Original-/Lateinschrift: nur das Band unterscheidet sich), damit das Zurückschalten nichts neu erzeugt.
+  // x.t ist die Fassung der aktuellen Darstellung; x.t = null verwirft alle Fassungen.
+  const texts = (x) => {
+    const k = SCRIPTS.mode();
+    if (!x.t) x.tc = null;
+    else if (x.tk !== k) ((x.tc = { ...x.tc, [x.tk]: x.t }), (x.t = x.tc[k] || null));
+    x.tk = k;
+    return (x.t = x.t || (DIVINE ? PRAYER.texts(model(x), window.DEITY) : generateTexts(model(x), { name: state.settings.owner })));
+  };
+  FORMULA.setBook(() => ALL.filter((x) => state.book.has(x.s.id)).map(model));
   ALL.forEach(model);
   ALL.forEach((x) => (x.title = texts(x).title));
   // Alltagszauber gehören zum Magierbuch, nicht zu einer Klassenliste: bei Magiern immer sichtbar, sonst nie
@@ -122,7 +136,7 @@
         if (f.es && !m.essences.some((y) => y.id === f.es && y.pct >= 15)) return false;
         if (f.ib !== "" && state.book.has(x.s.id) !== (f.ib === "1")) return false;
         if (f.q) {
-          const hay = (x.s.name + " " + RULES.name(x.s) + " " + (x.s.base || "") + (x.s.everyday ? " alltag" : "") + " " + x.title + " " + m.essences.map((y) => T.ESS[y.id].latin).join(" ") + " " + m.schoolInfo.de + " " + (m.combo || "")).toLowerCase();
+          const hay = (x.s.name + " " + RULES.name(x.s) + " " + RULES.other(x.s) + " " + (x.s.base || "") + (x.s.everyday ? " alltag everyday" : "") + " " + x.title + " " + m.essences.map((y) => T.ESS[y.id].latin).join(" ") + " " + m.schoolInfo.de + " " + (m.combo || "")).toLowerCase();
           if (!f.q.split(/\s+/).every((w) => hay.includes(w))) return false;
         }
         return true;
@@ -165,7 +179,16 @@
       return;
     }
     select(id);
+    ROUTE.push(currentRoute());
   });
+
+  // Formelsprache und Herkunft, bei aktiver Hausregel der Sprachenkunde-SG (nur in der App, nicht im Druck)
+  function formulaFact(m) {
+    const st = FORMULA.originOf(m), lang = FORMULA.langOf(m), dec = FORMULA.decipher(m, state.settings.knownLangs);
+    if (lang.id === "latin" && FORMULA.stations().length < 2 && !dec) return "";
+    const where = st.label ? ` <span class="muted">· ${e(st.label)}</span>` : "";
+    return `<div class="formula-fact"><b>${$t("detail.formula")}</b> ${e(FORMULA.name(lang.id, I18N.lang.ui))}${where}${dec ? `<div class="decipher">${$t("detail.decipher", { dc: dec.dc })}</div>` : ""}</div>`;
+  }
 
   function toggleBook(id) {
     if (state.book.has(id)) state.book.delete(id);
@@ -219,6 +242,7 @@
         <div class="detail-side">
           <div class="facts">
             <div><b>${$t("detail.size")}</b> ${pageCount(m) === 0.5 ? $t("detail.half") : $tn("detail.pages", pageCount(m))}${state.detailView ? ` <span class="muted">(${$t("detail.detailPages", { n: sp.length })})</span>` : ""}</div>
+            ${formulaFact(m)}
             <div><b>${$t("detail.essences")}</b></div>
             ${m.essences.map((y) => `<div class="essrow">${glyphSVG("essence", y.id, { s: 7, cls: y.id === m.primary ? "accent" : "" })}<span class="essname">${T.ESS[y.id].latin}</span><span class="essbar"><i style="width:${y.pct}%"></i></span><span class="esspct">${y.pct} %</span></div>`).join("")}
             ${m.combo ? `<div><b>${$t("detail.combo")}</b> ${e(m.combo)}</div>` : ""}
@@ -298,10 +322,24 @@
   }
 
   // Bände: bookAll() setzt alle Bände (bei einer Seitengrenze), bookData() liefert den gewählten Band
+  // letzte Sätze je Schlüssel behalten (höchstens zwei, ältester fällt heraus)
+  const keep = (map, c) => {
+    map.delete(c.key);
+    map.set(c.key, c);
+    while (map.size > 2) map.delete(map.keys().next().value);
+  };
+  // bookCache: aktueller Satz; bookKeep hält die letzten (Umschalten der Schrift und zurück ohne Neusatz)
   let bookCache = null;
+  const bookKeep = new Map();
   function bookAll() {
     const key = [...state.book].sort().join(",") + "|" + JSON.stringify(state.settings) + (DIVINE ? "|" + JSON.stringify(state.prayers) : "");
     if (bookCache && bookCache.key === key) return bookCache;
+    if (bookCache) keep(bookKeep, bookCache);
+    if (bookKeep.has(key)) {
+      bookCache = bookKeep.get(key);
+      view.rendered = null;
+      return bookCache;
+    }
     const entries = bookEntries();
     const { vols, warnings } = BOOK.volumes(entries, state.settings, visible().map((x) => x.m), { prayers: state.prayers });
     const strip = (h) => h.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
@@ -415,6 +453,7 @@
     units: () => ({ starts: bookData().starts, prev: $t("pager.prevSpell"), next: $t("pager.nextSpell") }),
     ensure: bookEnsure,
     pos: { get: () => view.g, set: (v) => ((view.g = v), store.set("bookPos", v)) },
+    onShow: () => state.view === "book" && viewWrite(),
     extra: () => `<button id="book-toc-toggle" class="${state.ui.toc ? "on" : ""}" title="${$t("side.tocRight")}">${$t("book.toc")}</button>`,
   });
   const showSpread = () => bookViewer.show();
@@ -458,7 +497,9 @@
       return;
     }
     const p = bookAll().pageBySpell.get(id);
-    if (p) gotoPageNo(p.page, p.vol);
+    if (!p) return;
+    ROUTE.mark();
+    gotoPageNo(p.page, p.vol);
   });
 
   // Inhaltsverzeichnis rechts: Akkordeon, Abschnitte zu Beginn eingeklappt
@@ -498,7 +539,9 @@
       return;
     }
     const li = ev.target.closest("li[data-page]");
-    if (li) gotoPageNo(+li.dataset.page, +(li.dataset.vol || 0));
+    if (!li) return;
+    ROUTE.mark();
+    gotoPageNo(+li.dataset.page, +(li.dataset.vol || 0));
   });
 
   // Regeltext auf Abruf: (i) an jedem Zauberkopf der Vorschau
@@ -508,6 +551,11 @@
       if (!id || h.querySelector(".rules-i")) return;
       h.insertAdjacentHTML("beforeend", `<button class="rules-i" data-spell="${e(id)}" title="${$t("book.showRules")}">i</button>`);
       tintToPage(h.querySelector(".rules-i"));
+      // ausführliche Fassung dieses Zaubers, wenn das Buch in der kurzen gesetzt ist
+      if (!DIVINE && !state.settings.detailPrint) {
+        h.insertAdjacentHTML("beforeend", `<button class="rules-i full-i" data-spell="${e(id)}" title="${$t("book.showFull")}">+</button>`);
+        tintToPage(h.querySelector(".full-i"));
+      }
     });
   }
 
@@ -552,8 +600,67 @@
     btn.style.background = `rgb(${fromLab(local.map((x, i) => x + tintOffset[i])).join(",")})`;
   }
   document.addEventListener("click", (ev) => {
-    const b = ev.target.closest(".rules-i");
+    const b = ev.target.closest(".full-i");
     if (!b) return;
+    const x = byId.get(b.dataset.spell);
+    if (x) openFull(x);
+  });
+  // Ausführliche Fassung eines Zaubers im Fenster (wie Detailansicht im Katalog), ohne das Buch umzustellen
+  function openFull(x) {
+    const m = model(x), t = texts(x);
+    const sp = BOOK.spellPages(m, t, { detail: true });
+    const pages = sp.map((p, i) =>
+      TYPESET.pageHTML({ html: p.half ? `<div class="half">${p.html}</div>` : p.html, spell: m.id, cls: p.first ? "first-page" : "", halves: p.half, no: "", running: t.title + (sp.length > 1 ? ` · ${i + 1}/${sp.length}` : "") })
+    );
+    const dlg = $("#full-modal");
+    dlg.querySelector(".fm-head").innerHTML = `<h3>${e(t.title)}</h3><div class="muted">${e(t.epithet)} · ${e(RULES.name(x.s))} · ${$tn("detail.pages", sp.length)}</div>`;
+    dlg.querySelector(".fm-print").onclick = () => { dlg.close(); printPages(pages.join("")); };
+    const root = $("#full-pages");
+    root.innerHTML = pages.join("");
+    root.classList.add("fitting");
+    dlg.style.width = "";
+    if (!dlg.open) dlg.showModal();
+    // Adresse …/<id>/full; der Eintrag merkt sich, dass die App ihn angelegt hat (Schließen = Zurück)
+    fullId = x.s.id;
+    ROUTE.push(currentRoute(), { full: true });
+    // Satz bei voller Größe, danach blättern wie im Buch (Vorder- und Rückseite nebeneinander)
+    TYPESET.autofit(root).then(() => {
+      root.classList.remove("fitting");
+      fullViewer.show(0);
+    });
+  }
+  const fullViewer = VIEWER.create({
+    root: $("#full-pages"),
+    pager: $("#full-pager"),
+    name: "full",
+    active: () => $("#full-modal").open,
+    count: () => $("#full-pages").querySelectorAll(":scope > .page").length,
+    pageNo: (i) => i + 1,
+    flat: () => true,
+    // Fenster nicht breiter als die gezeigten Seiten (eine oder zwei)
+    onShow: () => {
+      const dlg = $("#full-modal"), root = $("#full-pages");
+      const vis = [...root.querySelectorAll(":scope > .page:not(.offstage), :scope > .page-ghost")].map((p) => p.getBoundingClientRect());
+      if (!vis.length) return;
+      const w = Math.max(...vis.map((r) => r.right)) - Math.min(...vis.map((r) => r.left));
+      const need = Math.ceil(w + (dlg.offsetWidth - root.clientWidth) + 24);
+      if (need < dlg.offsetWidth) dlg.style.width = need + "px";
+    },
+  });
+  // Schließen (✕, Escape, Drucken): selbst angelegten Verlaufseintrag zurücknehmen, sonst nur /full streichen.
+  // Hat die Adresse das Fenster geschlossen (Zurück), bleibt der Verlauf, wie er ist.
+  $("#full-modal").addEventListener("close", () => {
+    fullId = null;
+    if (fullRouteClose) return void (fullRouteClose = false);
+    if (history.state && history.state.full) history.back();
+    else ROUTE.write(currentRoute());
+  });
+  // vor Zoom und Größenänderung volle Breite, damit der Betrachter neu entscheidet, ob zwei Seiten passen
+  $("#full-pager").addEventListener("click", () => ($("#full-modal").style.width = ""), true);
+  window.addEventListener("resize", () => ($("#full-modal").style.width = ""));
+  document.addEventListener("click", (ev) => {
+    const b = ev.target.closest(".rules-i");
+    if (!b || b.classList.contains("full-i")) return;
     const x = byId.get(b.dataset.spell);
     if (!x) return;
     const dlg = $("#rules-modal");
@@ -570,13 +677,16 @@
     $("#book-toc").classList.toggle("collapsed", !state.ui.toc);
     $("#book-toc-toggle")?.classList.toggle("on", !!state.ui.toc);
     $("#primer-side").classList.toggle("collapsed", !!state.ui.primerTocOff);
+    $("#vm-side").classList.toggle("collapsed", !!state.ui.primerTocOff);
+    $("#prep-side").classList.toggle("collapsed", !!state.ui.devotionLeft);
   }
   function toggleSide(k) {
     state.ui[k] = !state.ui[k];
     store.set("ui", state.ui);
     applySides();
     if (state.view === "book") showSpread();
-    if (state.view === "theory") (DIVINE ? theoryViewer : primerViewer).show();
+    if (state.view === "theory") showLehre();
+    if (state.view === "prepare") PREP.render();
   }
   document.querySelectorAll(".side-toggle").forEach((b) => (b.onclick = () => toggleSide(b.dataset.side)));
 
@@ -597,25 +707,51 @@
       return TYPESET.autofit(root).then(() => root.classList.remove("fitting"));
     },
     pos: { get: () => store.get("theoryPos", 0), set: (v) => store.set("theoryPos", v) },
+    onShow: () => state.view === "theory" && viewWrite(),
   });
 
   // --- Lehrheft (Reiter „Lehre“) ---------------------------------------------------
   let primerCache = null, primerRendered = null;
+  const primerKeep = new Map();
   function primerData() {
     const key = [...state.book].sort().join(",") + "|" + JSON.stringify(state.settings);
     if (primerCache && primerCache.key === key) return primerCache;
+    if (primerCache) keep(primerKeep, primerCache);
+    if (primerKeep.has(key)) return (primerCache = primerKeep.get(key));
     primerCache = { key, ...PRIMER_BOOK.build({ entries: bookEntries(), settings: state.settings }) };
     return primerCache;
   }
-  // Reiter „Lehre“: Magier sehen direkt das Lehrheft, göttliche Klassen „Vom Gebet“
+  // Reiter „Lehre“: Magier sehen direkt das Lehrheft, göttliche Klassen „Vom Gebet“. Mit Gottheit wählt eine
+  // Umschaltleiste zwischen diesem und dem Vademecum (je Charakter gemerkt).
+  const hasVm = () => !!(window.DEITY && window.VADEMECUM_BOOK);
   function showLehre() {
+    const vm = hasVm() && store.get("lehreView", "main") === "vademecum";
+    const sw = $("#lehre-switch");
+    sw.hidden = !hasVm();
+    sw.querySelector('[data-lehre="main"]').textContent = $t(DIVINE ? "lehre.mainDivine" : "lehre.main");
+    sw.querySelectorAll("button").forEach((b) => b.classList.toggle("on", (b.dataset.lehre === "vademecum") === vm));
+    $("#vademecum-view").hidden = !vm;
+    // Ziel aus der Adresse (Teil/Lektion), nur einmal
+    const go = lehreGo || {};
+    lehreGo = null;
+    if (vm) {
+      $("#theory-view").hidden = $("#primer-view").hidden = true;
+      return renderVm(go);
+    }
     const primer = !DIVINE && !!window.PRIMER_BOOK;
     $("#theory-view").hidden = primer;
     $("#primer-view").hidden = !primer;
-    primer ? renderPrimer() : theoryViewer.show();
+    primer ? renderPrimer(go) : theoryViewer.show();
   }
+  $("#lehre-switch").addEventListener("click", (ev) => {
+    const b = ev.target.closest("button[data-lehre]");
+    if (!b) return;
+    ROUTE.mark();
+    store.set("lehreView", b.dataset.lehre);
+    showLehre();
+  });
   // Gesetzt wird das ganze Heft auf einmal: fortlaufende Seitenzahlen und Seitenlage wie im Druck
-  const primerEls = { pages: [], starts: [] };
+  const primerEls = { pages: [], starts: [], lessons: [] };
   function primerEnsure() {
     const d = primerData();
     if (primerRendered === d.key) return null;
@@ -630,6 +766,7 @@
       primerEls.pages = [...root.querySelectorAll(":scope > .page")];
       // Seiten, auf denen eine Lektion beginnt (für „vorige/nächste Lektion“)
       primerEls.starts = [...new Set([...root.querySelectorAll(".lesson[data-lesson]:not([data-split-of])")].map((l) => primerEls.pages.indexOf(l.closest(".page"))))].sort((a, b) => a - b);
+      primerEls.lessons = lessonIndex(root, primerEls.pages, partOf);
       $("#primer-info").textContent = `${d.title} · ${$tn("detail.pages", primerEls.pages.length)}`;
     });
   }
@@ -653,6 +790,7 @@
         state.ui.primerPart = cur;
         store.set("ui", state.ui);
       }
+      if (state.view === "theory") viewWrite();
     },
   });
   const primerToc = VIEWER.toc($("#primer-toc"), {
@@ -667,9 +805,9 @@
     onHead: (id, grp, toggle) => {
       const opening = !grp.classList.contains("open");
       toggle(opening);
-      if (opening) renderPrimer({ part: id });
+      if (opening) ROUTE.mark(), renderPrimer({ part: id });
     },
-    onPick: (li) => renderPrimer({ part: li.dataset.part, lesson: li.dataset.lesson }),
+    onPick: (li) => (ROUTE.mark(), renderPrimer({ part: li.dataset.part, lesson: li.dataset.lesson })),
   });
   async function renderPrimer(go = {}) {
     const d = primerData();
@@ -688,6 +826,219 @@
   }
   $("#btn-print-checks").onclick = () => printJob("checks");
   $("#btn-print-primer").onclick = () => printJob("primer");
+
+  // --- Vademecum (Reiter „Lehre“, nur mit Gottheit) ----------------------------------
+  // Jede Hälfte hat eigene Seiten, eigenen Betrachter und eigene Seitenzahlen; die Mitte steht am Ende beider
+  // Hälften (in der zweiten kopfüber). Gesetzt werden beide Hälften auf einmal, danach die Verweise aufgelöst.
+  let vmCache = null, vmRendered = null;
+  const vmKeep = new Map();
+  function vmData() {
+    const key = [...state.book].sort().join(",") + "|" + JSON.stringify(state.settings) + "|" + (window.DEITY ? DEITY.id : "");
+    if (vmCache && vmCache.key === key) return vmCache;
+    if (vmCache) keep(vmKeep, vmCache);
+    if (vmKeep.has(key)) return (vmCache = vmKeep.get(key));
+    vmCache = { key, ...VADEMECUM_BOOK.build({ deity: window.DEITY, entries: bookEntries(), settings: state.settings }) };
+    return vmCache;
+  }
+  // Seiten einer Hälfte: ihre Teile, dann die Mitte. Gemeinsame Mitte: in der ersten Hälfte aufrecht, in der zweiten
+  // kopfüber (gegenüber, .vm-mid-foreign). Eigene Mitte je Hälfte: die eigene aufrecht, danach die der anderen Hälfte
+  // kopfüber als gegenüberliegende Seite (ohne Anker, im Druck nicht doppelt).
+  function vmPages(d, i) {
+    const h = d.halves[i];
+    const pages = h.parts.flatMap((p) => p.pages);
+    if (!d.middle) return pages;
+    const mid = (pg, foreign, anchor) => ({ ...pg, cls: pg.cls + " vm-mid half-" + h.key + (foreign ? " vm-mid-foreign upside-down" : ""), html: anchor ? pg.html.replace("<h3>", `<h3 data-anchor="${e(h.key)}/middle">`) : pg.html.replace(/ data-anchor="[^"]*"/g, "") });
+    if (d.middle.shared) pages.push(mid(d.middle.pages[0], i === 1, true));
+    else pages.push(mid(d.middle.pages[i], false, true), mid(d.middle.pages[1 - i], true, false));
+    return pages;
+  }
+  // Eigene Mitte je Hälfte: sie steht links (gerade Seitenzahl), damit beide Mitten im gebundenen Buch einander
+  // gegenüberliegen; sonst eine Vakatseite davor. Die gegenüberliegende Kopie trägt die Seitenzahl der anderen Hälfte.
+  function vmPadMiddle(d, roots) {
+    if (!d.middle || d.middle.shared) return;
+    const foot = (pg) => pg.querySelector(".page-foot span:last-child");
+    roots.forEach((root) => {
+      const own = root.querySelector(":scope > .page.vm-mid:not(.vm-mid-foreign)");
+      if (!own || +foot(own).textContent % 2 === 0) return;
+      const blank = own.cloneNode(false);
+      blank.classList.remove("vm-mid", "vm-middle", "flow");
+      blank.classList.add("blank", "vm-mid-pad");
+      blank.innerHTML = `<div class="page-inner"></div><footer class="page-foot"><span></span><span></span></footer>`;
+      own.before(blank);
+      let no = +foot(own).textContent;
+      foot(blank).textContent = no;
+      for (let pg = own; pg; pg = pg.nextElementSibling) foot(pg).textContent = ++no;
+      root.querySelectorAll(":scope > .page.bind").forEach((pg) => pg.classList.toggle("verso", +foot(pg).textContent % 2 === 0));
+    });
+    roots.forEach((root, i) => {
+      const f = root.querySelector(":scope > .page.vm-mid-foreign");
+      const o = roots[1 - i]?.querySelector(":scope > .page.vm-mid:not(.vm-mid-foreign)");
+      if (f && o) foot(f).textContent = foot(o).textContent;
+    });
+  }
+  const vmRoot = (i) => $("#vm-pages-" + i);
+  const vmEls = [{ pages: [], starts: [], lessons: [] }, { pages: [], starts: [], lessons: [] }];
+  const vmHalf = () => Math.min(+store.get("vmHalf", 0) || 0, (vmCache && vmCache.halves.length - 1) || 0);
+  const pageNoOf = (el) => el.closest(".page").querySelector(".page-foot span:last-child").textContent;
+  // Anker → Seite: in der eigenen Hälfte nur die Zahl, in der anderen mit dem Zeichen der Hälfte
+  function vmResolve(d, roots) {
+    const at = new Map();
+    roots.forEach((root, i) => {
+      // Fortsetzungen geteilter Abschnitte tragen den Anker als Klon (data-split-of): nicht sie, aber was darin steht
+      for (const el of root.querySelectorAll("[data-anchor]")) if (!el.dataset.splitOf && !at.has(el.dataset.anchor)) at.set(el.dataset.anchor, { i, no: pageNoOf(el) });
+    });
+    roots.forEach((root, i) => VADEMECUM_BOOK.resolveRefs(root, (ref) => {
+      const x = at.get(ref);
+      return x ? { no: x.no, mark: x.i !== i ? d.halves[x.i].mark : "" } : null;
+    }));
+  }
+  async function vmTypeset(d, roots, onProgress) {
+    const all = d.halves.map((h, i) => vmPages(d, i));
+    const total = all.reduce((a, l) => a + l.length, 0);
+    let done = 0;
+    for (let i = 0; i < d.halves.length; i++) {
+      for (const [k, v] of Object.entries(d.style)) roots[i].style.setProperty(k, v);
+      await TYPESET.typeset(roots[i], all[i], (n) => onProgress && onProgress(done + n, total));
+      done += all[i].length;
+    }
+    vmPadMiddle(d, roots.slice(0, d.halves.length));
+    vmResolve(d, roots.slice(0, d.halves.length));
+  }
+  function vmEnsure() {
+    const d = vmData();
+    if (vmRendered === d.key) return null;
+    const want = (vmRendered = d.key);
+    const roots = [0, 1].map(vmRoot);
+    roots.forEach((r) => { r.innerHTML = ""; r.removeAttribute("style"); r.classList.add("fitting"); });
+    // beide Hälften messbar machen: in einem verborgenen Behälter (hidden) misst der Browser alle Höhen als 0
+    const halves = [...document.querySelectorAll("#vademecum-view .vm-half")];
+    halves.forEach((el) => (el.hidden = false));
+    const restore = () => halves.forEach((el) => (el.hidden = +el.dataset.half !== vmHalf()));
+    $("#vm-info").textContent = $t("pager.busy");
+    return vmTypeset(d, roots, (n, total) => vmRendered === want && ($("#vm-info").textContent = `${$t("pager.busy")} ${n}/${total}`)).then(() => {
+      restore();
+      if (vmRendered !== want) return;
+      roots.forEach((root, i) => {
+        root.classList.remove("fitting");
+        vmEls[i].pages = [...root.querySelectorAll(":scope > .page")];
+        vmEls[i].starts = [...new Set([...root.querySelectorAll(".vm-ch, .lesson[data-lesson]:not([data-split-of])")].map((l) => vmEls[i].pages.indexOf(l.closest(".page"))))].sort((a, b) => a - b);
+        vmEls[i].lessons = lessonIndex(root, vmEls[i].pages, vmPartOf);
+      });
+      // gemerkte Seite je Hälfte (Schlüssel der Hälfte steht erst jetzt fest)
+      vmViewers.forEach((v, k) => d.halves[k] && (v.pos = +store.get("vmPos." + d.halves[k].key, 0) || 0));
+      vmInfo();
+    });
+  }
+  function vmInfo() {
+    const d = vmData(), i = vmHalf();
+    $("#vm-info").textContent = `${d.title}${d.dual ? " · " + d.halves[i].name : ""} · ${$tn("detail.pages", vmEls[i].pages.length)}`;
+  }
+  const vmPartOf = (pg) => (pg && (pg.classList.contains("vm-mid") || pg.classList.contains("vm-mid-pad")) ? "middle" : partOf(pg) || "front");
+  const vmViewers = [0, 1].map((i) =>
+    VIEWER.create({
+      root: vmRoot(i),
+      pager: $("#vm-pager-" + i),
+      name: "vm" + i,
+      active: () => state.view === "theory" && !$("#vademecum-view").hidden && vmHalf() === i,
+      count: () => vmEls[i].pages.length,
+      // die gegenüberstehende Mitte trägt die Seitenzahl der anderen Hälfte: im Blätterbereich zählt die eigene
+      pageNo: (k) => (vmEls[i].pages[k]?.classList.contains("vm-mid-foreign") && k ? vmEls[i].pages[k - 1] : vmEls[i].pages[k])?.querySelector(".page-foot span:last-child").textContent || k + 1,
+      units: () => ({ starts: vmEls[i].starts, prev: $t("pager.prevLesson"), next: $t("pager.nextLesson") }),
+      ensure: vmEnsure,
+      pos: { get: () => 0, set: (v) => vmCache && vmCache.halves[i] && store.set("vmPos." + vmCache.halves[i].key, v) },
+      onShow: (a, b) => {
+        vmToc.mark(vmPartOf(vmEls[i].pages[b]));
+        if (state.view === "theory") viewWrite();
+      },
+    }),
+  );
+  const vmToc = VIEWER.toc($("#vm-toc"), {
+    sections: () => {
+      const d = vmData(), h = d.halves[vmHalf()];
+      return h.parts
+        .map((p) => ({ id: p.id, title: p.id === "front" ? $t("vm.front") : p.title, items: p.lessons.map((L) => ({ attrs: `data-part="${e(p.id)}" data-lesson="${e(L.id)}"`, html: `<span class="no">${e(L.label)}</span><span class="nm"><b>${e(L.title)}</b></span>` })) }))
+        .concat(d.middle ? [{ id: "middle", title: d.middle.title, items: [] }] : []);
+    },
+    onHead: (id, grp, toggle) => {
+      const opening = !grp.classList.contains("open");
+      toggle(opening);
+      if (opening) ROUTE.mark(), renderVm({ part: id });
+    },
+    onPick: (li) => (ROUTE.mark(), renderVm({ part: li.dataset.part, lesson: li.dataset.lesson })),
+  });
+  async function renderVm(go = {}) {
+    const d = vmData();
+    if (!d.halves) return;
+    const i = vmHalf();
+    document.querySelectorAll("#vademecum-view .vm-half").forEach((el) => (el.hidden = +el.dataset.half !== i));
+    const other = d.halves[1 - i];
+    $("#btn-vm-turn").hidden = $("#btn-print-vm-half").hidden = !d.dual;
+    if (other) $("#btn-vm-turn").title = $t("vm.turnTitle", { name: other.name });
+    $("#vm-toc-title").textContent = d.title + (d.dual ? " · " + d.halves[i].name : "");
+    vmToc.render();
+    const p = vmEnsure();
+    if (p) {
+      $("#vm-pager-" + i).innerHTML = "";
+      await p;
+      if (vmRendered !== d.key) return;
+    }
+    vmInfo();
+    const root = vmRoot(i);
+    const target =
+      (go.lesson && root.querySelector(`[data-lesson="${CSS.escape(go.lesson)}"]`)) ||
+      (go.part === "middle" && root.querySelector(":scope > .page.vm-mid")) ||
+      (go.part === "front" && root.querySelector(":scope > .page")) ||
+      (go.part && root.querySelector(`:scope > .page.part-${CSS.escape(go.part)}:not(.blank)`));
+    vmViewers[i].show(target ? vmEls[i].pages.indexOf(target.closest(".page")) : vmViewers[i].pos);
+  }
+  // Buch wenden: andere Hälfte mit ihrer zuletzt gelesenen Seite
+  $("#btn-vm-turn").onclick = () => {
+    const d = vmData();
+    if (!d.dual) return;
+    ROUTE.mark();
+    store.set("vmHalf", 1 - vmHalf());
+    renderVm();
+  };
+  $("#vm-print-hooks").checked = store.get("vmPrintHooks", true);
+  $("#vm-print-hooks").onchange = (ev) => store.set("vmPrintHooks", ev.target.checked);
+  $("#btn-print-vm").onclick = () => printJob("vademecum");
+  $("#btn-print-vm-half").onclick = () => printJob("vademecum", { half: vmHalf() });
+  // Seiten im Druck: aus der Ansicht, sonst unsichtbar gesetzt (dieselben Seitenzahlen und Verweise)
+  async function vmSetPages(d) {
+    let roots = [0, 1].map(vmRoot);
+    let tmp = null;
+    if (vmRendered !== d.key || !roots[0].querySelector(".page")) {
+      tmp = document.createElement("div");
+      tmp.className = "offscreen-set";
+      tmp.innerHTML = `<div class="pages"></div><div class="pages"></div>`;
+      document.body.appendChild(tmp);
+      roots = [...tmp.children];
+      await vmTypeset(d, roots, (n, total) => progress.show($t("print.vademecum"), n, total));
+    }
+    const out = roots.map((r) => [...r.querySelectorAll(":scope > .page")].map((pg) => {
+      const c = pg.cloneNode(true);
+      c.classList.remove("offstage");
+      c.style.contentVisibility = "";
+      return c;
+    }));
+    tmp?.remove();
+    return out;
+  }
+  // Druckfolge des Wendebuchs: Hälfte A mit Mitte, ggf. Vakatseite, dann Hälfte B ohne Mitte rückwärts und gedreht.
+  // Bei gerader Gesamtzahl liegt jede Seite von B mit ihrer eigenen Seitenlage (recto/verso) richtig: nach der
+  // Drehung wandert ihr Lochrand auf die Bindungskante des gebundenen Buches.
+  async function vmPrintHTML(d, half) {
+    const [A, B] = await vmSetPages(d);
+    const style = Object.entries(d.style).map(([k, v]) => `${k}:${v}`).join(";");
+    const wrap = (pages) => pages.map((pg) => (pg.style.cssText += ";" + style, pg.outerHTML)).join("");
+    const own = (l) => l.filter((pg) => !pg.classList.contains("vm-mid-foreign"));
+    if (half != null) return wrap(own(half ? B : A));
+    if (!d.dual) return wrap(A);
+    const back = own(B).reverse();
+    back.forEach((pg) => pg.classList.add("upside-down"));
+    const blank = (own(A).length + back.length) % 2 ? [Object.assign(document.createElement("section"), { className: "page blank" + (state.settings.primerGutter === false ? "" : " bind") + (own(A).length % 2 ? " verso" : ""), innerHTML: `<div class="page-inner"></div><footer class="page-foot"><span></span><span></span></footer>` })] : [];
+    return wrap([...own(A), ...blank, ...back]);
+  }
 
   // --- Fortschritt -----------------------------------------------------------------
   const progress = {
@@ -709,6 +1060,21 @@
   // Fertig gesetzte Druckaufträge werden im Speicher gehalten (gleicher Inhalt + Format = sofort druckbereit).
   const PAPER = { a5: "A5", a4: "A4", "a4-2up": "A4 landscape" };
   const printCache = new Map();
+  // ids samt Verweisen (href="#…", url(#…)) mit Anhang versehen: Druck und Großansicht setzen dasselbe HTML wie die
+  // Vorschau; doppelte ids ließen textPath des Schriftbands dem Pfad im Original folgen (Band läuft neben dem Kreis)
+  // self: auch das Wurzelelement (Klon eines SVG); beim Druckbereich nur der Inhalt
+  function suffixIds(root, suf, self = true) {
+    const all = [...(self ? [root] : []), ...root.querySelectorAll("*")];
+    for (const el of all) {
+      if (el.id) el.id += suf;
+      for (const a of ["href", "xlink:href"]) if (el.getAttribute?.(a)?.startsWith("#")) el.setAttribute(a, el.getAttribute(a) + suf);
+      for (const a of ["fill", "stroke", "clip-path", "mask", "filter", "marker-start", "marker-mid", "marker-end"]) {
+        const v = el.getAttribute?.(a);
+        if (v && v.includes("url(#")) el.setAttribute(a, v.replace(/url\(#([^)]+)\)/g, `url(#$1${suf})`));
+      }
+    }
+  }
+  let printIds = 0;
   let printing = false;
   // Druckvorbereitung ohne Druckdialog (auch für die Browser-Tests): setzt in #print-root und lässt es stehen
   function endPrint() {
@@ -730,9 +1096,10 @@
     st.textContent = `@page { size: ${PAPER[paper]}; margin: 0; }`;
     document.body.classList.add("printing");
     try {
-      const html = typeof pages === "string" ? pages : pages.map(TYPESET.pageHTML).join("");
+      const html = pages.set != null ? pages.set : typeof pages === "string" ? pages : pages.map(TYPESET.pageHTML).join("");
       const key = U.hash(html) + "|" + html.length + "|" + paper;
       if (useCache && printCache.has(key)) root.innerHTML = printCache.get(key);
+      else if (pages.set != null) root.innerHTML = html; // schon gesetzt (Vademecum): nicht neu umbrechen
       else {
         progress.show(label, 0, typeof pages === "string" ? 1 : pages.length);
         await tick();
@@ -741,6 +1108,7 @@
         printCache.set(key, root.innerHTML);
         if (printCache.size > 3) printCache.delete(printCache.keys().next().value);
       }
+      suffixIds(root, "-pr" + ++printIds, false); // nach dem Merken: der Speicher hält die ids der Vorlage
       if (paper === "a4-2up") {
         // je zwei A5-Seiten auf ein A4-Querblatt
         const list = [...root.querySelectorAll(":scope > .page")];
@@ -802,6 +1170,21 @@
       return entries.length ? { pages: entries.flatMap(({ m, t }) => BOOK.scrollPages(m, t, { paper: state.settings.scrollPaper })), paper: state.settings.scrollPaper, label: $t("print.scrolls") } : null;
     },
     primer: () => ({ pages: primerData().parts.flatMap((p) => p.pages), label: $t("print.primer") }),
+    // Vademecum: fertig gesetzte Seiten (Seitenzahlen je Hälfte, Verweise aufgelöst); half: nur diese Hälfte
+    // ohne Häkchen „Kapitel IX mitdrucken“: eigener Satz ohne das Kapitel (Seitenzahlen und Verweise stimmen)
+    vademecum: async (o = {}) => {
+      if (!hasVm()) return null;
+      const hooks = o.hooks ?? store.get("vmPrintHooks", true);
+      const d = hooks ? vmData() : { key: vmData().key + "|ohne-ix", ...VADEMECUM_BOOK.build({ deity: window.DEITY, entries: bookEntries(), settings: state.settings, omit: ["hooks"] }) };
+      return { pages: { set: await vmPrintHTML(d, o.half) }, label: $t("print.vademecum") };
+    },
+    // Andachtsblatt des laufenden Spieltages und Andachtsbuch: immer A5
+    devotion: () => {
+      if (!DEVOTION.enabled()) return null;
+      const d = PREP.api.dayList().find((x) => x.current);
+      return { pages: DEVOTION.sheetPages(d), paper: "a5", label: $t("dv.sheet") };
+    },
+    devotionBook: () => (DEVOTION.enabled() ? { pages: DEVOTION.bookPages(), paper: "a5", label: $t("dv.bookTitle") } : null),
     checks: async () => {
       const d = primerData();
       const at = await primerRefs(d);
@@ -816,9 +1199,42 @@
   $("#btn-print-book").onclick = () => printJob("book");
   $("#book-vols").addEventListener("click", (ev) => {
     const b = ev.target.closest("button[data-vol]");
-    if (b) selectVol(+b.dataset.vol);
+    if (b) ROUTE.mark(), selectVol(+b.dataset.vol);
   });
   $("#btn-print-rules").onclick = () => printJob("rules");
+
+  // Schnellschalter Originalschrift / Lateinschrift (Schriftband und Absichtszeichen); nur sichtbar, wenn eine
+  // Formelsprache des Profils eine eigene Schrift hat
+  // (Buchleiste und Lehrheft)
+  const scriptSwitches = document.querySelectorAll(".script-switch");
+  const scriptHidden = DIVINE || !FORMULA.stations().some((st) => FORMULA.get(st.lang).script);
+  scriptSwitches.forEach((el) => (el.hidden = scriptHidden));
+  const showScriptSwitch = () => document.querySelectorAll(".script-switch button").forEach((b) => {
+    const on = b.dataset.mode === state.settings.scriptMode;
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-pressed", on);
+  });
+  // Darstellung wechseln: Texte (Band) und alle gesetzten Seiten neu, Kernzeilen bleiben gleich
+  function applyScriptMode() {
+    if (SCRIPTS.mode() === state.settings.scriptMode) return false;
+    // Caches sind nach den Einstellungen geschlüsselt (scriptMode inklusive): nichts verwerfen, nur neu zeigen
+    SCRIPTS.setMode(state.settings.scriptMode);
+    view.rendered = null;
+    showScriptSwitch();
+    return true;
+  }
+  scriptSwitches.forEach((el) => el.addEventListener("click", (ev) => {
+    const b = ev.target.closest("button[data-mode]");
+    if (!b || b.dataset.mode === state.settings.scriptMode) return;
+    state.settings.scriptMode = b.dataset.mode;
+    store.set("settings", state.settings); // nicht save(): das verwirft bei mehreren Stationen alle Texte
+    if (!applyScriptMode()) return;
+    renderList();
+    if (state.selected) renderDetail();
+    $("#theory-pages").innerHTML = "";
+    show(state.view);
+  }));
+  showScriptSwitch();
 
   // --- Testschnittstelle (tools/test-browser.mjs) -----------------------------------
   // Setzt Buch und Einstellungen nur im Speicher (nichts wird gespeichert) und setzt Druckaufträge
@@ -839,9 +1255,15 @@
       state.book = new Set(ids);
       state.settings = { ...DEFAULTS, ...settings };
       I18N.configure(state.settings);
+      SCRIPTS.setMode(state.settings.scriptMode);
+      showScriptSwitch();
+      ALL.forEach((x) => (x.t = null));
       bookCache = null;
       primerCache = null;
+      [bookKeep, primerKeep, vmKeep].forEach((k) => k.clear());
       primerRendered = null;
+      vmCache = null;
+      vmRendered = null;
       printCache.clear();
       view.rendered = null;
       view.vol = 0;
@@ -859,17 +1281,156 @@
     },
     done: endPrint,
     show: (v) => show(v),
+    // Testbuch und Einstellungen speichern (für Fälle, die neu laden)
+    save: () => save(),
+    here: () => ({ view: state.view, selected: state.selected, full: fullId, vol: view.vol, hash: location.hash }),
   };
 
   // --- Ansichten ------------------------------------------------------------------
   function show(view) {
     state.view = view;
-    history.replaceState(null, "", view === "browse" ? location.pathname : "#" + view);
+    // Reiterwechsel: neuer Verlaufseintrag, vor dem Zeichnen (der Betrachter kann sofort melden und berichtigt ihn dann);
+    // beim Herstellen einer Adresse schreibt applyRoute
+    if (!ROUTE.applying) {
+      ROUTE.push(currentRoute());
+      if (view === "book" || view === "theory") settling = true;
+    }
     document.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("active", b.dataset.view === view));
     document.querySelectorAll(".view").forEach((v) => v.classList.toggle("active", v.id === "view-" + view));
     if (view === "book") renderBook();
     if (view === "theory") showLehre();
     if (view === "prepare") PREP.render();
+  }
+
+  // --- Adresse: Lesezeichen und Zurück/Vor ---------------------------------------------
+  // #browse/<zauber>  #book/<zauber>  #prepare  #theory/primer/<teil>/<lektion>  #theory/prayer
+  // #theory/vademecum/<hälfte>/<teil>/<lektion>; hinter browse/book optional /full (ausführliche Fassung).
+  // Im Buch zählt der Zauber, nicht die Seite: Seitenzahlen verschieben sich mit jedem neuen Zauber.
+  let fullId = null, fullRouteClose = false, lehreGo = null;
+  // Betrachter melden nach jedem Anzeigen: anderer Zauber (Lektion, Teil) als in der Adresse → neuer Verlaufseintrag,
+  // Blättern innerhalb derselben Einheit → nur ersetzen. Nach einem Reiterwechsel oder dem Herstellen einer Adresse
+  // berichtigt die erste Meldung nur (settling), sonst entstünden doppelte Einträge bzw. ginge der Vor-Verlauf verloren.
+  let settling = false;
+  function viewWrite() {
+    const r = currentRoute();
+    if (settling) settling = false;
+    else if (ROUTE.format(r) !== location.hash) ROUTE.mark();
+    ROUTE.write(r);
+  }
+  // Zauber im sichtbaren Buchausschnitt: der erste, der hier beginnt (halbe Seiten tragen zwei), sonst der fortgesetzte
+  function bookSpellShown() {
+    const sh = bookViewer.shown;
+    if (!sh) return null;
+    const d = bookData();
+    if (!d || !d.pages.length) return null;
+    let cont = null;
+    for (let i = sh[0]; i <= sh[1] && i < d.pages.length; i++) {
+      const no = d.pages[i].no;
+      const starts = d.toc.find((x) => x.page === no);
+      if (starts) return starts.m.id;
+      cont = cont || d.pages[i].spell || null;
+    }
+    return cont;
+  }
+  // steht der Zauber schon im sichtbaren Ausschnitt? (dann bleibt das Buch, wo es ist)
+  function bookShows(id, p) {
+    const sh = bookViewer.shown;
+    if (state.view !== "book" || !sh || p.vol !== view.vol) return false;
+    const d = bookData();
+    for (let i = sh[0]; i <= sh[1] && i < d.pages.length; i++) if (d.pages[i].no === p.page || d.pages[i].spell === id) return true;
+    return false;
+  }
+  // Lektionsanfänge eines gesetzten Hefts: [{ i: Seitenindex, id, part }]
+  function lessonIndex(root, pages, partFn) {
+    return [...root.querySelectorAll(".lesson[data-lesson]:not([data-split-of])")]
+      .map((l) => {
+        const pg = l.closest(".page");
+        return { i: pages.indexOf(pg), id: l.dataset.lesson, part: partFn(pg) };
+      })
+      .filter((x) => x.i >= 0);
+  }
+  // Teil und Lektion zur letzten sichtbaren Seite b (wie das Verzeichnis, das dem Blättern folgt)
+  function anchorAt(els, sh, partFn) {
+    if (!sh || !els.pages.length) return [];
+    const b = Math.min(sh[1], els.pages.length - 1);
+    const part = partFn(els.pages[b]);
+    if (!part) return [];
+    const L = els.lessons.filter((x) => x.i <= b && x.part === part).pop();
+    return L ? [part, L.id] : [part];
+  }
+  function lehreRoute() {
+    if (hasVm() && store.get("lehreView", "main") === "vademecum") {
+      const i = vmHalf(), h = vmCache && vmCache.halves && vmCache.halves[i];
+      if (!h) return ["vademecum"];
+      return ["vademecum", h.key, ...(vmRendered === vmCache.key ? anchorAt(vmEls[i], vmViewers[i].shown, vmPartOf) : [])];
+    }
+    if (!DIVINE && window.PRIMER_BOOK) return ["primer", ...(primerCache && primerRendered === primerCache.key ? anchorAt(primerEls, primerViewer.shown, partOf) : [])];
+    return ["prayer"];
+  }
+  function currentRoute() {
+    const v = state.view;
+    if (v === "browse") return { view: v, parts: [fullId || state.selected], full: !!fullId };
+    if (v === "book") return { view: v, parts: [fullId || bookSpellShown()], full: !!fullId };
+    if (v === "theory") return { view: v, parts: lehreRoute() };
+    return { view: v, parts: [] };
+  }
+  // Ziel in der Lehre vormerken (Unteransicht, Hälfte, Teil/Lektion); was die Figur nicht hat, fällt auf den Hauptteil
+  function lehreTarget(parts) {
+    const [kind, ...rest] = parts;
+    if (!kind) return false;
+    if (kind === "vademecum" && hasVm()) {
+      store.set("lehreView", "vademecum");
+      const d = vmData();
+      const k = (d.halves || []).findIndex((h) => h.key === rest[0]);
+      if (k >= 0) store.set("vmHalf", k);
+      lehreGo = { part: rest[1], lesson: rest[2] };
+    } else {
+      store.set("lehreView", "main");
+      lehreGo = kind === "primer" && !DIVINE ? { part: rest[0], lesson: rest[1] } : null;
+    }
+    return true;
+  }
+  // Ort aus der Adresse herstellen (Start, Zurück/Vor, von Hand geänderte Adresse), ohne neue Verlaufseinträge.
+  // Was nicht passt, fällt zurück (Zauber nicht im Buch → Verzeichnis); die Adresse wird danach berichtigt.
+  function applyRoute(r) {
+    let v = r.view, settle = true;
+    const id = r.parts[0], x = id && byId.get(id);
+    ROUTE.applying = true;
+    try {
+      if (v === "book" && id) {
+        const p = x && bookAll().pageBySpell.get(id);
+        if (!p) v = "browse";
+        else if (!bookShows(id, p)) {
+          // Band und Seite setzen; angezeigt (und gemerkt) wird beim Zeigen des Buchs
+          if (p.vol !== view.vol) {
+            view.vol = p.vol;
+            view.rendered = null;
+            store.set("bookVol", p.vol);
+          }
+          bookViewer.pos = bookData().idxByNo.get(p.page) ?? 0;
+          if (state.view === "book") renderBook();
+          settle = false; // der Betrachter schreibt nach dem Satz
+          settling = true;
+        }
+      }
+      if (v === "browse" && x && state.selected !== id) select(id);
+      const lehre = v === "theory" && lehreTarget(r.parts);
+      const wantFull = r.full && !!x && (v === "browse" || v === "book");
+      // anderer Zauber im offenen Fenster: openFull tauscht nur den Inhalt (das close-Ereignis käme erst später)
+      if (fullId && !wantFull) {
+        fullRouteClose = true;
+        $("#full-modal").close();
+        fullId = null;
+      }
+      if (((v === "book" || v === "theory") && state.view !== v) || lehre) settling = true;
+      if (state.view !== v) show(v);
+      else if (lehre) showLehre();
+      if (v === "theory") settle = false;
+      if (wantFull && fullId !== id) openFull(x);
+    } finally {
+      ROUTE.applying = false;
+    }
+    if (settle) ROUTE.write(currentRoute());
   }
   document.querySelectorAll(".tabs button").forEach((b) => (b.onclick = () => show(b.dataset.view)));
 
@@ -886,11 +1447,29 @@
     // leerer Meistername: der aus dem Profil gilt, als Platzhalter sichtbar
     $("#set-primer-master").placeholder = (PROFILE.primer && PROFILE.primer.master && PROFILE.primer.master.name) || $t("set.book.masterDefault");
     renderCharAdmin();
+    renderKnownLangs();
     langHint();
     showSettingsSec(state.ui.settingsSec);
     dlg.showModal();
     dlg.querySelector(".set-nav button.on")?.focus();
   };
+  // Hausregel Entziffern: beherrschte Formelsprachen je Charakter (nur sichtbar, wenn das Profil die Hausregel einschaltet)
+  function renderKnownLangs() {
+    const fs = $("#set-known-langs");
+    fs.hidden = !FORMULA.decipherCfg().enabled || DIVINE;
+    if (fs.hidden) return;
+    const known = new Set(state.settings.knownLangs || FORMULA.decipherCfg().known);
+    const ids = Object.keys(FORMULA.LANGS).sort((a, b) => FORMULA.name(a, I18N.lang.ui).localeCompare(FORMULA.name(b, I18N.lang.ui), I18N.locale()));
+    fs.querySelector(".kl-list").innerHTML = ids.map((id) => `<label class="check"><input type="checkbox" value="${e(id)}" ${known.has(id) ? "checked" : ""}> ${e(FORMULA.name(id, I18N.lang.ui))}</label>`).join("");
+  }
+  function readKnownLangs() {
+    const fs = $("#set-known-langs");
+    if (fs.hidden) return;
+    const now = [...fs.querySelectorAll("input:checked")].map((x) => x.value).sort();
+    // unverändert gegenüber der Profilvorgabe: weiter der Vorgabe folgen (null)
+    if (state.settings.knownLangs || now.join() !== [...FORMULA.decipherCfg().known].sort().join()) state.settings.knownLangs = now;
+  }
+
   // Hinweis zur Regelsprache: Deutsch ohne lokale Regeldaten zeigt übersetzte Begriffe mit englischem Regeltext
   function langHint() {
     const f = dlg.querySelector("form");
@@ -923,7 +1502,10 @@
       if (!el) continue;
       state.settings[k] = el.type === "checkbox" ? el.checked : el.value;
     }
+    const langsBefore = JSON.stringify(state.settings.knownLangs);
+    readKnownLangs();
     save();
+    applyScriptMode();
     // neue Oberflächensprache: die Seite lädt neu (alle Beschriftungen, auch die aus den Skripten)
     if (state.settings.uiLang !== uiBefore) return location.reload();
     I18N.configure(state.settings);
@@ -931,16 +1513,18 @@
     VITRAIL.setMaterial(state.settings.material);
     const langChanged = ["uiLang", "bookLang", "rulesLang", "units"].map((k) => state.settings[k]).join("|") !== langBefore;
     if (state.settings.owner !== owner || langChanged) ALL.forEach((x) => (x.t = null)); // Besitzername steckt in den Randnotizen; Titel bleiben gleich
-    if (langChanged) { bookCache = null; primerCache = null; printCache.clear(); view.rendered = null; }
+    if (langChanged) { bookCache = null; primerCache = null; vmCache = null; [bookKeep, primerKeep, vmKeep].forEach((k) => k.clear()); printCache.clear(); view.rendered = null; }
     if (state.settings.onlyClass !== only || state.settings.owner !== owner || langChanged) renderList();
     if (state.selected) renderDetail();
+    if (JSON.stringify(state.settings.knownLangs) !== langsBefore && state.view === "prepare") PREP.render();
     $("#theory-pages").innerHTML = "";
     primerRendered = null;
+    vmRendered = null;
     if (state.view !== "browse") show(state.view);
   });
   $("#btn-export").onclick = () => {
     const ch = CHARS.current();
-    const data = { character: ch.name, profile: ch.profile, cls: CLASS.id, deity: ch.deity || null, prayers: state.prayers, book: [...state.book].map((id) => byId.get(id)?.s.name).filter(Boolean), settings: state.settings, preparation: PREP.exportData() };
+    const data = { character: ch.name, profile: ch.profile, cls: CLASS.id, deity: ch.deity || null, prayers: state.prayers, book: [...state.book].map((id) => byId.get(id)?.s.name).filter(Boolean), settings: state.settings, preparation: PREP.exportData(), journal: DEVOTION.exportData() };
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
     a.download = (ch.name || state.settings.owner || "zauberbuch").toLowerCase().replace(/[^a-z0-9äöüß]+/g, "-") + "-zauberbuch.json";
@@ -950,7 +1534,7 @@
     const file = ev.target.files[0];
     if (!file) return;
     try {
-      let names = [], settings = null, preparation = null, character = null, profile = null, extra = {}, prayers = null;
+      let names = [], settings = null, preparation = null, character = null, profile = null, extra = {}, prayers = null, journal = null;
       if (/\.xlsx$/i.test(file.name)) names = await IMPORT.xlsxNames(await file.arrayBuffer());
       else if (/\.json$/i.test(file.name)) {
         const data = JSON.parse(await file.text());
@@ -962,6 +1546,7 @@
         if (data.cls) extra.cls = data.cls;
         if (data.deity) extra.deity = data.deity;
         prayers = data.prayers || null;
+        journal = data.journal || null;
       } else names = IMPORT.textNames(await file.text());
       const norm = (n) => String(n).toLowerCase().replace(/[^a-z0-9äöüß]/g, "");
       const lookup = new Map(ALL.map((x) => [norm(x.s.name), x.s.id]));
@@ -983,6 +1568,7 @@
         const c = CHARS.create(character, CHARS.profiles().some((p) => p.key === profile) ? profile : null, null, extra);
         CHARS.write(c.id, "book", found);
         if (prayers) CHARS.write(c.id, "prayers", prayers);
+        if (journal) CHARS.write(c.id, "journal", journal);
         if (settings) CHARS.write(c.id, "settings", settings);
         if (preparation) {
           if (preparation.state) CHARS.write(c.id, "prep", preparation.state);
@@ -1001,6 +1587,7 @@
       found.forEach((id) => state.book.add(id));
       if (settings) Object.assign(state.settings, settings);
       if (preparation) PREP.importData(preparation);
+      if (journal) DEVOTION.importData(journal);
       if (prayers) (state.prayers = { ...state.prayers, ...prayers }), store.set("prayers", state.prayers);
       save();
       progress.show($t("import.assemble"), 0, 0);
@@ -1060,18 +1647,22 @@
     charReload = true;
     renderCharAdmin();
   };
-  // Gottheit: Eingabe mit Vorschlagsliste, vorgefiltert auf die Gesinnungen der Klasse
+  // Gottheit: Eingabe mit Vorschlagsliste, vorgefiltert auf die Gesinnungen der Klasse.
+  // Arkane Klassen: Schutzgottheit (freiwillig, alle Gottheiten, leer = keine) nur für Andacht und Tagebuch
   function renderDeityPicker() {
     const cls = CLASSES[$("#char-cls").value] || CLASS;
-    $("#char-deity-row").hidden = !cls.deity;
-    if (!cls.deity) return;
-    const all = $("#char-deity-all").checked;
+    const divine = !!cls.deity;
+    $("#char-deity-label").textContent = $t(divine ? "set.char.deity" : "set.char.patron");
+    $("#char-deity").placeholder = $t(divine ? "set.char.deityPh" : "set.char.patronPh");
+    $("#char-deity-row").querySelectorAll(".divine-only").forEach((el) => (el.hidden = !divine));
+    const all = !divine || $("#char-deity-all").checked;
     const list = (window.DEITIES || []).filter((d) => all || !cls.alignments || cls.alignments.includes(d.align));
     // Beschriftung enthält den Namen: manche Browser (Firefox) suchen nur in der Beschriftung, nicht im Wert
     $("#deity-list").innerHTML = list.map((d) => `<option value="${e(d.name)}" label="${e(d.name)} – ${e(d.align)}, ${e(d.title || d.pantheon)}"></option>`).join("");
-    const cur = deityById(CHARS.current().deity) || (CLASS.deity ? window.DEITY : null);
+    const ch = CHARS.current();
+    const cur = ch.deity === "" ? null : deityById(ch.deity) || (divine === !!CLASS.deity ? window.DEITY : null);
     if (document.activeElement !== $("#char-deity")) $("#char-deity").value = cur ? cur.name : "";
-    $("#char-deity-info").textContent = cur ? `${cur.name}: ${cur.align}, ${cur.areas.join(", ")} · ${$t("set.char.symbol")}: ${cur.symbol}` : $t("set.char.noDeity");
+    $("#char-deity-info").textContent = cur ? `${cur.name}: ${cur.align}, ${cur.areas.join(", ")} · ${$t("set.char.symbol")}: ${cur.symbol}` : $t(divine ? "set.char.noDeity" : "set.char.noPatron");
   }
   $("#char-cls").onchange = (ev) => {
     CHARS.update(CHARS.active(), { cls: ev.target.value });
@@ -1080,6 +1671,12 @@
   };
   $("#char-deity-all").onchange = renderDeityPicker;
   $("#char-deity").onchange = (ev) => {
+    // Magier: leeres Feld = keine Schutzgottheit
+    if (!ev.target.value.trim() && !(CLASSES[$("#char-cls").value] || CLASS).deity) {
+      CHARS.update(CHARS.active(), { deity: "" });
+      charReload = true;
+      return renderCharAdmin();
+    }
     const d = (window.DEITIES || []).find((x) => x.name.toLowerCase() === ev.target.value.trim().toLowerCase());
     if (!d) return ($("#char-deity-info").textContent = $t("set.char.unknownDeity"));
     CHARS.update(CHARS.active(), { deity: d.id });
@@ -1099,7 +1696,15 @@
 
   // --- Kreis groß anzeigen ----------------------------------------------------------
   const cm = $("#circle-modal");
-  let cmSvg = null, cmName = "kreis";
+  let cmSvg = null, cmName = "kreis", cmClones = 0;
+  // Klon fürs Dialogfenster: eigene ids, sonst greifen href="#…" (Schriftband-textPath) auf das Original in der Seite,
+  // und der Text folgt dessen Lage samt Seitenzoom statt dem Ring im Dialog
+  function cloneSvg(svg) {
+    const big = svg.cloneNode(true);
+    suffixIds(big, "-cm" + ++cmClones);
+    big.classList.add("cm-svg");
+    return big;
+  }
   document.addEventListener("click", (ev) => {
     const vt = ev.target.closest(".page svg.vitrail");
     if (vt && !document.body.classList.contains("printing")) return openVitrail(vt);
@@ -1107,8 +1712,7 @@
     if (!svg || document.body.classList.contains("printing")) return;
     const spellId = svg.closest("[data-spell]")?.dataset.spell;
     const x = spellId && byId.get(spellId);
-    const big = svg.cloneNode(true);
-    big.classList.add("cm-svg");
+    const big = cloneSvg(svg);
     if (svg.closest(".mirror")) big.style.transform = "scaleX(-1)";
     cm.querySelector(".cm-figure").replaceChildren(big);
     cmSvg = big;
@@ -1136,8 +1740,7 @@
   function openVitrail(svg) {
     const spellId = svg.closest("[data-spell]")?.dataset.spell;
     const x = spellId && byId.get(spellId);
-    const big = svg.cloneNode(true);
-    big.classList.add("cm-svg");
+    const big = cloneSvg(svg);
     cm.querySelector(".cm-figure").replaceChildren(big);
     cmSvg = big;
     cmSpell = null;
@@ -1200,7 +1803,11 @@
     } else {
       out.setAttribute("width", "1200");
       out.setAttribute("height", "1200");
-      out.insertAdjacentHTML("afterbegin", `<rect x="-300" y="-300" width="600" height="600" fill="#f3e9d2" stroke="none"/><style>${SVG_STYLE}</style>`);
+      // Originalschrift des Bands mitnehmen (gekürzte Schrift als data-URL aus app/fonts/widths.js)
+      const key = ((out.querySelector(".band-text[class*='script-']") || {}).className?.baseVal || "").match(/script-(\w+)/)?.[1];
+      const font = key && (window.SCRIPT_FONTS || {})[key];
+      const face = font ? `@font-face{font-family:"F-${key}";src:url(${font}) format("woff2")}.script-${key}{font-family:"F-${key}"}` : "";
+      out.insertAdjacentHTML("afterbegin", `<rect x="-300" y="-300" width="600" height="600" fill="#f3e9d2" stroke="none"/><style>${SVG_STYLE}${face}</style>`);
     }
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([out.outerHTML], { type: "image/svg+xml" }));
@@ -1209,7 +1816,7 @@
   };
 
   // --- Start ----------------------------------------------------------------------
-  PREP.init({ byId, model, book: () => state.book, select, show, printPages, owner: () => state.settings.owner });
+  PREP.init({ byId, model, book: () => state.book, select, show, printPages, owner: () => state.settings.owner, knownLangs: () => state.settings.knownLangs });
   document.querySelectorAll(".cls-label").forEach((el) => (el.textContent = $t(`class.${CLASS.id}.label`)));
   document.querySelectorAll(".front-label").forEach((el) => (el.textContent = DIVINE ? $t("set.book.frontDivine") : $t("set.book.frontArcane")));
   if (DIVINE) {
@@ -1225,6 +1832,7 @@
   updateCount();
   const first = filtered().find((x) => x.s.name === "Fireball") || filtered()[0];
   if (first) select(first.s.id);
-  const hashView = location.hash.slice(1);
-  if (["book", "theory", "prepare"].includes(hashView)) show(hashView);
+  // Adresse vor gemerkter Position; ohne Ziel wie bisher
+  applyRoute(ROUTE.parse(location.hash));
+  window.addEventListener("popstate", () => applyRoute(ROUTE.parse(location.hash)));
 })();

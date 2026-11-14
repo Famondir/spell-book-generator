@@ -16,6 +16,7 @@
       <button data-view="theory" data-i18n="tab.theory">Lehre</button>
     </nav>
     <div class="actions">
+      <button id="btn-seal" class="seal-btn" hidden title="Eintrag freigeben">✶</button>
       <select id="char-switch" data-i18n-attr="title:top.charSwitch" title="Charakter wechseln"></select>
       <button id="btn-settings" data-i18n="top.settings" data-i18n-attr="title:top.settingsTitle" title="Buch-Einstellungen">Einstellungen</button>
     </div>
@@ -38,13 +39,14 @@
             <label><span data-i18n="set.char.profile">Profil</span> <select id="char-profile"></select></label>
             <label><span data-i18n="set.char.cls">Klasse</span> <select id="char-cls"></select></label>
             <div id="char-deity-row" class="deity-row">
-              <label><span data-i18n="set.char.deity">Gottheit</span> <input id="char-deity" list="deity-list" autocomplete="off" data-i18n-attr="placeholder:set.char.deityPh" placeholder="Name eintippen …"></label>
-              <label class="check"><input type="checkbox" id="char-deity-all"> <span data-i18n="set.char.deityAll">alle Gottheiten (nicht nur passende Gesinnung)</span></label>
+              <label><span id="char-deity-label" data-i18n="set.char.deity">Gottheit</span> <input id="char-deity" list="deity-list" autocomplete="off" data-i18n-attr="placeholder:set.char.deityPh" placeholder="Name eintippen …"></label>
+              <label class="check divine-only"><input type="checkbox" id="char-deity-all"> <span data-i18n="set.char.deityAll">alle Gottheiten (nicht nur passende Gesinnung)</span></label>
               <datalist id="deity-list"></datalist>
               <div class="muted" id="char-deity-info"></div>
-              <label><span data-i18n="set.char.material">Andachtsbild</span> <select name="material"><option value="auto" data-i18n="set.char.matAuto">automatisch (Steinintarsie bei zwergischen Gottheiten, sonst Bleiglas)</option><option value="glass" data-i18n="set.char.matGlass">Bleiglas</option><option value="stone" data-i18n="set.char.matStone">Steinintarsie</option></select></label>
+              <label class="divine-only"><span data-i18n="set.char.material">Andachtsbild</span> <select name="material"><option value="auto" data-i18n="set.char.matAuto">automatisch (Steinintarsie bei zwergischen Gottheiten, sonst Bleiglas)</option><option value="glass" data-i18n="set.char.matGlass">Bleiglas</option><option value="stone" data-i18n="set.char.matStone">Steinintarsie</option></select></label>
             </div>
             <label class="check"><input type="checkbox" name="onlyClass"> <span><span data-i18n="set.char.onlyClass">Nur Zauber der Klassenliste anzeigen</span> (<span class="cls-label">Magier</span>)</span></label>
+            <fieldset id="set-known-langs" class="known-langs" hidden><legend data-i18n="set.char.langs">Beherrschte Formelsprachen</legend><div class="muted" data-i18n="set.char.langsNote">Hausregel Entziffern: bestimmt den Sprachenkunde-SG je Zauber</div><div class="kl-list"></div></fieldset>
             <label class="inline arcane-only"><span data-i18n="set.char.level">Charakterstufe</span> <input type="number" name="charLevel" min="0" max="40" placeholder="–" class="num"> <span class="muted" data-i18n="set.char.levelNote">freiwillig, nur für Randnotizen im Lehrheft</span></label>
             <div class="row">
               <button type="button" id="char-new" data-i18n="set.char.new">Neuer Charakter</button>
@@ -66,6 +68,7 @@
           <label class="arcane-only"><span data-i18n="set.book.leftStart">Mehrseitige Zauber und Kapitel beginnen links</span>
             <select name="leftStart"><option value="notes" data-i18n="set.book.leftNotes">ja, mit Notizseite davor</option><option value="expand" data-i18n="set.book.leftExpand">ja, vorherigen Zauber im Umfang des nächsthöheren Grades</option><option value="off" data-i18n="set.book.leftOff">nein (spart Papier)</option></select>
           </label>
+          <label class="arcane-only"><span data-i18n="set.book.script">Schrift in Kreis und Schnellglyphe</span> <select name="scriptMode"><option value="original" data-i18n="set.book.scriptOriginal">Originalschrift der Formelsprache (Keilschrift, Hieroglyphen, Griechisch …)</option><option value="latin" data-i18n="set.book.scriptLatin">Lateinische Buchstaben (Lautschrift im Band, Anlaute in Umschrift)</option></select></label>
           <label class="check arcane-only"><input type="checkbox" name="detailPrint"> <span data-i18n="set.book.detail">Ausführliche Fassung (jeder Zauber ~10 Seiten, unabhängig vom Grad)</span></label>
           <fieldset class="refs"><legend data-i18n="set.book.refs">Regelverweise auf den Zauberseiten</legend>
             <label class="check"><input type="checkbox" name="refNo"> <span data-i18n="set.book.refNo">Nummer im Regelband</span></label>
@@ -101,7 +104,7 @@
         </section>
         <section class="set-sec" data-sec="bestand" hidden>
           <h3 data-i18n="set.nav.data">Bestand &amp; Export</h3>
-          <p class="muted set-note" data-i18n="set.data.note">Der Export enthält Buch, Einstellungen, eigene Gebete, Vorbereitung und Protokoll dieses Charakters. Importiert werden Zauberlisten als xlsx (Spalte „Name“), csv, txt oder ein früherer Export.</p>
+          <p class="muted set-note" data-i18n="set.data.note">Der Export enthält Buch, Einstellungen, eigene Gebete, Vorbereitung, Protokoll und Andachtsbuch dieses Charakters. Importiert werden Zauberlisten als xlsx (Spalte „Name“), csv, txt oder ein früherer Export.</p>
           <div class="row">
             <button type="button" id="btn-export" data-i18n="set.data.export">Liste exportieren</button>
             <label class="filebtn"><span data-i18n="set.data.import">Liste importieren (xlsx, csv, txt, json)</span> <input type="file" id="file-import" accept=".json,.xlsx,.csv,.txt,application/json" hidden></label>
@@ -159,6 +162,9 @@
         <div class="book-bar">
           <div id="book-stats"></div>
           <div class="row">
+            <div id="script-switch" class="seg-switch script-switch" role="group" data-i18n-attr="title:book.scriptTitle" title="Schriftband und Absichtszeichen der Schnellglyphe: Schrift der Formelsprache oder Umschrift in vertrauten Buchstaben">
+              <button type="button" data-mode="original" data-i18n="book.scriptOriginal">Originalschrift</button><button type="button" data-mode="latin" data-i18n="book.scriptLatin">Umschrift</button>
+            </div>
             <button id="btn-print-rules" data-i18n="book.printRules" data-i18n-attr="title:book.printRulesTitle" title="Zweites Buch nur mit den Regeltexten, nummeriert wie das Inhaltsverzeichnis">Regelband drucken</button>
             <button id="btn-print-scrolls" data-i18n="book.printScrolls" data-i18n-attr="title:book.printScrollsTitle" title="Pro Zauber zwei Seiten: Kreis vorne, Regeln hinten – beidseitig drucken">Alle als Schriftrollen drucken</button>
             <button id="btn-print-book" class="primary" data-i18n="book.print">Buch drucken / als PDF</button>
@@ -177,11 +183,24 @@
 
     <!-- Tagesvorbereitung -->
     <section id="view-prepare" class="view">
-      <div id="prep" class="prep"></div>
+      <!-- im Unterreiter „Andacht“ wird die Vorbereitung zur einklappbaren Seitenleiste neben dem Betrachter -->
+      <div id="prep-side" class="prep-side side">
+        <button class="side-toggle" data-side="devotionLeft" data-i18n-attr="title:side.controls" title="Bedienleiste ein-/ausklappen"></button>
+        <div id="prep" class="prep"></div>
+      </div>
+      <!-- Andachtsblatt und Andachtsbuch (Unterreiter „Andacht“, devotion.js) -->
+      <div id="devotion-view" class="devotion-view" hidden>
+        <nav id="devotion-pager" class="pager"></nav>
+        <div id="devotion-pages" class="pages spread"></div>
+      </div>
     </section>
 
     <!-- Theorie -->
     <section id="view-theory" class="view">
+      <!-- nur mit Gottheit: Lehrheft bzw. „Vom Gebet“ oder Vademecum (je Charakter gemerkt) -->
+      <nav id="lehre-switch" class="lehre-switch" hidden>
+        <button data-lehre="main"></button><button data-lehre="vademecum" data-i18n="lehre.vademecum">Vademecum</button>
+      </nav>
       <div id="theory-view" class="primer-view" hidden>
         <article class="primer-main">
           <nav id="theory-pager" class="pager"></nav>
@@ -190,7 +209,7 @@
       </div>
       <div id="primer-view" class="primer-view" hidden>
         <article class="primer-main">
-          <div class="book-bar"><div id="primer-info" class="muted"></div><div class="row"><button id="btn-print-checks" data-i18n="primer.printChecks" data-i18n-attr="title:primer.printChecksTitle" title="Alle Prüfvermerke gesammelt als Handzettel für den Meister">Prüfbogen drucken</button><button id="btn-print-primer" class="primary" data-i18n="primer.print">Lehrheft drucken / als PDF</button></div></div>
+          <div class="book-bar"><div id="primer-info" class="muted"></div><div class="row"><div id="primer-script-switch" class="seg-switch script-switch" role="group" data-i18n-attr="title:book.scriptTitle" title="Schriftband und Absichtszeichen der Schnellglyphe: Schrift der Formelsprache oder Umschrift in vertrauten Buchstaben"><button type="button" data-mode="original" data-i18n="book.scriptOriginal">Originalschrift</button><button type="button" data-mode="latin" data-i18n="book.scriptLatin">Umschrift</button></div><button id="btn-print-checks" data-i18n="primer.printChecks" data-i18n-attr="title:primer.printChecksTitle" title="Alle Prüfvermerke gesammelt als Handzettel für den Meister">Prüfbogen drucken</button><button id="btn-print-primer" class="primary" data-i18n="primer.print">Lehrheft drucken / als PDF</button></div></div>
           <nav id="primer-pager" class="pager"></nav>
           <div id="primer-pages" class="pages spread"></div>
         </article>
@@ -198,6 +217,19 @@
           <button class="side-toggle" data-side="primerTocOff" data-i18n-attr="title:side.toc" title="Inhaltsverzeichnis ein-/ausklappen"></button>
           <h3 id="primer-toc-title"></h3>
           <ul id="primer-toc" class="toc-list primer-toc"></ul>
+        </aside>
+      </div>
+      <!-- Vademecum (vademecum.js): je Hälfte eigener Betrachter; „Buch wenden“ wechselt die Hälfte -->
+      <div id="vademecum-view" class="primer-view" hidden>
+        <article class="primer-main">
+          <div class="book-bar"><div id="vm-info" class="muted"></div><div class="row"><button id="btn-vm-turn" data-i18n="vm.turn" hidden>Buch wenden</button><label class="vm-hooks" title="Kapitel IX (außerweltlich: Anregungen, Regelskizzen)" data-i18n-attr="title:vm.printHooksTitle"><input type="checkbox" id="vm-print-hooks"> <span data-i18n="vm.printHooks">Kapitel IX mitdrucken</span></label><button id="btn-print-vm-half" data-i18n="vm.printHalf" hidden>Diese Hälfte drucken</button><button id="btn-print-vm" class="primary" data-i18n="vm.print" data-i18n-attr="title:vm.printTitle">Vademecum drucken / als PDF</button></div></div>
+          <div class="vm-half" data-half="0"><nav id="vm-pager-0" class="pager"></nav><div id="vm-pages-0" class="pages spread vm-pages"></div></div>
+          <div class="vm-half" data-half="1" hidden><nav id="vm-pager-1" class="pager"></nav><div id="vm-pages-1" class="pages spread vm-pages"></div></div>
+        </article>
+        <aside id="vm-side" class="toc-side side">
+          <button class="side-toggle" data-side="primerTocOff" data-i18n-attr="title:side.toc" title="Inhaltsverzeichnis ein-/ausklappen"></button>
+          <h3 id="vm-toc-title"></h3>
+          <ul id="vm-toc" class="toc-list primer-toc"></ul>
         </aside>
       </div>
     </section>
@@ -232,6 +264,13 @@
     <form method="dialog" class="row end"><button class="primary" data-i18n="common.close">Schließen</button></form>
   </dialog>
 
+  <dialog id="full-modal" class="full-modal">
+    <div class="fm-head"></div>
+    <nav id="full-pager" class="pager"></nav>
+    <div id="full-pages" class="pages spread"></div>
+    <form method="dialog" class="row end"><button type="button" class="fm-print" data-i18n="detail.printOne">Drucken</button><button class="primary" data-i18n="common.close">Schließen</button></form>
+  </dialog>
+
   <dialog id="rules-modal" class="rules-modal">
     <div class="rm-body"></div>
     <form method="dialog" class="row end"><button class="primary" data-i18n="common.close">Schließen</button></form>
@@ -251,8 +290,11 @@
   <script src="app/js/profile.js"></script>
   <script src="data/spells.js"></script>
   <script src="data/rules.de.local.js" onerror="this.remove()"></script>
+  <script src="data/domains.de.local.js" onerror="this.remove()"></script>
   <script src="data/everyday_spells.js"></script>
+  <script src="data/everyday_spells.en.js"></script>
   <script src="data/deities.js"></script>
+  <script src="app/js/deity-colors.js"></script>
   <script src="data/custom_texts.js"></script>
   <script src="app/vendor/qrcode.js"></script>
   <script src="app/js/util.js"></script>
@@ -260,21 +302,46 @@
   <script src="app/js/everyday.js"></script>
   <script src="app/js/theory.js"></script>
   <script src="app/js/analyze.js"></script>
+  <script src="data/formula-lang/latin.js"></script>
+  <script src="data/formula-lang/akkadian.js"></script>
+  <script src="data/formula-lang/bantu.js"></script>
+  <script src="data/formula-lang/egyptian.js"></script>
+  <script src="data/formula-lang/greek.js"></script>
+  <script src="data/formula-lang/hittite.js"></script>
+  <script src="data/formula-lang/oldirish.js"></script>
+  <script src="data/formula-lang/pie.js"></script>
+  <script src="data/formula-lang/sumerian.js"></script>
+  <script src="data/formula-lang/technic.js"></script>
+  <script src="data/formula-lang/welsh.js"></script>
+  <!-- optional: eigene Formelsprachen (gitignored), siehe README „Formelsprachen“ -->
+  <script src="data/formula-lang/langs.local.js" onerror="this.remove()"></script>
+  <script src="app/js/lang.js"></script>
+  <script src="app/fonts/widths.js"></script>
+  <script src="app/js/scripts.js"></script>
   <script src="app/js/glyphs.js"></script>
   <script src="app/js/circle.js"></script>
   <script src="app/js/textgen.js"></script>
   <script src="app/js/vitrail.js"></script>
   <script src="app/js/prayer.js"></script>
+  <script src="data/lang/rules-terms.de.js"></script>
   <script src="app/js/rules.js"></script>
   <script src="app/js/legend.js"></script>
+  <script src="data/time.js"></script>
+  <script src="app/js/time.js"></script>
   <script src="app/js/typeset.js"></script>
   <script src="app/js/book.js"></script>
   <script src="app/js/viewer.js"></script>
   <script src="data/primer.js"></script>
+  <script src="data/primer.en.js"></script>
   <script src="app/js/primer.js"></script>
+  <script src="data/vademecum.js"></script>
+  <script src="data/vademecum.local.js" onerror="this.remove()"></script>
+  <script src="app/js/vademecum.js"></script>
   <script src="app/js/import.js"></script>
+  <script src="app/js/devotion.js"></script>
   <script src="app/js/prepare.js"></script>
   <script src="app/js/stats.js"></script>
+  <script src="app/js/route.js"></script>
   <script src="app/js/app.js"></script>
 </body>
 </html>

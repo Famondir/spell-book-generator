@@ -4,19 +4,25 @@
 Aufbau und Bedienung des Einstellungsdialogs in Abschnitten.
 ## Requirements
 ### Requirement: Abschnitte des Einstellungsdialogs
-Der Einstellungsdialog SHALL in die Abschnitte „Charakter“, „Buch“, „Druck“ und „Bestand & Export“ gegliedert sein; es MUST immer genau ein Abschnitt sichtbar sein. Jede bisherige Einstellung MUST genau einem Abschnitt angehören:
-- Charakter: Name, Profil, Klasse, Gottheit, Andachtsbild, Nur Zauber der Klassenliste, Charakter anlegen/duplizieren/löschen
-- Buch: Besitzer, Buchtitel, Untertitel, Vorspann, Kapitel je Grad, Beginn links, Ausführliche Fassung, Regelverweise
-- Druck: Papierformat, Format für Schriftrollen, Pergament-Hintergrund, Seiten je Band
+Der Einstellungsdialog SHALL in die Abschnitte „Charakter“, „Buch“, „Druck“ und „Bestand & Export“ gegliedert sein; es MUST immer genau ein Abschnitt sichtbar sein. Jede Einstellung MUST genau einem Abschnitt angehören:
+- Charakter: Name, Profil, Klasse, Gottheit, Andachtsbild, Charakterstufe (arkan), Nur Zauber der Klassenliste, Charakter anlegen/duplizieren/löschen
+- Buch: Besitzer, Buchtitel, Untertitel, Vorspann, Kapitel je Grad, Beginn links, Ausführliche Fassung, Regelverweise, Name des Meisters (Lehrheft)
+- Druck: Papierformat, Format für Schriftrollen, Pergament-Hintergrund, Satz des Lehrhefts und Lochrand im Lehrheft (nur arkan), Seiten je Band
 - Bestand & Export: Liste exportieren, Liste importieren, Buch leeren
+
+Die Charakterstufe MUST als freiwillige Angabe gekennzeichnet sein, die nur Randnotizen im Lehrheft freischaltet; die App berechnet nichts daraus.
 
 #### Scenario: Abschnitt wechseln
 - **WENN** im geöffneten Dialog „Druck“ gewählt wird
-- **DANN** zeigt der Dialog nur Papierformat, Schriftrollen, Hintergrund und Seiten je Band, und „Druck“ ist in der Abschnittsliste hervorgehoben
+- **DANN** zeigt der Dialog nur Papierformat, Schriftrollen, Hintergrund, Satz des Lehrhefts, Lochrand und Seiten je Band, und „Druck“ ist in der Abschnittsliste hervorgehoben
 
 #### Scenario: Paladin
 - **WENN** ein Paladin aktiv ist
-- **DANN** fehlen im Abschnitt „Buch“ die nur arkanen Einstellungen (Beginn links, Ausführliche Fassung) wie bisher, und „Charakter“ zeigt Gottheit und Andachtsbild
+- **DANN** fehlen im Abschnitt „Buch“ die nur arkanen Einstellungen (Beginn links, Ausführliche Fassung, Name des Meisters) wie bisher, ebenso die Charakterstufe (sie schaltet nur Notizen im Lehrheft frei), und „Charakter“ zeigt Gottheit und Andachtsbild
+
+#### Scenario: Charakterstufe
+- **WENN** im Abschnitt „Charakter“ die Stufe 7 eingetragen und „Fertig“ geklickt wird
+- **DANN** ist die Stufe für diesen Charakter gespeichert, und das Lehrheft zeigt die Notizen bis Mindeststufe 7
 
 ### Requirement: Navigation wie Buchkapitel
 Auf breiten Bildschirmen SHALL die Abschnittsliste links neben dem Inhalt stehen; unterhalb von 640 px Breite MUST sie als Reiterreihe über dem Inhalt erscheinen. Der Dialog MUST eine feste Höhe haben, damit er beim Wechsel nicht springt; nur der Inhalt scrollt, „Fertig“ bleibt immer sichtbar.
@@ -46,4 +52,11 @@ Werte SHALL weiterhin beim Schließen des Dialogs übernommen werden, aus allen 
 #### Scenario: Vorspann
 - **WENN** der Abschnitt „Buch“ angezeigt wird
 - **DANN** heißt die Einstellung „Vorspann (Titelblatt, Lehre der Kreise, Verzeichnis)“ und nicht „Vorspann drucken“
+
+### Requirement: Beherrschte Sprachen
+Ist die Hausregel „Entziffern“ eingeschaltet, SHALL der Abschnitt „Charakter“ die beherrschten Sprachen des Charakters zum An- und Abwählen zeigen, vorbelegt aus dem Profil. Die Auswahl MUST je Charakter gespeichert werden. Ist die Hausregel aus, MUST die Einstellung fehlen.
+
+#### Scenario: Sprache anwählen
+- **WENN** im Abschnitt „Charakter“ eine weitere Sprache angewählt und „Fertig“ geklickt wird
+- **DANN** ist sie für diesen Charakter gespeichert, und die SG ihrer Zauber sinken
 

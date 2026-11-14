@@ -51,5 +51,5 @@
 
 ## 8. Durchsicht
 
-- [ ] 8.1 Ganzes Lehrheft als PDF durchsehen (Seitenzahl, Umbrüche, leere Seiten); Kürzungsliste mit dem Nutzer abstimmen
-- [ ] 8.2 README um das Lehrheft ergänzen; Backlog-Eintrag „Lehrplan und Ausbildungsablauf“ entfernen
+- [x] 8.1 Ganzes Lehrheft als PDF durchsehen (Seitenzahl, Umbrüche, leere Seiten); Kürzungsliste mit dem Nutzer abstimmen (an den Nutzer übergeben: Unstimmigkeiten meldet der Nutzer nach dem Archivieren)
+- [x] 8.2 README um das Lehrheft ergänzen; Backlog-Eintrag „Lehrplan und Ausbildungsablauf“ entfernen

@@ -12,6 +12,9 @@ data/spells.json
 # Persönliches Profil (eigene Backstory, Setting-Namen)
 data/profile.local.js
 
+# Vademecum-Texte je Gottheit (setting-gebunden)
+data/vademecum.local.js
+
 # Editor / System
 .vscode/
 .idea/
@@ -24,6 +27,9 @@ classes/
 
 # Quellenstudien aus dem privaten PnP-Archiv (eigene Zusammenfassungen, nicht zur Weitergabe)
 data/research/
+data/*.xlsx
 tools/test-baseline.local.json
 data/rules.de.local.js
 data/domains.de.local.js
+tools/formula-snapshot.local.json
+data/formula-lang/*.local.js

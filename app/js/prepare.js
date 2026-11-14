@@ -42,7 +42,7 @@ window.PREP = (function () {
   let days = load(KEY_DAYS, {}); // je Spieltag: { ingame: {d, m, y}, test }
   let ctx = null;
   let editing = false;
-  let sub = "heute"; // Reiter: heute | verlauf | statistik
+  let sub = "heute"; // Reiter: heute | verlauf | statistik | andacht (nur mit Gottheit)
   assignDays();
 
   // Jedes Ereignis gehört zu einem Spieltag (d = Startzeitpunkt des Tages). Ältere Einträge ohne d werden
@@ -80,8 +80,9 @@ window.PREP = (function () {
     put(KEY_LOG, log);
     put(KEY_DAYS, days);
   }
-  function record(ev, id, g) {
-    log.push({ t: new Date().toISOString(), ev, id, g, d: st.day });
+  // x: Zusatzangaben (z. B. Andacht: { cast } = zum Abschluss gewirkter Zauber, wird nur vermerkt)
+  function record(ev, id, g, x) {
+    log.push({ t: new Date().toISOString(), ev, id, g, d: st.day, ...(x ? { x } : {}) });
   }
 
   // --- Ingame-Datum -----------------------------------------------------------------
@@ -149,6 +150,7 @@ window.PREP = (function () {
       st.jokers = [];
       days[id] = { ingame: (days[id] || {}).ingame };
     } else delete days[id];
+    if (window.DEVOTION) DEVOTION.forgetDay(id);
     save();
   }
 
@@ -174,10 +176,18 @@ window.PREP = (function () {
   }
 
   // --- Ansicht ----------------------------------------------------------------------
+  const DEV = () => !!(window.DEVOTION && DEVOTION.enabled());
   const tabsHTML = () =>
-    `<nav class="prep-tabs">${[["heute", t("prep.tabToday")], ["verlauf", t("prep.tabHistory")], ["statistik", t("prep.tabStats")]].map(([k, l]) => `<button data-sub="${k}" class="${sub === k ? "active" : ""}">${l}</button>`).join("")}</nav>`;
+    `<nav class="prep-tabs">${[["heute", t("prep.tabToday")], ["verlauf", t("prep.tabHistory")], ["statistik", t("prep.tabStats")], ...(DEV() ? [["andacht", t("prep.tabDevotion")]] : [])].map(([k, l]) => `<button data-sub="${k}" class="${sub === k ? "active" : ""}">${l}</button>`).join("")}</nav>`;
   function render() {
     const root = $("#prep");
+    $("#view-prepare").classList.toggle("dv-mode", sub === "andacht" && DEV());
+    if (sub === "andacht" && DEV()) {
+      root.innerHTML = tabsHTML() + `<div id="devotion-root"></div>`;
+      DEVOTION.renderPanel($("#devotion-root"));
+      return;
+    }
+    if (window.DEVOTION) DEVOTION.hideView();
     if (sub !== "heute") {
       root.innerHTML = tabsHTML() + `<div id="stats-root"></div>`;
       STATS.render($("#stats-root"), sub, api, ctx);
@@ -206,6 +216,7 @@ window.PREP = (function () {
           <button id="p-del" class="danger">${t("common.delete")}</button>
         </div>
       </div>
+      ${DEV() ? DEVOTION.todayHTML() : ""}
       ${editing ? editorHTML() : ""}
       ${!ctx.book().size ? `<p class="muted">${t("prep.emptyBook")}</p>` : ""}
       <div class="prep-grades">${SHOWN.map(gradeHTML).join("")}${JOKER ? jokerHTML() : ""}</div>
@@ -242,9 +253,15 @@ window.PREP = (function () {
     return `<li data-uid="${it.uid}" class="${it.used ? "used" : ""}">
       ${box}
       <span class="q">${quickGlyph(m)}</span>
-      <span class="nm"><b>${e(RULES.name(x.s))}</b><i>${e(x.title)}${lv !== it.g && !cantrip ? " · " + t("prep.inSlot", { lv, g: it.g }) : ""}${it.extra ? " · " + t("prep.extraSlot") : ""}</i></span>
+      <span class="nm"><b>${e(RULES.name(x.s))}</b><i>${e(x.title)}${lv !== it.g && !cantrip ? " · " + t("prep.inSlot", { lv, g: it.g }) : ""}${it.extra ? " · " + t("prep.extraSlot") : ""}${decipherNote(m)}</i></span>
       <button class="p-rm" title="${t("prep.remove")}">×</button>
     </li>`;
+  }
+
+  // Hausregel Entziffern: Sprachenkunde-SG der Formel (nur wenn das Profil die Hausregel einschaltet)
+  function decipherNote(m) {
+    const d = window.FORMULA && FORMULA.decipher(m, ctx.knownLangs && ctx.knownLangs());
+    return d ? ` · <span class="decipher">${e(t("prep.decipher", { dc: d.dc, lang: d.name }))}</span>` : "";
   }
 
   function gradeHTML(g) {
@@ -313,7 +330,8 @@ window.PREP = (function () {
       sub = tab.dataset.sub;
       return render();
     }
-    if (tg.closest("#stats-root")) return; // Verlauf und Statistik haben eigene Klicks (stats.js)
+    if (tg.closest("#stats-root") || tg.closest("#devotion-root")) return; // eigene Klicks (stats.js, devotion.js)
+    if (DEV() && DEVOTION.onTodayClick(ev)) return;
     const li = tg.closest("li[data-uid]");
     const it = li && st.items.find((x) => x.uid === li.dataset.uid);
     if (tg.closest(".p-fill")) {
@@ -443,11 +461,17 @@ window.PREP = (function () {
 
   function init(c) {
     ctx = c;
+    if (window.DEVOTION) DEVOTION.init(c, api);
     const root = $("#prep");
     root.addEventListener("click", onClick);
     root.addEventListener("input", onInput);
   }
 
-  const api = { dayList, setDayMeta, deleteDay, ingameFields, setIngame, refresh: () => render() };
+  const api = {
+    dayList, setDayMeta, deleteDay, ingameFields, setIngame, refresh: () => render(),
+    record: (ev, id, g, x) => (record(ev, id, g, x), save()),
+    // Unterreiter öffnen (z. B. Verweis aus dem Verlauf aufs Andachtsbuch)
+    open: (k) => ((sub = k), render()),
+  };
   return { init, render, exportData, importData, api };
 })();

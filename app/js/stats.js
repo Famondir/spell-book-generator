@@ -26,6 +26,17 @@ window.STATS = (function () {
     return `<span class="q">${quickGlyph(m)}</span><span class="nm" data-open="${e(id)}"><b>${e(RULES.name(x.s))}</b><i>${e(x.title)}</i></span>`;
   }
 
+  // Ereigniszeile im Protokoll; Andacht, Abendgebet und Freigaben haben eigene Formen
+  function eventLine(x, ctx) {
+    const nm = (id) => e(ctx.byId.get(id) ? RULES.name(ctx.byId.get(id).s) : id);
+    if (x.ev === "day") return EV("day");
+    if (x.ev === "devotion") return `${EV("devotion")}${x.id ? ` (${t("stats.fragment", { name: nm(x.id) })}${x.x && x.x.cast ? "; " + t("stats.castAtEnd", { name: nm(x.x.cast) }) : ""})` : x.x && x.x.cast ? ` (${t("stats.castAtEnd", { name: nm(x.x.cast) })})` : ""}`;
+    if (x.ev === "vespers") return EV("vespers");
+    if (x.ev === "release") return t("stats.ev.release", { id: e(x.id) });
+    return `${nm(x.id)} ${EV(x.ev)}${x.g === "joker" ? " (Joker)" : x.g != null ? ` (${t("stats.slot", { g: x.g })})` : ""}`;
+  }
+  const DEV = () => !!(window.DEVOTION && DEVOTION.enabled());
+
   // --- Verlauf ----------------------------------------------------------------------
   function history(root, api, ctx) {
     const list = api.dayList();
@@ -38,6 +49,7 @@ window.STATS = (function () {
             <div><b>${fmtDate(d.start)}</b>${d.current ? ` <span class="badge">${t("stats.today")}</span>` : ""}${d.meta.test ? ` <span class="badge muted-badge">${t("stats.test")}</span>` : ""}
               <div class="muted">${d.ingameText ? e(d.ingameText) + " · " : ""}${t("stats.dayLine", { p: d.prepared.length, c: sum(casts) })}</div></div>
             <div class="row">
+              ${DEV() ? `<button data-act="dv-book">${t("stats.devotionBook")}</button><button data-act="dv-review">${t("stats.review")}</button>` : ""}
               <button data-act="test">${d.meta.test ? t("stats.untest") : t("stats.markTest")}</button>
               <button data-act="del" class="danger">${t("common.delete")}</button>
             </div>
@@ -45,7 +57,7 @@ window.STATS = (function () {
           ${chips ? `<div class="st-chips">${chips}</div>` : ""}
           <details><summary>${t("stats.events", { n: d.events.length })}</summary>
             <div class="ingame-row">${t("stats.ingameDate")} ${api.ingameFields(d.id)}</div>
-            <ol class="st-events">${d.events.map((x) => `<li><span class="muted">${fmtTime(x.t)}</span> ${x.ev === "day" ? EV("day") : `${e(ctx.byId.get(x.id) ? RULES.name(ctx.byId.get(x.id).s) : x.id)} ${EV(x.ev)}${x.g === "joker" ? " (Joker)" : x.g != null ? ` (${t("stats.slot", { g: x.g })})` : ""}`}</li>`).join("") || `<li class="muted">${t("stats.noEvents")}</li>`}</ol>
+            <ol class="st-events">${d.events.map((x) => `<li><span class="muted">${fmtTime(x.t)}</span> ${eventLine(x, ctx)}</li>`).join("") || `<li class="muted">${t("stats.noEvents")}</li>`}</ol>
           </details>
         </section>`;
       }).join("")
@@ -55,6 +67,8 @@ window.STATS = (function () {
       const sec = ev.target.closest("[data-day]");
       if (!b || !sec) return;
       const d = list.find((x) => x.id === sec.dataset.day);
+      if (b.dataset.act === "dv-book") return DEVOTION.openDay(d.id);
+      if (b.dataset.act === "dv-review") return DEVOTION.exportReview(d.id);
       if (b.dataset.act === "test") api.setDayMeta(d.id, { test: !d.meta.test });
       if (b.dataset.act === "del") {
         const msg = d.current

@@ -139,26 +139,47 @@
         segs.push([g + GAP, next - GAP]);
       });
     if (m.components.V && text) {
-      const base = text.toUpperCase().trim() + " · ";
+      // Schrift der Formelsprache (scripts.js): Laufweite, Großbuchstaben, Trenner; gezählt in Zeichen, nicht UTF-16-Einheiten
+      const sc = window.SCRIPTS ? SCRIPTS.shownOf(window.FORMULA && FORMULA.langOf(m)) : { upper: true, size: 13, advance: 9.2, sep: " · ", cls: "" };
+      const adv = sc.advance;
+      const base = [...((sc.upper ? text.toUpperCase() : text).trim() + sc.sep)];
+      const gap = (c) => c === " " || c === "\u1680";
       segs.forEach(([a1, a2], i) => {
         const pid = `${id}-${i}`;
         const len = ((a2 - a1) / 360) * 2 * Math.PI * R.bandText;
-        let t = base;
-        while (t.length * 9.2 < len) t += base;
+        const width = (x) => (window.SCRIPTS ? SCRIPTS.bandWidth(sc, x) : x.length * adv);
+        let t = base.slice();
+        while (width(t) < len) t = t.concat(base);
         // auf ganze Zeichenzahl kürzen, die in den Bogen passt
         // auf ganze Wörter kürzen, damit an Lücken kein Wortrest stehen bleibt
-        const max = Math.max(4, Math.floor(len / 9.2));
+        let max = t.length;
+        while (max > 4 && width(t.slice(0, max)) > len) max--;
         if (t.length > max) {
           t = t.slice(0, max);
-          const cut = t.lastIndexOf(" ");
+          let cut = t.length - 1;
+          while (cut > 0 && !gap(t[cut])) cut--;
           if (cut > max * 0.6) t = t.slice(0, cut);
         }
-        t = t.replace(/[\s·]+$/, "");
+        while (t.length && (gap(t[t.length - 1]) || t[t.length - 1] === "·")) t.pop();
+        if (sc.glyphs) {
+          // Ursprache: Strichzeichen einzeln entlang des Bogens, Mitte des Rests auf die Mitte des Bogens
+          const step = (adv / (2 * Math.PI * R.bandText)) * 360;
+          const a0 = (a1 + a2) / 2 - (step * (t.length - 1)) / 2;
+          t.forEach((c, k) => {
+            const d = SCRIPTS.protoPath(c);
+            if (!d) return;
+            const [x, y] = polar(0, 0, R.bandText + 4.5, a0 + k * step);
+            out.push(S.group(`<path class="band-glyph" d="${d}" transform="translate(-3,-5)"/>`, x, y, a0 + k * step));
+          });
+          return;
+        }
+        const str = t.join("");
         if (segs.length === 1 && a2 - a1 >= 360) out.push(`<path id="${pid}" d="M0,${-R.bandText} A${R.bandText},${R.bandText} 0 1 1 -0.01,${-R.bandText}Z" class="guide"/>`);
         else out.push(arcPath(pid, R.bandText, a1, a2));
         // fast voller Bogen: auf Länge strecken; kurzer Rest: mittig in normaler Laufweite
-        if (t.length * 9.2 >= len * 0.85) out.push(`<text class="band-text" font-size="13"><textPath href="#${pid}" textLength="${f(len - 6)}" lengthAdjust="spacing">${U.esc(t)}</textPath></text>`);
-        else out.push(`<text class="band-text" font-size="13" text-anchor="middle"><textPath href="#${pid}" startOffset="50%">${U.esc(t)}</textPath></text>`);
+        const cls = `band-text ${sc.cls}`.trim();
+        if (width(t) >= len * 0.85) out.push(`<text class="${cls}" font-size="${sc.size}"><textPath href="#${pid}" textLength="${f(len - 6)}" lengthAdjust="spacing">${U.esc(str)}</textPath></text>`);
+        else out.push(`<text class="${cls}" font-size="${sc.size}" text-anchor="middle"><textPath href="#${pid}" startOffset="50%">${U.esc(str)}</textPath></text>`);
       });
     } else {
       // stumme Formel: Runenband
@@ -491,27 +512,85 @@
     transmutation: () => S.polygon(G.tri(0, 4, 31, true)),
     universal: () => S.line(-30, 0, 30, 0) + S.line(0, -30, 0, 30),
   };
-  function quickShape(m) {
+  // Gestaltstrich außen oben, ab dem äußersten Ring b; Ziele: ein bis drei Striche mit Knoten
+  function quickShape(m, b) {
+    const up = (d) => -b - d;
     switch (m.shape.kind) {
-      case "cone": return S.line(0, -50, -16, -66) + S.line(0, -50, 16, -66);
-      case "line": return S.line(-4, -50, -4, -68) + S.line(4, -50, 4, -68);
-      case "ray": case "targets": return S.line(0, -50, 0, -66) + S.arrowHead(0, -68, 0, 6);
-      case "burst": case "spread": case "sphere": case "cube": case "cylinder": return [0, 90, 180, 270].map((a) => S.line(...polar(0, 0, 50, a + 45), ...polar(0, 0, 62, a + 45))).join("");
-      case "emanation": return S.arc(0, 0, 58, 300, 60);
-      case "touch": return [45, 135, 225, 315].map((a) => S.line(...polar(0, 0, 64, a), ...polar(0, 0, 54, a))).join("");
-      case "self": return S.arc(0, -58, 7, 0, 300);
-      case "wall": return S.line(-16, -58, 16, -58);
-      case "summon": return S.path("M-8,-52 L-8,-62 A8,8 0 0 1 8,-62 L8,-52");
-      default: return "";
+      case "ray": return S.line(0, up(0), 0, up(16)) + S.arrowHead(0, up(18), 0, 6);
+      case "touch": return S.line(0, up(18), 0, up(4)) + S.arrowHead(0, up(0), 180, 6);
+      case "targets": {
+        const n = Math.min(m.shape.count, 3), angs = [[0], [-12, 12], [-20, 0, 20]][n - 1];
+        return angs.map((a) => { const [x1, y1] = polar(0, 0, b, a), [x2, y2] = polar(0, 0, b + 13, a), [x3, y3] = polar(0, 0, b + 16.5, a); return S.line(x1, y1, x2, y2) + S.dot(x3, y3, 3.2); }).join("");
+      }
+      case "cone": return S.line(0, up(0), -16, up(16)) + S.line(0, up(0), 16, up(16));
+      case "line": return S.line(-4, up(0), -4, up(18)) + S.line(4, up(0), 4, up(18));
+      case "burst": return [45, 135, 225, 315].map((a) => S.line(...polar(0, 0, b, a), ...polar(0, 0, b + 12, a))).join("");
+      case "spread": return S.path(`M-15,${up(9)} q3.75,-7 7.5,0 t7.5,0 t7.5,0 t7.5,0`);
+      case "emanation": return S.arc(0, 0, b + 8, 300, 60);
+      case "cylinder": return S.line(0, up(0), 0, up(16)) + S.line(-8, up(16), 8, up(16));
+      case "wall": return S.line(-16, up(8), 16, up(8));
+      case "sphere": return S.circle(0, up(11), 7) + S.line(-7, up(11), 7, up(11));
+      case "cube": return S.polygon([[-6, up(5)], [6, up(5)], [6, up(17)], [-6, up(17)]]);
+      case "object": return S.polygon([[-6, up(5)], [6, up(5)], [6, up(17)], [-6, up(17)]], "fill");
+      case "self": return S.arc(0, up(8), 7, 0, 300);
+      case "summon": return S.path(`M-8,${up(2)} L-8,${up(12)} A8,8 0 0 1 8,${up(12)} L8,${up(2)}`);
+      case "sensor": return S.path(`M-11,${up(10)} Q0,${up(19)} 11,${up(10)} Q0,${up(1)} -11,${up(10)}Z`) + S.dot(0, up(10), 2.4);
+      case "symbol": return S.line(0, up(0), 0, up(18)) + S.line(0, up(8), -7, up(15)) + S.line(0, up(8), 7, up(15));
+      default: return S.path(`M-9,${up(18)} Q-9,${up(5)} 0,${up(5)} Q9,${up(5)} 9,${up(18)}`); // besondere Form: offene Schale
     }
   }
+  // Kreis nach Dauer: vereinfachter Dauerring; zusätzliche Ringe liegen außen. Rückgabe: [SVG, äußerer Radius]
+  function quickRing(m) {
+    const R = 50, extra = (n) => Array.from({ length: n }, (_, i) => S.circle(0, 0, R + 6 * (i + 1), "thin")).join("");
+    switch (m.duration.kind) {
+      case "instant": return [S.arc(0, 0, R, 25, 335), R];
+      case "rounds": return [S.circle(0, 0, R) + S.line(R, 0, R + 8, 0) + S.line(-R, 0, -R - 8, 0), R];
+      case "minutes": return [S.circle(0, 0, R, "dash"), R];
+      case "hours": return [S.circle(0, 0, R) + extra(1), R + 6];
+      case "days": return [S.circle(0, 0, R) + extra(2), R + 12];
+      case "permanent": return [S.circle(0, 0, R) + S.arc(0, 0, R + 6, 55, 110) + S.dot(...polar(0, 0, R + 6, 110), 3), R];
+      case "concentration": return [S.circle(0, 0, R) + S.line(...polar(0, 0, R, 245), ...polar(0, 0, R + 14, 252)) + S.dot(...polar(0, 0, R + 17, 253), 2.6), R];
+      default: return [S.arc(0, 0, R, 105, 75), R]; // besonders: Lücke rechts
+    }
+  }
+  // Absichtszeichen: Anlaute von Verb und Essenzwort der gedruckten Kernzeile in der Schrift ihrer Sprache, neben der Schulfigur
+  const QL_WIDTH = 16, QL_MIN = 11; // größte Breite und Mindestgröße eines Absichtszeichens (Lücke Figur–Ring)
+  const QL_GAP = 40.5, QL_LENGTH = 22; // gedrehte Zeichen (Ogham): Mitte der Lücke, größte Länge entlang des Rings
+  const QUICK_LETTERS = { divination: [[0, -36], [0, 35]], illusion: [[0, -36], [0, 35]], universal: [[-25, -25], [25, -25]] };
+  function quickLetters(m) {
+    const marks = window.TEXTGEN ? TEXTGEN.coreChoice(m).marks : ["", ""];
+    const sc = window.SCRIPTS ? SCRIPTS.shownOf(window.FORMULA && FORMULA.langOf(m)) : {};
+    const [p, q] = QUICK_LETTERS[m.school] || [[-36.5, 1], [36.5, 1]];
+    const one = ([x, y], c) => {
+      // Ogham steht wie auf den Steinen senkrecht (liest von unten nach oben): an den seitlichen Plätzen um −90° gedreht,
+      // die Stammlinie tangential, mittig in der Lücke zwischen Figur (r≈31) und Ring (r=50)
+      const rot = sc.qlRotate && Math.abs(x) > Math.abs(y);
+      if (rot) { const r = Math.hypot(x, y), k = QL_GAP / r; x *= k; y *= k; }
+      if (sc.glyphs) return `<path class="ql-proto" d="${SCRIPTS.protoPath(c) || ""}" transform="translate(${f(x - 4.5)},${f(y - 12.5)}) scale(1.5)"/>`;
+      // breite Zeichen (Keilschrift, manche Hieroglyphen) zwischen Figur und Ring einpassen: erst kleiner, ab der
+      // Mindestgröße schmaler gezogen
+      const w = ((window.SCRIPT_WIDTHS || {})[sc.key] || {})[c];
+      const max = sc.qlRotate ? QL_LENGTH : QL_WIDTH;
+      const size = w ? Math.min(sc.mark || 16, Math.max(QL_MIN, max / w)) : sc.mark || 16;
+      let t = S.text(x, y, c, `ql ${sc.cls || ""}`.trim(), f(size));
+      if (w && w * size > max) t = t.replace("<text ", `<text textLength="${max}" lengthAdjust="spacingAndGlyphs" `);
+      return rot ? t.replace("<text ", `<text transform="rotate(-90 ${f(x)} ${f(y)})" `) : t;
+    };
+    return one(p, marks[0]) + one(q, marks[1]);
+  }
+  // Vorschauen für die Legende: nur der Kreis einer Dauer, nur ein Gestaltstrich auf einem Ringstück
+  const QUICK_PART = {
+    ring: (kind) => `<svg class="quick" viewBox="-68 -68 136 136" xmlns="http://www.w3.org/2000/svg">${quickRing({ duration: { kind } })[0]}</svg>`,
+    shape: (kind, count = 1) => `<svg class="quick" viewBox="-56 -82 112 50" xmlns="http://www.w3.org/2000/svg">${S.arc(0, 0, 50, 316, 44, "thin")}${quickShape({ shape: { kind, count } }, 50)}</svg>`,
+  };
+  // opts.marks === false: verkürzte Form ohne Absichtszeichen (Verzeichnis, Kapitellisten; dort winzig klein)
   function quickGlyph(m, opts = {}) {
-    const ring = m.duration.kind === "instant" ? S.arc(0, 0, 50, 25, 335) : S.circle(0, 0, 50) + (m.duration.kind === "permanent" ? S.circle(0, 0, 45) : "");
+    const [ring, outer] = quickRing(m);
     const lv = m.level;
     const dots = Array.from({ length: lv }, (_, i) => S.dot(...polar(0, 0, 50, 180 + (i - (lv - 1) / 2) * 14), 3.2)).join("");
     const core = (QUICK_SCHOOL[m.school] || QUICK_SCHOOL.universal)();
     const ess = `<g class="accent">${ESSENCE[m.primary](0, 0, 11)}</g>`;
-    return `<svg class="quick ${opts.cls || ""}" viewBox="-75 -75 150 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Schnellglyphe ${U.esc(m.name)}"><g class="quick-g">${ring}${core}${ess}${quickShape(m)}${dots}</g></svg>`;
+    return `<svg class="quick ${opts.cls || ""}" viewBox="-80 -80 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Schnellglyphe ${U.esc(m.name)}"><g class="quick-g">${ring}${core}${ess}${quickShape(m, outer)}${dots}${opts.marks === false ? "" : quickLetters(m)}</g></svg>`;
   }
 
   // Einzelglyphe als kleines SVG (für Legenden und Tabellen)
@@ -531,6 +610,13 @@
   window.renderCircle = circle;
   window.circleAnnotations = annotations;
   window.quickGlyph = quickGlyph;
+  // Absichtszeichen für den Fließtext: Zeichen in der Formelschrift, Ursprache als kleines Strichbild
+  window.quickMarksHTML = (m) => {
+    const sc = SCRIPTS.shownOf(FORMULA.langOf(m));
+    return TEXTGEN.coreChoice(m).marks.map((c) =>
+      sc.glyphs ? `<svg class="mark-proto" viewBox="-1 -1 8 12"><path d="${SCRIPTS.protoPath(c) || ""}"/></svg>` : `<b class="mark ${sc.cls}">${U.esc(c)}</b>`);
+  };
+  window.QUICK_PART = QUICK_PART;
   window.QUICK_SCHOOL = QUICK_SCHOOL;
   window.glyphSVG = glyphSVG;
   window.CIRCLE_LAYERS = ALL;

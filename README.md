@@ -14,11 +14,13 @@ Erzeugt ein In-Game-Zauberbuch: Zu jedem Zauber gibt es einen magischen Kreis, d
 - **Lehre der Kreise**: Legende aller Symbole, Schnellglyphen und Affinitätstabelle der Schulen
 - **Einstellungen**: Besitzer, Titel, Höchstseitenzahl je Band, Regelverweise auf den Zauberseiten (Regelband-Nummer, QR-Code zu Archives of Nethys, Quellenangabe; alle aus), mehrseitige Zauber links beginnen lassen, Papierformate, Hintergrund drucken ja/nein, Import (xlsx mit Spalte „Name“, csv/txt, json) und Export der Zauberliste (json enthält auch Vorbereitung und Protokoll)
 
+**Lesezeichen**: Die Adresse merkt sich, was gerade offen ist: `#browse/fireball` (Verzeichnis), `#book/fireball` (Buch, beim Zauber aufgeschlagen, auch wenn sich die Seitenzahlen später verschieben), `…/full` (ausführliche Fassung im Fenster), `#theory/primer/II/l10` (Lehrheft-Lektion), `#theory/vademecum/<hälfte>/<teil>/<lektion>`, `#prepare`. Zurück und Vor des Browsers führen zum vorigen Zauber (auch beim Blättern im Buch, je Lektion im Lehrheft) oder Reiter und schließen das Fenster; Seiten innerhalb eines Zaubers legen keine Verlaufseinträge an. Steht ein Zauber nicht im Buch des aktiven Charakters, öffnet das Lesezeichen ihn im Verzeichnis. Funktioniert lokal (`file://`) und auf GitHub Pages gleich; lokale und Online-Fassung haben aber getrennte Speicher (eigene Charaktere und Bücher).
+
 Seitenumfang: Grad 0 und Alltagszauber = ½ Seite, Grad n = n Seiten. Jeder Grad ist ein Kapitel mit eigener Doppelseite (Titel, Ordnungsfigur, Text zur Stufe, Formelliste). Kapitel und mehrseitige Zauber beginnen links – davor bei Bedarf eine Notizseite, oder der vorherige Zauber bekommt den Umfang des nächsthöheren Grades; beides abschaltbar.
 
 ## Mehrere Charaktere
 
-Oben rechts wählst du den Charakter. Jeder hat sein eigenes Buch, eigene Einstellungen, Vorbereitung und Protokoll; in den Einstellungen lassen sich Charaktere anlegen, umbenennen, duplizieren und löschen und je Charakter ein Profil, eine **Klasse** und (bei Paladinen) eine **Gottheit** wählen. Alles liegt nur im Browser – zum Sichern oder für ein anderes Gerät „Liste exportieren“ (die Datei enthält den Charakternamen; beim Import lässt sie sich als neuer Charakter anlegen).
+Oben rechts wählst du den Charakter. Jeder hat sein eigenes Buch, eigene Einstellungen, Vorbereitung und Protokoll; in den Einstellungen lassen sich Charaktere anlegen, umbenennen, duplizieren und löschen und je Charakter ein Profil, eine **Klasse** und eine **Gottheit** wählen (bei Paladinen Pflicht, bei Magiern eine freiwillige **Schutzgottheit** für Andacht und Tagebuch). Alles liegt nur im Browser – zum Sichern oder für ein anderes Gerät „Liste exportieren“ (die Datei enthält den Charakternamen; beim Import lässt sie sich als neuer Charakter anlegen).
 
 ## Paladine: das Brevier
 
@@ -33,6 +35,28 @@ Ist ein Charakter Paladin, wird aus dem Zauberbuch ein **Brevier**. Das Verzeich
 **Steinintarsie für Zwerge**: Statt Bleiglas kann das Andachtsbild als eingelegter Stein erscheinen – gestufter Tafelberg statt Spitzbogen, der Grad als waagerechte Schichten mit Flechtbandbalken, Sechseckfeld mit Rauten, Knotensteine, feine Fugen, Sechseck-Basalt, gemusterte Steine (Marmor, Granit, Malachit, Lapislazuli …) und Gold- oder Silbereinlagen; jede Essenz hat ihren Stein. Einstellung „Andachtsbild“: automatisch (Stein bei Torag und den zwergischen Gottheiten), Bleiglas oder Steinintarsie. Die Bedeutung aller Elemente bleibt gleich.
 
 Die Gottheiten (461, Daten in `data/deities.js`) lassen sich nach Name suchen; vorgeschlagen werden passende Gesinnungen (LG, LN, NG), „alle Gottheiten“ hebt das auf.
+
+## Magier: das Lehrheft
+
+Für arkane Charaktere gibt es im Reiter **Lehre** die **Fibel der Kreise**, ein Lehrheft im A5-Format zum Üben von Hand: Vorspann (Vorrede des Meisters, Lehrvertrag, Hausordnung und Tagesplan, Ausrüstung), dann die Teile Werkstatt (Wachstafel, Feder, Tinten, Farben und ihre Gifte, Pergament, Papier, Zirkel, Zauberkreide), Hand und Kreis, Glyphen, Zeichen der Stoffe, Schnellglyphen, Kreise lesen, Kleine Formeln und Gesellenstück, dazu ein Anhang mit Prüfscheibe, Pausblättern, Bewertungs- und Versetzungsbogen und Glossar. Die Alltagszauber des Buches stehen als eigener Abschnitt hinter dem Anhang, Teil VII enthält nur Zaubertricks.
+
+- Jede Lektion hat Lesestück, Aufgabe und Prüfkriterien; Muster stehen als „Ansicht des Meisters“ zum Abzeichnen, nie zum Nachfahren.
+- Glyphen, Essenzen, Schnellglyphen und kleine Formeln werden aus denselben Daten erzeugt wie die Kreise im Zauberbuch.
+- Die Prüfvermerke stehen nicht im Heft, sondern im eigenen **Prüfbogen** (eigener Druckknopf).
+- Einstellungen: Name des Meisters, Charakterstufe (nur für Randnotizen), Satz des Lehrhefts, Lochrand für Ringbücher.
+- Persönliche Fassung über das Profil (`primer`): Meister, Vorrede, Übergabeschreiben, Stimmen mit eigener Handschrift und Tinte, Randnotizen je Lektion (optional ab einer Charakterstufe), eigene Kästen und ersetzte Lektionen.
+
+## Andacht und Tagebuch
+
+Hat ein Charakter eine Gottheit (Paladin) oder eine **Schutzgottheit** (Magier, Einstellungen → Charakter), gibt es Gebete für den Tag:
+
+- **Morgenandacht und Abendgebet** im Reiter „Heute vorbereitet“: lesen, als gehalten vermerken; zur Andacht lässt sich der zum Abschluss gewirkte Zauber eintragen (nur vermerkt, nichts wird abgestrichen). Der Ablauf kommt aus dem Profil (`devotion.morning`, `devotion.evening`), etwa Buch holen, Andacht, Vorbereitung, Buch zurücksenden; das Abendgebet blickt auf das Protokoll des Tages zurück und bittet ums Behalten.
+- **Zwiespalt**: Gottheiten mit gegensätzlichen Domänen (Zerstörung und Schutz, Tod und Heilung …) bekommen einen Doppelvers, auch im Brevier.
+- **Anlass-Gebete** (Entziffern, misslungener Wurf, Bannen, Abschreiben, Tote, Festtage) und **Festtage** aus dem Profil; im Lehrheft als Teil „Gebete für den Tag“.
+- **Andachtsblatt** (Unterreiter „Andacht“): je Spieltag ein A5-Blatt für den Ringordner, vorn der Morgen, hinten der Abend mit Tagebuchlinien. Mit `devotion.obedience: "fragment"` trägt die Andacht ein abgebrochenes **Formelfragment** aus dem eigenen Buch mit großem, unvollständigem Kreis – nie ein ganzer Zauber, innerhalb einer Woche nie derselbe; von den Gebeten in fester Form steht dann nur die Anrufung auf dem Blatt (ganz im Lehrheft und über „lesen“ im Reiter „Heute“). Mit `devotion.log: true` kommt hinten ein nüchternes **Protokoll** dazu (vorbereitet, gewirkt, Auslastung, Formeln, ungenutzt). Druck immer A5, beidseitig über die lange Kante (Lochrand vorn links, hinten rechts).
+- **Andachtsbuch**: wächst mit jedem Spieltag (Probetage nicht), je Tag eine Doppelseite; das Tagebuch (auch für ein spontanes Gebet) lässt sich in der App schreiben.
+- **Rückschau nach der Sitzung**: „Rückschau exportieren“ legt einen Markdown-Bogen ab (Protokoll, Fragment, erzeugtes Abendgebet, letzte Einträge, Stimme des Tagebuchs aus `devotion.voice`). Der Tagebucheintrag – selbst geschrieben oder mit einer KI wie Claude – kommt in das JSON am Ende des Bogens und wird mit „Rückschau importieren“ dem Tag zugeordnet. Die Texte bleiben beim Charakter (und im Export); die Bögen am besten in einem gitignorierten Ordner wie `character/` ablegen.
+- **Einträge des Spielleiters**: Der Spielleiter schreibt Einträge in eine Vorlage (`tools/gm-entries.example.json`) und versiegelt sie mit `tools/seal-entries.html` (läuft lokal im Browser; PBKDF2 + AES-GCM). Er behält den Spickzettel mit den Codes, du importierst die Spielerdatei. Die App zeigt nur die Zahl versiegelter Einträge. Nennt der Spielleiter am Tisch einen Code, gibst du ihn über das Siegel ✶ oben rechts ein: Die Seite öffnet sich sofort und steht danach im Andachtsbuch beim laufenden Tag. Die Statusliste für den Spielleiter enthält weder Codes noch Texte.
 
 ## Eigene Backstory
 
@@ -50,10 +74,26 @@ Vorgehen: Vorlage nach `data/profile.local.js` kopieren, Felder anpassen, Seite 
 - `calendar` (Monatsnamen, irdische Entsprechung `earth`, Monatslängen `days`, Jahr) und `places` – Übungsprotokoll und Notizen
 - `notes`, `noteOriginalName`, `noteAlignment` – die Stimme der Randnotizen (Platzhalter `{owner}`, `{name}`, `{essence}`, `{school}`)
 - `learningOrigins`, `everydayOrigins` – woher die Formeln stammen
+- `formulaOrigins`, `formulaLangNames`, `decipher`, `bridgeNotes` – Formelsprachen je Herkunft (siehe unten)
 - `divineFocus` – Text zum göttlichen Fokus
 - `planes`, `essenceText`, `correspond` – Kosmologie und Entsprechungen deiner Welt
 - `chapters` – eigene Texte für die Kapitelseiten je Grad
 - `everyday.add`, `everyday.remove`, `everyday.flavor` – eigene Alltagszauber, ausgeblendete, eigene Flavour-Texte
+- `primer` – persönliche Fassung des Lehrhefts (Meister, Vorrede, Stimmen, Randnotizen je Lektion, ersetzte Lektionen)
+
+### Formelsprachen
+
+Ohne Angaben im Profil sprechen alle Formeln Latein. Ein Profil kann **Stationen** festlegen (`formulaOrigins`): wo und von wem die Formeln stammen, jeweils mit Sprache, Anteil am Buch, Gradfenster und Gewichten für Schulen und Essenzen. Die App verteilt die Zauber des Buches deterministisch mit fester Quote auf die Stationen. Einzelne Zauber legt `data/custom_texts.js` fest (`{ origin: "<station>" }` oder `{ lang: "<sprache>" }`).
+
+- Der Sprache folgt nur das Gesprochene: Formel, Langformel, Schlussformel und Schriftband. Titel, Essenzen und Schulen bleiben lateinisch.
+- Mitgeliefert sind Latein, Hethitisch, Mittelägyptisch, Akkadisch, Sumerisch, Altirisch, archaisches Griechisch, Urindogermanisch, Mittelkymrisch, eine technische Kunstsprache und eine Klangsprache mit Bantu-Lautbild (`data/formula-lang/`). Alle sind vereinfachte Leihsprachen: gut vorlesbar statt philologisch genau.
+- Die Lexika speichern eine einfache **Lautschrift** (`sh`, `kh`, `j`, `y` …). Die Ausgabe schreibt sie je Buchsprache aus, deutsch „dschwala“, englisch „jvala“. Latein behält seine Schreibung.
+- `formulaLangNames` gibt einer Sprache ihren Namen in deiner Welt. Im Repository stehen nur irdische Bezeichnungen.
+- Eigene Sprachen gehören in `data/formula-lang/langs.local.js` (von Git ignoriert, Aufbau wie `latin.js`). Wortlisten geschützter Kunstsprachen (Tolkien, Klingonisch …) bitte nur dort, nie im Repository.
+- Optionale Hausregel **Entziffern** (`decipher`): Je Zauber zeigen Detailansicht und „Heute vorbereitet“ einen Sprachenkunde-SG aus Sprachverhältnis (beherrscht, verwandt, fremd, tot), Grad und Hand. Die beherrschten Sprachen stellt jeder Charakter in den Einstellungen ein. Im Druck erscheint der SG nicht.
+- `bridgeNotes`: Randnotizen, die ein fremdes Formelwort neben ein lateinisches Fachwort mit gemeinsamem Stamm stellen (*agni* – *ignis*). Nur verwandte Wörter bekommen eine Notiz; sie steht immer zuerst und damit auch in der Normalfassung.
+
+Werkzeuge: `tools/formula-lang-check.mjs` prüft alle Lexika auf Vollständigkeit; `tools/formula-origins-report.mjs --book liste.txt --with-profile` listet, welche Zauber eines Buches auf welche Station fallen.
 
 **Mit KI füllen:** Gib einer KI `data/profile.js`, `data/profile.local.example.js` und eine Beschreibung deines Charakters (Volk, Klasse, Gottheit, Herkunft, Kampagne, Tonfall) und lass dir `data/profile.local.js` schreiben. Einzelne Zauber lassen sich zusätzlich in `data/custom_texts.js` komplett von Hand formulieren.
 
@@ -65,6 +105,7 @@ Vorgehen: Vorlage nach `data/profile.local.js` kopieren, Felder anpassen, Seite 
 | `app/js/analyze.js` | Zauber → Modell (Essenzprofil in %, Gestalt, Reichweite, Dauer, Komponenten …) |
 | `app/js/glyphs.js`, `circle.js` | SVG-Glyphen, Kreisgenerator, Schnellglyphen, Beschriftung |
 | `app/js/textgen.js` | Baukasten-Texte (deterministisch pro Zauber) |
+| `app/js/lang.js`, `data/formula-lang/` | Formelsprachen: Lexika, Satzmuster, Lautschrift, Stationen und Verteilung, Hausregel Entziffern |
 | `app/js/book.js` | Seitenplanung, Vorspann, Regelband, Schriftrollen |
 | `app/js/typeset.js` | Satzmodul: Seiten setzen, Autofit, fließende Seiten; Kopf beschreibt die Satz-Klassen |
 | `app/js/viewer.js` | Seitenbetrachter (Doppelseiten, Blätterleiste, Sprünge) und Verzeichnis-Akkordeon für Buch, Lehrheft, „Vom Gebet“ |
@@ -77,13 +118,15 @@ Vorgehen: Vorlage nach `data/profile.local.js` kopieren, Felder anpassen, Seite 
 | `app/js/chars.js` | Charakter-Slots: getrennter Speicher je Charakter (mit Klasse und Gottheit) |
 | `app/js/classes.js` | Klassen als Daten (Zauberliste, Grade, Joker, Bezeichnungen) und aktive Klasse/Gottheit |
 | `app/js/vitrail.js` | Andachtsbild: Bleiglasfenster aus Analyse und Gottheit, Motivbibliothek der Symbole |
-| `app/js/prayer.js` | Gebete: Kanon der Kirche nach Gesinnung, Beinamen- und Domänenwörterbuch |
+| `app/js/prayer.js` | Gebete: Kanon der Kirche nach Gesinnung und Zwiespalt, Beinamen- und Domänenwörterbuch, Stimme der Gottheit für Tagesgebete |
+| `app/js/devotion.js` | Andacht: Gebete für den Tag, Formelfragment, Andachtsblatt, Andachtsbuch, Rückschau, versiegelte Einträge des Spielleiters |
 | `app/js/profile.js` | mischt neutrales Profil und das Profil des aktiven Charakters |
 | `data/spells.js` | Zauberdaten (erzeugt) |
 | `data/everyday_spells.js` | Alltagszauber mit Ideengebern |
 | `data/deities.js` | Gottheiten, nur beschreibende Angaben (erzeugt) |
 | `tools/parse_deities.py` | erzeugt `data/deities.js` aus AoN-Gottheitsseiten (`dieties/*.aspx`, nicht im Repository) |
 | `tools/parse_spells.py` | erzeugt `data/spells.js` aus AoN-Seiten (`spells/*.aspx`) und dem d20pfsrd-Export (`data/spell_full*.tsv`); beide Rohdaten sind nicht im Repository |
+| `tools/seal-entries.html`, `gm-entries.example.json` | Werkzeug des Spielleiters: Einträge versiegeln (Spielerdatei und Spickzettel) |
 | `tools/test-browser.mjs`, `test-cases.mjs`, `test-baseline.json` | Browser-Tests für Satz und Bedienung, Testfälle, Sollwerte (siehe unten) |
 
 ## Browser-Tests
@@ -110,6 +153,7 @@ Anforderungen und geplante Änderungen liegen als [OpenSpec](https://github.com/
 ## Quellen und Lizenzen
 
 - **Regeltexte** der Zauber: Open Game Content unter der Open Game License 1.0a, übernommen über [Archives of Nethys](https://aonprd.com) und [d20pfsrd.com](https://www.d20pfsrd.com). Lizenztext und Copyright-Hinweise: [`LICENSE-OGL.txt`](LICENSE-OGL.txt). Die Quelle jedes Zaubers steht im Quellenkasten unter seinem Regeltext.
+- **Deutsche Regelbegriffe** (Regelsprache Deutsch ohne lokale Regeldaten): `app/js/rules.js` übersetzt nur Feldwerte der englischen Daten, also allgemeine Spielbegriffe wie Schulen, Aktionen, Reichweiten, Dauer, Rettungswürfe, Flächen und Einheiten, und keinen Regeltext: das Häufige regelbasiert, freie Werte (Ziele, Effekte, Bereiche) über die Tabelle `data/lang/rules-terms.de.js`, eine eigene Übersetzung der Feldwerte (Open Game Content). Der Freitext von Materialkomponenten bleibt englisch in Anführungszeichen, ergänzt um deutsche Stoffwörter. Deutsche Regeltexte und Domänen aus MyPFDB (OGL, deutsche Begriffe mit Genehmigung von Ulisses Spiele) liest `tools/import-rules-de.mjs` bzw. `tools/import-domains-de.mjs` nur lokal ein. Die Ergebnisse sind gitignoriert und werden nicht veröffentlicht. Abdeckung der Begriffe: `node tools/rules-terms-coverage.mjs`.
 - **Alltagszauber**: eigene Hausregeln und Formulierungen. Anregungen von der [offiziellen Frieren-Seite](https://frieren-anime.jp/special/magic/), aus einem [r/Frieren-Thread](https://www.reddit.com/r/Frieren/comments/1rialip/come_up_with_a_mundane_spell_that_would_be/) und aus der Geschichte [„Fear Not The Elf Who Knows 10,000 Spells“](https://forums.spacebattles.com/threads/fear-not-the-elf-who-knows-10-000-spells-frieren-beyond-journeys-end-self-insert.1225442/) von Silver W. King. Der Ideengeber steht jeweils im Quellenkasten.
 - **Magietheorie**: angeregt von den *Signs* aus *Witch Hat Atelier* und der Alchemie aus *Fullmetal Alchemist*; eigene Ausarbeitung.
 - **QR-Codes**: [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) von Kazuhiko Arase, MIT-Lizenz (`app/vendor/qrcode.js`).

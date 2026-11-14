@@ -19,6 +19,7 @@ window.PRIMER = {
     { id: "VII", title: "Kleine Formeln" },
     { id: "VIII", title: "Das Gesellenstück" },
     { id: "A", title: "Anhang" },
+    { id: "W", title: "Alltagszauber" },
   ],
   // Randkästen je Teil (neutral; das Profil kann eigene setzen)
   boxes: {
@@ -155,6 +156,27 @@ window.PRIMER = {
       check: ["Mischung", "Wissen"],
     },
     {
+      id: "w-soap", part: "I", title: "Seife und Lauge",
+      read: [
+        "Wer mit Zinnober gearbeitet hat, wäscht sich. Die [[Seife]] dazu macht die Werkstatt selbst, aus Asche aus dem Ofen und Fett aus der Küche.",
+        "Zuerst die [[Lauge]]: Buchenasche kommt auf Stroh in einen Bottich mit einem Loch im Boden und wird mit Regenwasser übergossen; was durchläuft, gießt man noch einmal darüber, bis es klar ist. Ob sie taugt, zeigt ein frisches Ei. Es muss schwimmen und eine Fläche zeigen, so groß wie eine Münze.",
+        "Talg oder Öl wird mit der Lauge im Kessel gerührt und gekocht, bis die Masse Fäden zieht. Dieses [[Sieden]] ergibt weiche Schmierseife; mit Salz scheidet sich feste Kernseife ab. Die Lehre sagt, darin haben sich Sulfur und Sal verbunden, das Brennende des Fetts und das Feste der Asche.",
+        "Gegen den Regen tränkt man Stoff erst in Seifenwasser, dann in einer Lösung von [[Alaun]]. Im Gewebe entsteht eine Seife, die sich nicht mehr löst, und das Wasser perlt ab. So imprägniert der Meister Mantel und Buchbeutel, denn ein nasses Reinbuch ist ein verlorenes Reinbuch.",
+        "Über die Seife des Meisters, die in einer eigenen Schale liegt, wurde der kleine Reinigungszauber gesprochen; sie hält ihn einige Wäschen lang.",
+      ],
+      glosses: {
+        Seife: "Aus Fett und Lauge gesotten. Wäscht Hände, Pinsel und Gewebe.",
+        Lauge: "Wasser, das durch Holzasche gelaufen ist. Scharf, ätzt Haut und Augen.",
+        Sieden: "Langes Kochen von Fett mit Lauge, bis Seife entsteht.",
+        Alaun: "Weißes, herbes Salz. Mit Seife im Gewebe macht es Stoff wasserfest.",
+      },
+      box: { title: "Lauge frisst Haut", text: [
+        "Ein Spritzer Lauge im Auge kann blind machen. Darum Lederhandschuhe, nie im Küchentopf, und ein Eimer klares Wasser steht bereit. Nach jedem Zinnober, jeder Mennige, jedem Grünspan wäscht der Lehrling Hände und Pinsel mit Seife, ehe er isst. Der Meister sieht nach: unter den Fingernägeln.",
+      ] },
+      task: ["Setze unter Aufsicht drei Laugen an und prüfe jede mit dem Ei.", "Wasche nach dem nächsten Rubrizieren Hände und Pinsel und zeige sie dem Meister.", "Imprägniere einen Lappen mit Seife und Alaun und beträufle ihn neben einem unbehandelten mit Wasser."],
+      check: ["Probe", "Sauberkeit", "Imprägnierung"],
+    },
+    {
       id: "l6", part: "I", title: "Pergament",
       read: [
         "[[Pergament]] ist Haut, die nicht gegerbt, sondern unter Spannung getrocknet wird. Die Haut eines Kalbs, Schafs oder einer Ziege liegt einige Wochen in Kalkwasser, bis sich die Haare lösen. Dann wird sie auf einem gewölbten Baum mit stumpfem Messer gesäubert und nass in einen Rahmen geschnürt, die [[Herse]].",
@@ -184,6 +206,27 @@ window.PRIMER = {
       },
       task: ["Schöpfe unter Anleitung fünf Bögen und trockne sie.", "Halte sie gegen das Licht: Welcher ist wolkig, welcher gleichmäßig? Notiere, warum.", "Ziehe auf einem geleimten und einem ungeleimten Bogen je einen Strich mit derselben Feder."],
       check: ["Gleichmaß", "Begründung"],
+    },
+    {
+      id: "w-seal", part: "I", title: "Siegellack und Petschaft", gen: "sealBlank",
+      read: [
+        "Was fertig ist, wird verschlossen: ein Brief, eine Urkunde, ein Reinbuch, ein Schrank. Das ältere [[Siegel]] ist aus Bienenwachs, mit Harz zäh gemacht und mit Mennige, Zinnober oder Grünspan gefärbt; es wird in der Sonne weich.",
+        "Härter und glänzender ist der [[Siegellack]]: [[Schellack]], Kolophonium und Terpentin, mit Kreide gestreckt, mit Zinnober gefärbt und als Stange gegossen. Man dreht die Stange über der Flamme, nicht in ihr, lässt den Lack auf das Papier fließen, haucht das [[Petschaft]] an und drückt es gerade hinein, bis man langsam bis drei gezählt hat. Schwarze Schlieren sind Ruß, Blasen kommen von zu viel Hitze, Lack am Petschaft vom vergessenen Anhauchen.",
+        "Ein Siegel schützt nicht, es bezeugt. Wer einen Brief öffnet, bricht es, und jeder sieht es. Darum gehört unter den Lehrvertrag ein Siegel, und darum bekommt der Lehrling am Ende der Lehre ein eigenes Zeichen.",
+      ],
+      glosses: {
+        Siegel: "Abdruck eines Zeichens in Wachs oder Lack. Bezeugt, dass ein Verschluss unberührt ist.",
+        Siegellack: "Harter Lack aus Schellack und Harzen, als Stange gegossen, über der Flamme geschmolzen.",
+        Schellack: "Hartes, glänzendes Harz, das eine Laus an Bäumen ausscheidet.",
+        Petschaft: "Stempel mit dem eigenen Zeichen, in Metall oder Stein geschnitten.",
+      },
+      box: [
+        { title: "Das wachende Siegel", text: [
+          "In den Lack eines magischen Siegels wird beim Schmelzen ein Wachzauber gebunden, mit einem Zusatz, der zur Formel passt. Bricht jemand das Siegel, weiß es der, der es gesetzt hat. So verschließt der Meister den Giftschrank und sein Reinbuch, und wer daran nur kratzt, muss am Abend erklären, warum.",
+        ] },
+      ],
+      task: ["Entwirf dein Zeichen aus Anfangsbuchstabe und einer Glyphe und zeichne es in den ersten Kreis.", "Siegle dreimal mit dem Petschaft der Werkstatt und setze das beste Siegel in den zweiten Kreis.", "Welche Formel deines Buches würdest du in ein wachendes Siegel binden, und was gibst du dem Lack bei?"],
+      check: ["Entwurf", "Abdruck", "Sauberkeit"],
     },
     {
       id: "l8", part: "I", title: "Zirkel, Lineal und Schnur", gen: "pageSetup",
@@ -415,6 +458,21 @@ window.PRIMER = {
       task: ["Lege die Hand flach auf ein Blatt und zeichne ihren Umriss. Das ist dein Gestenblatt.", "Trage für jede Schule eine Grundgeste ein: Stellung der Finger als Punkte, Bewegung als Pfeil.", "Führe dem Meister drei Gesten vor, ohne auf das Blatt zu sehen."],
       check: ["Genauigkeit", "Gedächtnis", "Haltung"],
     },
+    {
+      id: "g-sigil", part: "III", title: "Sigillenbau", gen: "sigil",
+      sentences: ["Schutz für dieses Buch", "Licht über der Tür", "Ruhe in der Kammer"],
+      read: [
+        "Der Kern einer Glyphe sagt, was geschieht, und wird nie verändert. Was nur für diesen Ort, dieses Ziel, diesen Namen gilt, steht in den Beizeichen. Ein Beizeichen, das man selbst baut, heißt [[Sigille]].",
+        "Gebaut wird sie aus dem [[Satz der Absicht]], der in wenigen Worten sagt, wofür das Zeichen gilt. Schreibe ihn in Großbuchstaben. Streiche jeden Buchstaben, der schon einmal vorkam, danach die Vokale. Lege die übrigen übereinander, ziehe gemeinsame Striche nur einmal und vereinfache, bis die Figur in einem Zug lesbar ist.",
+        "Eine Sigille gilt nur für genau das, was ihr Satz sagt. „Schutz für dieses Buch“ schützt dieses Buch und kein anderes. Wer ein neues Ziel hat, baut eine neue Sigille. Darum steht sie in keinem Musterbuch.",
+      ],
+      glosses: {
+        Sigille: "Selbst gebautes Beizeichen aus den Buchstaben eines Satzes. Gilt nur für das Beschriebene.",
+        "Satz der Absicht": "Kurzer Satz, der sagt, wofür eine Sigille gilt.",
+      },
+      task: ["Baue aus den beiden anderen Sätzen je eine Sigille, zuerst auf der Wachstafel, dann in die leere Fläche.", "Wähle einen eigenen Satz für einen Ort der Werkstatt und baue seine Sigille.", "Erkläre dem Meister deine Sigille Buchstabe für Buchstabe: Wo steckt das S, wo das T?"],
+      check: ["Streichen", "Verschmelzen", "Begründung"],
+    },
 
     // --- IV. Die Zeichen der Stoffe -----------------------------------------------
     {
@@ -429,7 +487,7 @@ window.PRIMER = {
         Sal: "Der feste Grundsatz: Asche, Kristall, Gestalt. Zeichen: Kreis mit Querstrich. Essenz Ordo.",
         "tria prima": "Die drei Grundsätze Sulfur, Mercurius und Sal.",
       },
-      task: ["Zeichne die drei Zeichen je zehnmal frei.", "Ordne sechs Stoffe ihrem vorherrschenden Grundsatz zu: Wachs, Salz, Quecksilber, Kohle, Kreide, Weingeist. Die Lösung steht kopfüber auf der nächsten Seite."],
+      task: ["Zeichne die drei Zeichen je zehnmal frei.", "Ordne acht Stoffe ihrem vorherrschenden Grundsatz zu: Wachs, Salz, Quecksilber, Kohle, Kreide, Weingeist, Seife, Siegellack. Die Lösung steht kopfüber auf der nächsten Seite."],
       check: ["Zeichen", "Zuordnung"],
     },
     {
@@ -473,8 +531,48 @@ window.PRIMER = {
         "alte Reihe": "Die sieben Wandelsterne nach ihrer Umlaufzeit: Saturn, Jupiter, Mars, Sonne, Venus, Merkur, Mond.",
         Siebenstern: "Siebenzackiger Stern im Siebeneck; seine Linien führen von der alten Reihe zur Woche.",
       },
-      task: ["Konstruiere ein Siebeneck nach der Näherung aus Lektion 16 und zeichne den Siebenstern hinein.", "Setze die Zeichen der Wandelsterne in der alten Reihe auf die Ecken.", "Folge dem Stern und schreibe die Wochentage dazu."],
+      task: ["Konstruiere ein Siebeneck nach der Näherung aus {{lesson:l16}} und zeichne den Siebenstern hinein.", "Setze die Zeichen der Wandelsterne in der alten Reihe auf die Ecken.", "Folge dem Stern und schreibe die Wochentage dazu."],
       check: ["Stern", "Reihe", "Woche"],
+    },
+    {
+      id: "l-time-week", part: "IV", title: "Die Tage und ihre Gestirne", gen: "timeWeek",
+      read: [
+        "Im Wochenkreis hast du gesehen, wie der Siebenstern die Wandelsterne zur Woche ordnet. Nun nimm jeden Tag einzeln in die Hand. Jeder bringt etwas mit: das Zeichen seines Gestirns, das Metall, das ihm gehört, eine Farbe und die Essenzen, zu denen er eine [[Affinität]] hat.",
+        "Die Werkstätten haben über viele Generationen aufgeschrieben, was an welchem Tag gelang und was misslang. Daraus ist ein Brauch geworden, keine Regel. Niemand verbietet dir, am Tag des Bleis eine Feuerformel zu zeichnen. Aber wenn sie misslingt, wird dein Meister die Stirn runzeln und zum Kalender hinübersehen.",
+        "Unter jedem Tag steht, was man ihm nachsagt. Lies es wie die Erfahrung älterer Kollegen: Nicht alles davon ist wahr, aber nichts ist ohne Grund aufgeschrieben worden. Wo die Gegend, in der du lebst, eigene Bräuche für den Tag kennt, stehen sie dabei.",
+      ],
+      glosses: {
+        Affinität: "Die Neigung eines Tages, Monats oder Zeichens zu bestimmten Essenzen. Überlieferung, keine Regel.",
+      },
+      task: ["Führe eine Woche lang ein Werkstattbuch: Schreibe jeden Abend auf, was dir gelungen ist und was nicht.", "Vergleiche am Ende der Woche mit den Tagen hier: Wo stimmt der Brauch, wo nicht?", "Zeichne die sieben Zeichen der Gestirne aus dem Gedächtnis und schreibe Metall und Farbe dazu."],
+      check: ["Werkstattbuch", "Vergleich", "Zeichen"],
+    },
+    {
+      id: "l-time", part: "IV", title: "Das Jahr und seine Schutzgötter", gen: "timeYear",
+      read: [
+        "Die Woche ist ein kleiner Kreis, das Jahr ein großer. Der Jahresring zeigt zwei Teilungen des Jahres übereinander: außen die Monate, wie die Menschen sie zählen, innen die Zeichen des Himmels, wie die Sonne sie durchwandert.",
+        "Viele Monate stehen unter einem [[Schutzgott]]. Wo die Überlieferung einen kennt, steht sein Name unter dem Monat, und seine heiligen Farben laufen als zwei schmale Streifen am äußeren Rand. Teilen sich mehrere Götter dieselbe Farbe, malt die Werkstatt jeden mit einem anderen Farbstoff: Blau ist nicht gleich Blau, Ultramarin ist nicht Azurit.",
+        "Was der Gott hütet, färbt den Monat. Ein Monat unter einem Gott des Gesetzes hat eine Affinität zur Ordnung, einer unter einem Gott des Meeres zum Wasser. Welche Feste die Häuser der Götter feiern, steht nicht in diesem Heft; das lernst du in deinem eigenen Haus, oder gar nicht. Hier zählt, was am Werktisch gilt.",
+      ],
+      glosses: {
+        Schutzgott: "Die Gottheit, der ein Monat gehört; ihre Zuständigkeiten färben den Monat.",
+      },
+      task: ["Zeichne den Jahresring ab, zuerst die Monate, dann die Zeichen, und trage den Tag deiner Geburt ein.", "Suche dir drei Monate aus und schreibe zu jedem, welche Affinität er hat und ob das zu dem passt, was du über seinen Schutzgott weißt.", "Schreibe auf, in welchem Monat und unter welchem Zeichen du geboren bist, und was beides über dich sagen soll."],
+      check: ["Ring", "Monate", "Geburt"],
+    },
+    {
+      id: "l-time-sky", part: "IV", title: "Die Zeichen des Himmels", gen: "timeSky",
+      read: [
+        "In einer klaren Nacht sieht man, dass sich der ganze Himmel dreht, nur ein Stern nicht: der [[Polarstern]]. Um ihn kreisen die anderen wie Lehrlinge um den Meister. Die Sternkarte zeigt den Nordhimmel so, wie er über dir steht, wenn du nach Norden blickst und den Kopf in den Nacken legst.",
+        "Die rote Schleife ist die [[Ekliptik]], der Weg der Sonne durch das Jahr. Im Sommer steigt sie hoch über den gestrichelten Himmelsäquator, im Winter sinkt sie darunter; darum sieht ihr Weg auf der Karte aus wie ein verschobener Kreis. Auf ihr liegen die Zeichen, jedes ein Bild aus wenigen Sternen.",
+        "Das Zeichen, in dem die Sonne an deinem Geburtstag stand, nennen die Sterndeuter dein Zeichen. Sehen kannst du es an diesem Tag nicht, denn die Sonne überstrahlt es. Ein halbes Jahr später steht es um Mitternacht hoch im Süden.",
+      ],
+      glosses: {
+        Polarstern: "Der Stern am Nordhimmel, der fest steht, während sich alle anderen um ihn drehen.",
+        Ekliptik: "Die Bahn, auf der die Sonne im Lauf des Jahres durch die Sternbilder zieht.",
+      },
+      task: ["Suche in einer klaren Nacht den Polarstern und zeichne die Sterne um ihn ab, so wie du sie siehst.", "Finde dein Zeichen auf der Karte und zeichne sein Bild mit den Verbindungslinien nach.", "Schreibe auf, welche Affinität dein Zeichen hat und ob du dich darin wiedererkennst."],
+      check: ["Himmel", "Zeichen", "Deutung"],
     },
     {
       id: "l31", part: "IV", title: "Stoffe lesen", gen: "materials",
@@ -492,6 +590,21 @@ window.PRIMER = {
       task: ["Lies die Mischungen laut vor.", "Schreibe für eine weitere Formel deines Buches die Mischung in Teilen auf, nur nach ihrem Essenzring."],
       check: ["Lesen", "Schreiben"],
     },
+    {
+      id: "l-inks", part: "IV", title: "Tinten nach der Mischung", gen: "inks",
+      read: [
+        "Die Grundtinte des Reinbuchs ist immer Eisengallus, denn sie bleibt. Was eine Formel trägt, gibt man ihr bei: Gefärbt wird sie in der Farbe der Hauptessenz, und dazu kommt ein Staub von deren Metall. Welche Farbe und welches Metall zu welcher Essenz gehören, steht in der Tafel und bei jeder Formel unter den [[Entsprechungen]].",
+        "Danach wird es schwieriger. Die zweite Essenz bekommt eine [[Beimischung]], eine Messerspitze ihres Metalls, und du musst sagen können, warum. Die Lehre gibt die Zutat; die Begründung findest du selbst.",
+        "Aus dem Werkstattbuch eines Lehrlings, für eine Feuerformel mit Luft: »Zinnober und Goldstaub, wie es die Tafel will. Dazu Kupfer, denn Luft facht das Feuer an, und mit mehr Luft brennt es heißer.« Darunter, in der Hand des Meisters: »Die Zutat ist richtig. Die Begründung ist besser als die Zutat.«",
+        "Stoffe im Eckstein einer Formel liest man anders als ihre Entsprechungen: Dort gehört das Gold zum Licht, hier zum Feuer. Und für die giftigen Farbstoffe der Tafel gilt, was in {{lesson:l5}} und {{lesson:w-soap}} steht.",
+      ],
+      glosses: {
+        Entsprechungen: "Stunde, Farbe, Metall und Richtung, die zu einer Essenz gehören.",
+        Beimischung: "Eine Messerspitze Metall aus der zweiten Essenz einer Formel, mit Begründung.",
+      },
+      task: ["Decke die Tafel ab und nenne für drei Essenzen Farbstoff und Metall.", "Leite die Tinte deiner ersten Formel aus {{lesson:l39}} ab: Grundtinte, Farbstoff, Metall, Beimischung.", "Schreibe die Begründung der Beimischung in einem Satz auf und verteidige sie vor dem Meister."],
+      check: ["Tafel", "Ableitung", "Begründung"],
+    },
 
     // --- V. Schnellglyphen -----------------------------------------------------------
     {
@@ -499,8 +612,14 @@ window.PRIMER = {
       read: [
         "Am Tisch eines Gasthauses, im Regen, im Kampf bleibt keine Zeit für den vollen Kreis. Wer eine Formel einmal vollständig gezeichnet und verstanden hat, darf sie mit ihrer [[Schnellglyphe]] abrufen: fünf Striche statt fünfzig.",
         "Die Schnellglyphe entsteht, indem man alle Beizeichen weglässt und vom Kern nur das behält, was ihn von allen anderen unterscheidet. Den Kern weglassen darf man nie.",
+        () =>
+          "Viele Formeln haben denselben Kern. Was eine von der anderen trennt, ist ihre [[Absicht]]: das Verb und das Essenzwort der lateinischen Kernzeile. Ihre Anfangsbuchstaben stehen neben der Schulfigur. Wer die Kernzeile kann, kann auch die Glyphe. " +
+          (window.SCRIPTS && SCRIPTS.mode() === "latin"
+            ? "Formeln aus fremden Lehrbüchern schreibt man in Umschrift: Neben der Figur stehen dann vertraute Großbuchstaben, die Anlaute der fremden Kernzeile, wie die Gelehrten sie umschreiben."
+            : "Formeln aus fremden Lehrbüchern behalten ihre Schrift: Neben der Figur stehen dann griechische Buchstaben, Keilschriftzeichen, Hieroglyphen oder Ogham.") +
+          " Darunter steht klein die [[Fachformel]], die lateinische Kernzeile, damit man die Formel auch in der Fachsprache nachschlagen kann.",
       ],
-      glosses: { Schnellglyphe: "Kurzzeichen einer Formel: Kreis, Schulfigur, Hauptessenz, Gestaltstrich, Gradpunkte." },
+      glosses: { Schnellglyphe: "Kurzzeichen einer Formel: Kreis, Schulfigur, Hauptessenz, Absicht, Gestaltstrich, Gradpunkte.", Absicht: "Verb und Essenzwort der Kernzeile; in der Schnellglyphe ihre Anfangsbuchstaben.", Fachformel: "lateinische Kernzeile unter einer fremdsprachigen Formel, zum Nachschlagen in der Fachsprache." },
       task: ["Leite die Schnellglyphe in drei Schritten her, wie in der Ansicht gezeigt.", "Begründe in einem Satz, welche Teile du weggelassen hast."],
       check: ["Herleitung", "Begründung"],
     },
