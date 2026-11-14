@@ -305,7 +305,7 @@
         : `<div class="rules-source"><div><b>Source</b> Everyday spell (house rule, own wording) · based on ${e(s.base)} – ${e(s.baseSource || "")} (Open Game Content, OGL 1.0a)</div>${insp}</div>`;
     }
     const src = RULES.source(s);
-    if (D && src.de) return `<div class="rules-source"><div><b>Quelle</b> ${e(src.de)} · englisch: ${e(src.en)}</div><div><b>Regeltext</b> Open Game Content (OGL 1.0a), deutsch nach dem Deutschen Pathfinder-Referenzdokument (MyPFDB); deutsche Begriffe mit freundlicher Genehmigung von Ulisses Spiele</div></div>`;
+    if (D && src.de) return `<div class="rules-source"><div><b>Quelle</b> ${e(src.de)} · englisch: ${e(src.en)}</div><div><b>Regeltext</b> Open Game Content (OGL 1.0a), deutsch nach dem Deutschen Pathfinder-Referenzdokument (prd.5footstep.de, MyPFDB); deutsche Begriffe mit freundlicher Genehmigung von Ulisses Spiele. Dieses Produkt unterliegt keiner Abnahme oder Genehmigung durch Ulisses Spiele.</div></div>`;
     if (D) return `<div class="rules-source"><div><b>Quelle</b> ${e(src.en || "unbekannt")}</div><div><b>Regeltext</b> Open Game Content (OGL 1.0a), englisch, übernommen über ${via}${RULES.hasData() ? "" : " – deutsche Regeltexte lassen sich lokal einbinden (tools/import-rules-de.mjs)"}</div></div>`;
     return `<div class="rules-source"><div><b>Source</b> ${e(src.en || "unknown")}</div><div><b>Rules text</b> Open Game Content (OGL 1.0a), via ${via}</div></div>`;
   }

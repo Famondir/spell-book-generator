@@ -1,11 +1,11 @@
 ## ADDED Requirements
 
-### Requirement: Lokaler Import deutscher Zauberdaten
-Ein Werkzeug (`tools/import-rules-de.mjs`) SHALL aus lokal vorliegenden deutschen Zauberlisten (MyPFDB-PDFs in `spells/`) Einträge mit Name, Quelle, Schule, Graden, Zeitaufwand, Komponenten, Reichweite, Ziel/Bereich/Effekt, Wirkungsdauer, Rettungswurf, Zauberresistenz und Regeltext gewinnen. Es MUST eine gitignorierte Datei `data/rules.de.local.js` und eine gitignorierte Prüfliste schreiben.
+### Requirement: Import deutscher Zauberdaten
+Ein Werkzeug (`tools/import-rules-de.mjs`) SHALL aus lokal vorliegenden deutschen Zauberlisten (MyPFDB-PDFs in `spells/`) Einträge mit Name, Quelle, Schule, Graden, Zeitaufwand, Komponenten, Reichweite, Ziel/Bereich/Effekt, Wirkungsdauer, Rettungswurf, Zauberresistenz und Regeltext gewinnen. Es MUST die Datei `data/rules.de.js` (mit OGL- und Ulisses-Hinweis im Kopf) und eine gitignorierte Prüfliste schreiben.
 
 #### Scenario: Import
 - **WENN** `node tools/import-rules-de.mjs` mit den PDFs in `spells/` läuft
-- **DANN** entsteht `data/rules.de.local.js`, und die Ausgabe nennt die Zahl der eindeutig, mehrdeutig und gar nicht zugeordneten Einträge
+- **DANN** entsteht `data/rules.de.js`, und die Ausgabe nennt die Zahl der eindeutig, mehrdeutig und gar nicht zugeordneten Einträge
 
 ### Requirement: Zuordnung per Fingerabdruck
 Deutsche Einträge SHALL englischen Zaubern über einen Fingerabdruck aus Schule, Unterschule, Graden je Klasse, Komponenten, Zeitaufwand, Reichweite, Dauer, Rettungswurf, Zauberresistenz und Quellbuch zugeordnet werden. Nur eindeutige Treffer (über einer Schwelle und mit Abstand zum zweiten) MUST übernommen werden; mehrdeutige und fehlende MUST in der Prüfliste stehen. Handzuordnungen aus dem lokalen Profil MUST Vorrang haben.
@@ -19,14 +19,14 @@ Deutsche Einträge SHALL englischen Zaubern über einen Fingerabdruck aus Schule
 - **DANN** gilt diese Zuordnung unabhängig von der Punktzahl
 
 ### Requirement: Deutsche Regeldaten in der App
-Liegt `data/rules.de.local.js` vor und gilt `rulesLang = de`, SHALL die App deutsche Zaubernamen, Werte und Regeltexte zeigen (Regeltext auf Abruf, Regelband, Suche). Fehlt ein Zauber in den deutschen Daten, MUST die Begriffsübersetzung mit englischem Regeltext erscheinen. Ohne die Datei MUST die App unverändert laufen.
+Liegt `data/rules.de.js` vor und gilt `rulesLang = de`, SHALL die App deutsche Zaubernamen, Werte und Regeltexte zeigen (Regeltext auf Abruf, Regelband, Suche). Fehlt ein Zauber in den deutschen Daten, MUST die Begriffsübersetzung mit englischem Regeltext erscheinen. Ohne die Datei MUST die App unverändert laufen.
 
 #### Scenario: Feuerball auf Deutsch
 - **WENN** deutsche Regeldaten vorliegen, `rulesLang = de` gilt und der Regeltext von Fireball aufgerufen wird
 - **DANN** erscheinen „Feuerball“, die deutschen Werte und der deutsche Regeltext mit Quellangabe
 
 #### Scenario: Ohne Datei
-- **WENN** `data/rules.de.local.js` fehlt und `rulesLang = de` gilt
+- **WENN** `data/rules.de.js` fehlt und `rulesLang = de` gilt
 - **DANN** erscheinen übersetzte Begriffe mit englischem Regeltext und ein Hinweis, wie deutsche Regeltexte eingebunden werden
 
 ### Requirement: Übersetzte Regelbegriffe
@@ -36,8 +36,8 @@ Ohne deutsche Regeldaten SHALL `rulesLang = de` die Werte der englischen Daten r
 - **WENN** ein Zauber den Rettungswurf „Will negates (harmless)“ hat
 - **DANN** erscheint „Willen, keine Wirkung (harmlos)“
 
-### Requirement: Deutsche Domänen lokal
-Ein Werkzeug SHALL die MyPFDB-PDF „Alles zu Domänen“ (lokal in `spells/`) einlesen und Domänen und Unterdomänen den englischen Namen aus `data/deities.js` zuordnen, über die Domänenzauber (deutsche Zaubernamen über `RULES_DE` zu englischen Ids, englische Listen von den Domänenseiten der Archives of Nethys, zwischengespeichert in `data/research/`), die Quellseite und die Oberdomäne. Jede englische Unterdomäne MUST höchstens einen deutschen Eintrag bekommen. Das Ergebnis `data/domains.de.local.js` (Name, Volltitel, Quelle, verliehene Kräfte, Domänenzauber) MUST gitignoriert sein und nie veröffentlicht werden; Unsicheres steht in `data/research/domains-de-review.md`. Handzuordnungen kommen aus `PROFILE_LOCAL.rulesDe.domainOverrides`.
+### Requirement: Deutsche Domänen
+Ein Werkzeug SHALL die MyPFDB-PDF „Alles zu Domänen“ (lokal in `spells/`) einlesen und Domänen und Unterdomänen den englischen Namen aus `data/deities.js` zuordnen, über die Domänenzauber (deutsche Zaubernamen über `RULES_DE` zu englischen Ids, englische Listen von den Domänenseiten der Archives of Nethys, zwischengespeichert in `data/research/`), die Quellseite und die Oberdomäne. Jede englische Unterdomäne MUST höchstens einen deutschen Eintrag bekommen. Das Ergebnis `data/domains.de.js` (Name, Volltitel, Quelle, verliehene Kräfte, Domänenzauber) wird wie `data/rules.de.js` mit Lizenzhinweisen veröffentlicht; Unsicheres steht in `data/research/domains-de-review.md`. Handzuordnungen kommen aus `PROFILE_LOCAL.rulesDe.domainOverrides`.
 
 #### Scenario: Unterdomäne über Ersatzzauber
 - **WENN** die deutsche „Unterdomäne des Arkanen“ dieselben Zauber hat wie Arcane auf der Seite der Domäne Magic

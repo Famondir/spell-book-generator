@@ -29,7 +29,5 @@ classes/
 data/research/
 data/*.xlsx
 tools/test-baseline.local.json
-data/rules.de.local.js
-data/domains.de.local.js
 tools/formula-snapshot.local.json
 data/formula-lang/*.local.js

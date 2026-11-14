@@ -257,3 +257,27 @@ Enchantment, Evocation, Illusion, Necromancy, Transmutation (and Universal).
 |---|---|
 | Alltagszauber | everyday spells |
 | Sonderform von … | variant of … |
+
+### Added during translation
+| Deutsch | English |
+|---|---|
+| Formeln (Plural) | formulas (not „formulae“) |
+| Lehrlingskammer | apprentice's chamber |
+| Werkstattbuch | workshop journal |
+| Pausblatt, Pausblätter | pounce sheet(s) |
+| Bewertungsbogen / Versetzungsbogen | grading sheet / promotion sheet |
+| Gestenblatt / Tintentagebuch | gesture sheet / ink diary |
+| Zuschnitt (einer Formel, verengte Fassung) | cutting plan |
+| Teile (Mischung in Teilen) | parts |
+| Reibstein, Ahle, Winkeleisen | grinding stone, awl, square |
+| Rötel, Mennige, Bleiweiß, Grünspan | red ochre, red lead, white lead, verdigris |
+| Waid, Wau, Kolophonium | woad, weld, rosin |
+| Kernseife / Schmierseife | hard curd soap / soft soap |
+| Essenzring | essence ring |
+| Wirkrichtung | direction of working |
+| Sechsstern / Fünfstern | six-pointed star / five-pointed star |
+| Sterndeuter, Himmelsäquator | star-readers, celestial equator |
+| Preis (einer Formel) / Gegenstück | price / counterpart |
+| Quader (Schwellentor der Zähigkeit) | block |
+| Zeichen: Säule, Ausguss, Schwebe, Zug, Bruch, Richtung, Bündelung, Fenster, Raute, Sammlung, Dämpfung, Geschoss, Wiederkehr, Sicht, Gewebe, Maß, Regen, Bote | column, outpouring, hover, pull, breaking, direction, focusing, window, lozenge, gathering, damping, missile, recurrence, sight, weave, measure, rain, messenger |
+| Monate des neutralen Profils (…mond) | Icemoon, Thawmoon, Lentenmoon, Eastermoon, Joymoon, Fallowmoon, Haymoon, Harvestmoon, Autumnmoon, Vintagemoon, Fogmoon, Yulemoon |

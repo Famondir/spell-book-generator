@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Deutsche Zauberdaten (MyPFDB-PDF, lokal in spells/) einlesen und den englischen Zaubern zuordnen.
 // Ergebnis (beides gitignoriert):
-//   data/rules.de.local.js            window.RULES_DE = { [spellId]: { name, source, fields, text } }
+//   data/rules.de.js            window.RULES_DE = { [spellId]: { name, source, fields, text } }
 //   data/research/rules-de-review.md  mehrdeutige, fehlende und überzählige Einträge; Gegenprobe der Regeltexte
 //                                     (Zahlen, Würfel, Längen über tools/lib/textcheck.mjs, Werte unter 0,5)
 // Nachträge aus data/research/prd-de.json (tools/fetch-prd-de.mjs) füllen Zauber, die im PDF fehlen.
@@ -404,8 +404,8 @@ const suspect = check.filter((c) => c.score < 0.5).sort((a, b) => a.score - b.sc
 // 5. Ausgabe
 // ---------------------------------------------------------------------------------------------
 const data = Object.fromEntries(Object.entries(out).sort().map(([id, x]) => [id, { name: x.name, source: x.source, fields: x.fields, text: x.text }]));
-writeFileSync(join(ROOT, "data/rules.de.local.js"),
-  `// Deutsche Regeldaten (MyPFDB, OGL; deutsche Begriffe mit Genehmigung von Ulisses Spiele) – nur lokal, nie veröffentlichen.\n` +
+writeFileSync(join(ROOT, "data/rules.de.js"),
+  `// Deutsche Regeldaten – Open Game Content (OGL 1.0a) nach dem Deutschen Pathfinder-Referenzdokument (prd.5footstep.de) und MyPFDB; deutsche Begriffe mit freundlicher Genehmigung von Ulisses Spiele. Dieses Produkt unterliegt keiner Abnahme oder Genehmigung durch Ulisses Spiele.\n` +
   `// Erzeugt von tools/import-rules-de.mjs am ${new Date().toISOString().slice(0, 10)}.\nwindow.RULES_DE = ${JSON.stringify(data)};\n`);
 const row = (r) => `| ${r.x.name} (${r.x.source}) | ${r.top.map((t) => `${t.name} ${t.p.toFixed(1)}`).join(" · ")} |`;
 writeFileSync(join(ROOT, "data/research/rules-de-review.md"),

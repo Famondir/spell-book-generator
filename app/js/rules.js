@@ -1,5 +1,5 @@
 // Regelangaben in der Regelsprache (I18N.lang.rules): Name, Werte, Regeltext, Quelle.
-// Deutsch: aus den lokalen Regeldaten (data/rules.de.local.js → window.RULES_DE, erzeugt von
+// Deutsch: aus den deutschen Regeldaten (data/rules.de.js → window.RULES_DE, erzeugt von
 // tools/import-rules-de.mjs), sonst regelbasiert übersetzte Begriffe mit englischem Regeltext.
 // Alltagszauber: eigener deutscher Name und Regeltext; geerbte Werte kommen vom Basiszauber.
 (function () {
@@ -298,8 +298,8 @@
   }
 
   // --- Domänen ------------------------------------------------------------------------------
-  // Gottheiten führen englische Domänen und Unterdomänen („Demon (Chaos)“). Deutsch: aus den lokalen
-  // Domänendaten (data/domains.de.local.js → window.DOMAINS_DE, tools/import-domains-de.mjs),
+  // Gottheiten führen englische Domänen und Unterdomänen („Demon (Chaos)“). Deutsch: aus den
+  // Domänendaten (data/domains.de.js → window.DOMAINS_DE, tools/import-domains-de.mjs),
   // sonst die Domänen als allgemeine Begriffe; Unterdomänen ohne Daten bleiben englisch.
   const DOMAIN = { Air: "Luft", Animal: "Tiere", Animals: "Tiere", Artifice: "Handwerk", Chaos: "Chaos", Charm: "Verzauberung", Community: "Gemeinschaft", Darkness: "Dunkelheit", Death: "Tod", Destruction: "Zerstörung", Earth: "Erde", Evil: "Böses", Fire: "Feuer", Glory: "Herrlichkeit", Good: "Gutes", Healing: "Heilung", Knowledge: "Wissen", Law: "Ordnung", Liberation: "Befreiung", Luck: "Glück", Madness: "Wahnsinn", Magic: "Magie", Nobility: "Adel", Plant: "Pflanzen", Protection: "Schutz", Repose: "Ruhe", Rune: "Runen", Scalykind: "Schuppenartige", Strength: "Stärke", Sun: "Sonne", Travel: "Reisen", Trickery: "Tricks", Void: "Leere", War: "Krieg", Water: "Wasser", Weather: "Wetter" };
   const domainData = (en) => (de() && window.DOMAINS_DE ? window.DOMAINS_DE[en] || window.DOMAINS_DE[String(en).replace(/\s*\(.*\)$/, "")] || null : null);

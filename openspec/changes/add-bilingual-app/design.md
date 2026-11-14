@@ -30,7 +30,7 @@ Die App läuft ohne Build über `file://`. Daten kommen per `<script>`, Zustand 
 - Keine maschinelle Übersetzung zur Laufzeit.
 - Lateinische Namen (Essenzen, Schulen) und der Formeltext bleiben in beiden Sprachen gleich. Sie sind In-Game-Fachsprache. Präzisiert durch `add-formula-languages`: Die Wörter fremder Formelsprachen bleiben gleich, ihre Umschrift folgt der Buchsprache (deutsch „dschwala“, englisch „jvala“); Latein bleibt unverändert.
 - Handgeschriebene Texte aus dem Profil (Kirran, `custom_texts`) werden nicht übersetzt.
-- Deutsche Regeltexte werden nicht veröffentlicht, auch nicht teilweise.
+- ~~Deutsche Regeltexte werden nicht veröffentlicht.~~ Überholt, siehe Nachtrag zu Entscheidung 6.
 
 ## Decisions
 
@@ -92,7 +92,7 @@ Material-Komponenten werden über die bestehenden `materialTags` (deutsche Nomen
 
 Die Maßeinheit ist eine eigene Funktion, `units.len`. Sie rechnet 5 ft in 1,5 m um (Pathfinder-Konvention) und gilt auch für Bereiche („20-ft.-radius spread“ → „Ausbreitung mit 6 m Radius“).
 
-### 6. Deutsche Regeldaten: Import über die Übersetzungstabelle, Fingerabdruck als Rückfall, lokal
+### 6. Deutsche Regeldaten: Import über die Übersetzungstabelle, Fingerabdruck als Rückfall
 *Nachtrag aus der Umsetzung*: Die alphabetische MyPFDB-Liste enthält am Ende eine Tabelle „Zauberübersetzungen“ (deutsch | englisch | Quelle). Sie ist die erste Zuordnung (mit unscharfer Namenssuche gegen Tippfehler, rund 2.470 Einträge); der Fingerabdruck prüft sie gegen und ordnet den Rest zu. Gelesen wird mit `pdftohtml -xml` (Schriftgröße für Name und Quelle, Lage und Einzug für Absätze, Blocksatz als Ende des Werteblocks, Lücken als Tabellenzellen).
 
 `tools/import-rules-de.mjs` arbeitet in vier Schritten:
@@ -109,13 +109,15 @@ Die Maßeinheit ist eine eigene Funktion, `units.len`. Sie rechnet 5 ft in 1,5 m
    - Quellbuch (Kürzeltabelle GRW ↔ PFRPG Core, ABR ↔ Advanced …)
 
    Die Punktzahl wird gewichtet. Eindeutig heißt: bester Treffer über einer Schwelle und mit Abstand zum zweiten. Ein Profil-Schalter erlaubt Handzuordnungen (`overrides: { "Feuerball": "fireball" }`).
-4. Zwei Dateien schreiben, beide gitignoriert:
-   - `data/rules.de.local.js` mit `window.RULES_DE = { [spellId]: { name, source, fields, text } }`
-   - `data/research/rules-de-review.md` mit mehrdeutigen, fehlenden und überzähligen Einträgen
+4. Zwei Dateien schreiben:
+   - `data/rules.de.js` (veröffentlicht, siehe Nachtrag unten) mit `window.RULES_DE = { [spellId]: { name, source, fields, text } }`
+   - `data/research/rules-de-review.md` (gitignoriert) mit mehrdeutigen, fehlenden und überzähligen Einträgen
 
-`index.html` lädt `data/rules.de.local.js` optional, genauso wie heute `profile.local.js`. Die App liest Namen, Felder und Text aus `RULES_DE`, wenn `rulesLang = de` gilt. Sonst nimmt sie die Begriffsübersetzung.
+`index.html` lädt `data/rules.de.js`. Die App liest Namen, Felder und Text aus `RULES_DE`, wenn `rulesLang = de` gilt. Sonst nimmt sie die Begriffsübersetzung.
 
 *Nachtrag*: Das deutsche PRD (prd.5footstep.de) ist wieder erreichbar. Sein Zauberindex (1.901 Einträge) wurde Ende Oktober 2026 gegen `RULES_DE` abgeglichen. Nur 9 Zauber fehlten im PDF wirklich (Abenteurerkompendium, Almanach der Götter und Magie, Weltenband der Inneren See). `tools/fetch-prd-de.mjs` holt sie einzeln, die Zuordnung steht fest im Werkzeug, und der Import übernimmt sie, wo das PDF nichts liefert.
+
+*Nachtrag (14.11.2026)*: Die deutschen Regeldaten werden veröffentlicht. Laut FAQ des Deutschen PRD (prd.5footstep.de/FAQ/Deutsches-PRD-und-Nutzungsrechte) hat Ulisses die deutschen Regelinhalte unter der OGL freigegeben (bis auf Widerruf); eigene Werke dürfen sie nutzen, wenn OGL, Product Identity, Verweis auf das DPRD und der Ulisses-Vermerk enthalten sind. Die Dateien heißen deshalb `data/rules.de.js` und `data/domains.de.js`, Abschnitt 15 aus MyPFDB steht in `LICENSE-OGL.txt`. Rohdaten und Prüflisten bleiben gitignoriert.
 
 *Alternative*: Zuordnung über übersetzte Namen. Verworfen, weil deutsche Namen frei übertragen sind („Magic Missile“ → „Magisches Geschoss“). Der Fingerabdruck ist robuster, und der Name dient nur zum Brechen von Gleichständen.
 
@@ -139,6 +141,7 @@ Ein neuer Test prüft:
 - **[Seitenfüllung]** Englische Texte sind kürzer, sodass Füllseiten und Kapitel anders brechen. → Sollwerte je Sprache. Die Füllregeln (`.opt`) gleichen schon heute aus.
 - **[Fingerabdruck-Fehlzuordnung]** Varianten wie „Lesser“/„Greater“ oder gleiche Werte in verschiedenen Büchern. → Quellbuch im Abdruck, Schwelle mit Abstand, Prüfliste, Handzuordnungen im lokalen Profil. Nichts Mehrdeutiges wird automatisch übernommen.
 - **[PDF-Text]** Tabellen, Silbentrennung und Seitenumbrüche zerstückeln Absätze. → Glättung im Import. Tabellen bleiben als einfache Zeilen, und der Regeltext ist zum Nachschlagen da, nicht zum Setzen im Buch.
+- **[Lizenz deutsche Regeltexte]** Freigabe durch Ulisses gilt bis auf Widerruf. → Dann die beiden Datendateien entfernen; die App fällt auf Begriffsübersetzung zurück.
 - **[Lizenz]** Die deutschen Spielbegriffe in `rules-de.js` sind öffentlich. → Es sind allgemeine Begriffe ohne Regeltext. Vor der Veröffentlichung prüfen (Aufgabe). Notfalls `rules-de.js` als lokale Datei mit neutralem Rückfall.
 - **[Mehr Ladezeit]** Beide Sprachdateien werden geladen. → Die Texte sind klein gegenüber `spells.js`. Lange Prosa wird nur bei Bedarf gelesen.
 

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // Deutsche Domänen und Unterdomänen (MyPFDB-PDF „Alles zu Domänen“, lokal in spells/) einlesen und den
 // englischen Namen aus data/deities.js zuordnen. Zuordnung über die Domänenzauber: die deutschen Zaubernamen
-// werden über data/rules.de.local.js zu englischen Zauber-Ids, die englischen Listen kommen von den
+// werden über data/rules.de.js zu englischen Zauber-Ids, die englischen Listen kommen von den
 // Domänenseiten der Archives of Nethys (zwischengespeichert in data/research/aon-domains/).
 // Ergebnis (beides gitignoriert):
-//   data/domains.de.local.js            window.DOMAINS_DE = { [englischer Name]: { name, full, kind, parents, source, intro, powers, spells } }
+//   data/domains.de.js            window.DOMAINS_DE = { [englischer Name]: { name, full, kind, parents, source, intro, powers, spells } }
 //   data/research/domains-de-review.md  nicht zugeordnete und unsichere Einträge
 // Gegenprobe: Zahlen, Würfel und Längen der eigenen Kräfte gegen die englischen Kräftetexte (tools/lib/textcheck.mjs);
 // Werte unter 0,5 stehen in der Prüfliste. Doppelte deutsche Einträge übernehmen die Zuordnung des ersten.
@@ -38,8 +38,8 @@ const DEITIES = load(join(ROOT, "data/deities.js"), "DEITIES");
 const localFile = join(ROOT, "data/profile.local.js");
 // Handzuordnungen: { "Unterdomäne der Ritterlichkeit": "Chivalry (Glory)" } in PROFILE_LOCAL.rulesDe.domainOverrides
 const OVERRIDES = existsSync(localFile) ? ((load(localFile, "PROFILE_LOCAL") || {}).rulesDe || {}).domainOverrides || {} : {};
-const RULES_DE = existsSync(join(ROOT, "data/rules.de.local.js")) ? load(join(ROOT, "data/rules.de.local.js"), "RULES_DE") : null;
-if (!RULES_DE) { console.error("data/rules.de.local.js fehlt – zuerst tools/import-rules-de.mjs laufen lassen."); process.exit(1); }
+const RULES_DE = existsSync(join(ROOT, "data/rules.de.js")) ? load(join(ROOT, "data/rules.de.js"), "RULES_DE") : null;
+if (!RULES_DE) { console.error("data/rules.de.js fehlt – zuerst tools/import-rules-de.mjs laufen lassen."); process.exit(1); }
 
 // ---------------------------------------------------------------------------------------------
 // 1. Englisch: Domänenseiten der Archives of Nethys
@@ -327,8 +327,8 @@ async function main() {
   const wanted = new Set(DEITIES.flatMap((d) => [...(d.domains || []), ...(d.subdomains || [])]).filter((n) => n && n !== "N/A"));
   const missing = [...wanted].filter((n) => !out[n]).sort();
   const data = Object.fromEntries(Object.entries(out).sort());
-  writeFileSync(join(ROOT, "data/domains.de.local.js"),
-    "// Deutsche Domänen (MyPFDB, OGL; deutsche Begriffe mit Genehmigung von Ulisses Spiele) – nur lokal, nie veröffentlichen.\n" +
+  writeFileSync(join(ROOT, "data/domains.de.js"),
+    "// Deutsche Domänen – Open Game Content (OGL 1.0a) nach dem Deutschen Pathfinder-Referenzdokument (prd.5footstep.de) und MyPFDB; deutsche Begriffe mit freundlicher Genehmigung von Ulisses Spiele. Dieses Produkt unterliegt keiner Abnahme oder Genehmigung durch Ulisses Spiele.\n" +
     `// Erzeugt von tools/import-domains-de.mjs am ${new Date().toISOString().slice(0, 10)}.\n` +
     `window.DOMAINS_DE = ${JSON.stringify(data)};\n`);
   mkdirSync(join(ROOT, "data/research"), { recursive: true });

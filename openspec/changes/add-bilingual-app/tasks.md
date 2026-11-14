@@ -22,7 +22,7 @@
 
 ## 4. Deutsche Regeldaten lokal (Stufe 3)
 
-- [x] 4.1 `.gitignore`: `data/rules.de.local.js`; optionales Laden in `index.html` wie `profile.local.js`
+- [x] 4.1 `.gitignore`: `data/rules.de.local.js`; optionales Laden in `index.html` wie `profile.local.js` (später umbenannt in `data/rules.de.js` und veröffentlicht, siehe 7.3)
 - [x] 4.2 `tools/import-rules-de.mjs`: `pdftohtml -xml` (Schriftgröße, Lage, Einzug), Zerlegen an „Name (QUELLE Seite)“, Felder parsen, Absätze glätten (Seitenumbrüche, Silbentrennung, Tabellenzeilen)
 - [x] 4.3 Kürzeltabellen: Klassen (MAG, HXM, KLE, DRU, BAR, PAL, WAL, …), Quellbücher (GRW, ABR I–VIII, EXP, …), Schulen und Unterschulen
 - [x] 4.4 Fingerabdruck und Punktzahl, Schwelle mit Abstand; Handzuordnungen aus `PROFILE_LOCAL.rulesDe.overrides`
@@ -63,4 +63,4 @@ Lademodell: `data/primer.en.js` setzt `window.PRIMER_EN` (Teile, Kästen, Lektio
 
 - [ ] 7.1 Ganze App auf Englisch durchklicken und drucken (Buch, Regelband, Rollen, Lehrheft, Brevier); Funde beheben
 - [ ] 7.2 README zweisprachig (Kurzfassung englisch), Backlog-Eintrag „Deutsche Regeltexte (MyPFDB) und zweisprachige App“ entfernen
-- [ ] 7.3 Veröffentlichung prüfen: `tools/publish.sh` im Trockenlauf enthält keine deutschen Regeldaten
+- [x] 7.3 Veröffentlichung prüfen: deutsche Regeldaten nach PRD-FAQ (OGL-Freigabe durch Ulisses) veröffentlicht als `data/rules.de.js` und `data/domains.de.js`; Abschnitt 15 aus MyPFDB in `LICENSE-OGL.txt`, Ulisses-Vermerk und „keiner Abnahme“ in README, Datenköpfen und Quellenkasten; keine Rohdaten, Prüflisten oder privaten Profile im Baum

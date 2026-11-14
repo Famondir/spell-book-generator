@@ -21,7 +21,7 @@ Die App mischt heute zwei Sprachen fest: Oberfläche und In-Game-Texte sind Deut
 
   Jede Sprache hat einen eigenen Baukasten mit eigener Grammatik. Das Englische wird also nicht Wort für Wort übersetzt. Die Texte bleiben je Zauber deterministisch.
 - **Regelbegriffe übersetzt**: Werte aus den englischen Daten werden auf Deutsch dargestellt, also Schule, Zeitaufwand, Komponenten, Reichweite, Dauer, Rettungswurf und ZR, etwa „close (25 ft. + 5 ft./2 levels)“ → „Nah (7,5 m + 1,5 m je 2 Stufen)“. Fuß oder Meter ist wählbar. Material-Komponenten bekommen eine deutsche Fassung, wo eine Zuordnung besteht.
-- **Deutsche Regeldaten nur lokal**: Ein Werkzeug liest die deutschen Zauberlisten (MyPFDB-PDFs in `spells/`, gitignoriert) und ordnet sie über einen Fingerabdruck den englischen Daten zu. Es erzeugt eine gitignorierte Datei mit deutschen Namen, Quellangaben und Regeltexten. Mehrdeutige oder fehlende Zuordnungen landen in einer Prüfliste. Ohne diese Datei läuft die App wie bisher mit englischen Regeltexten und übersetzten Begriffen.
+- **Deutsche Regeldaten** (zunächst nur lokal geplant, nach Prüfung der PRD-Nutzungsrechte veröffentlicht): Ein Werkzeug liest die deutschen Zauberlisten (MyPFDB-PDFs in `spells/`, gitignoriert) und ordnet sie über einen Fingerabdruck den englischen Daten zu. Es erzeugt eine gitignorierte Datei mit deutschen Namen, Quellangaben und Regeltexten. Mehrdeutige oder fehlende Zuordnungen landen in einer Prüfliste. Ohne diese Datei läuft die App wie bisher mit englischen Regeltexten und übersetzten Begriffen.
 - **Persönliche Fassung**: Kirrans Profil stellt alle drei Ebenen auf Deutsch. Eigene Texte im lokalen Profil bleiben einsprachig. Sie gelten für die Sprache, in der sie geschrieben sind; für die andere wird der neutrale Text genommen.
 - **Druck und Tests**: Jede Sprache bekommt eigene Sollwerte für Seitenzahlen und Umbrüche. Die Seitenfüllung darf je Sprache abweichen.
 
@@ -36,7 +36,7 @@ Die App mischt heute zwei Sprachen fest: Oberfläche und In-Game-Texte sind Deut
 - `german-rules-data`:
   - lokaler Import der deutschen Zauberdaten mit Zuordnung per Fingerabdruck und Prüfliste
   - deutsche Namen, Quellangaben und Regeltexte in der App
-  - Regel: nie veröffentlichen
+  - Veröffentlichung mit OGL-Hinweisen (Freigabe durch Ulisses laut PRD-FAQ)
 
 ### Modified Capabilities
 - `spell-texts`: Der Textbaukasten erzeugt Texte in der gewählten Buchsprache, und handgeschriebene Texte können je Sprache vorliegen.
@@ -47,7 +47,7 @@ Die App mischt heute zwei Sprachen fest: Oberfläche und In-Game-Texte sind Deut
 - `spell-catalog`:
   - Suche findet deutsche und englische Zaubernamen, sobald deutsche Daten vorliegen
   - Filterbegriffe in der Oberflächensprache
-- `publication`: Deutsche Regeldaten und deren Prüflisten werden nie veröffentlicht. Die öffentliche Fassung enthält beide Sprachen der eigenen Texte.
+- `publication`: Deutsche Regeldaten werden mit OGL-Hinweisen veröffentlicht, Rohdaten und Prüflisten nicht. Die öffentliche Fassung enthält beide Sprachen der eigenen Texte.
 
 ## Impact
 
@@ -57,7 +57,7 @@ Die App mischt heute zwei Sprachen fest: Oberfläche und In-Game-Texte sind Deut
 - **Daten**:
   - Sprachtabellen `data/lang/de.js` und `data/lang/en.js`.
   - Englische Fassungen von `data/primer.js`, `data/everyday_spells.js`, `data/profile.js` und den Gottheitstexten.
-  - Gitignoriert: `data/rules.de.local.js` und `data/research/rules-de-review.md`.
+  - `data/rules.de.js` und `data/domains.de.js` (veröffentlicht mit OGL-Hinweisen); gitignoriert: `data/research/rules-de-review.md`.
 - **Werkzeuge**: `tools/import-rules-de.mjs` (PDF-Text → Datensätze → Zuordnung). Die Browser-Tests bekommen Fälle je Sprache.
 - **Umfang**: Das ist ein großer Change. Er wird in Stufen umgesetzt, und jede Stufe ist für sich nutzbar:
   1. Gerüst und Oberfläche
