@@ -1562,7 +1562,7 @@
   });
   $("#btn-export").onclick = () => {
     const ch = CHARS.current();
-    const data = { character: ch.name, profile: ch.profile, cls: CLASS.id, deity: ch.deity || null, prayers: state.prayers, book: [...state.book].map((id) => byId.get(id)?.s.name).filter(Boolean), settings: state.settings, preparation: PREP.exportData(), journal: DEVOTION.exportData() };
+    const data = { character: ch.name, profile: ch.profile, cls: CLASS.id, deity: ch.deity || null, prayers: state.prayers, book: [...state.book].map((id) => byId.get(id)?.s.name).filter(Boolean), ids: [...state.book], settings: state.settings, preparation: PREP.exportData(), journal: DEVOTION.exportData() };
     // Profilpaket: Profil des Charakters und Vademecum-Eintrag seiner Gottheit, damit eine Datei den ganzen Charakter trägt
     const prof = ch.profile && CHARS.profiles().find((p) => p.key === ch.profile);
     if (prof) data.profilePackage = profilePackage(prof, window.DEITY ? [DEITY.id] : []);
@@ -1575,11 +1575,13 @@
     const file = ev.target.files[0];
     if (!file) return;
     try {
-      let names = [], settings = null, preparation = null, character = null, profile = null, extra = {}, prayers = null, journal = null, profileFromPackage = false;
+      let names = [], ids = null, keepUnknown = false, settings = null, preparation = null, character = null, profile = null, extra = {}, prayers = null, journal = null, profileFromPackage = false;
       if (/\.xlsx$/i.test(file.name)) names = await IMPORT.xlsxNames(await file.arrayBuffer());
       else if (/\.json$/i.test(file.name)) {
         const data = JSON.parse(await file.text());
         names = data.book || [];
+        // ids (seit dem Profilpaket im Export): eindeutig, auch bei gleichen Namen und Zaubern aus dem Profil
+        if (Array.isArray(data.ids) && data.ids.length) ids = data.ids;
         settings = data.settings || null;
         preparation = data.preparation || null;
         character = data.character || null;
@@ -1593,17 +1595,24 @@
           const r = storePackage(PROFILE_STORE.check(data.profilePackage));
           profile = r.key;
           profileFromPackage = !r.kept || CHARS.current().profile !== r.key;
+          // Alltagszauber aus dem mitgebrachten Profil kennt die App erst nach dem Neuladen: ids trotzdem übernehmen
+          keepUnknown = true;
         }
       } else names = IMPORT.textNames(await file.text());
       const norm = (n) => String(n).toLowerCase().replace(/[^a-z0-9äöüß]/g, "");
       const lookup = new Map(ALL.map((x) => [norm(x.s.name), x.s.id]));
+      const exact = new Map(ALL.map((x) => [x.s.name, x.s.id]));
       // deutsche Namen (lokale Regeldaten) werden beim Import ebenfalls erkannt
       for (const [id, d] of Object.entries(window.RULES_DE || {})) if (!lookup.has(norm(d.name))) lookup.set(norm(d.name), id);
       const missing = [];
       const found = [];
+      if (ids) {
+        for (const id of ids) (byId.has(id) || keepUnknown ? found : missing).push(id);
+        names = [];
+      }
       for (let i = 0; i < names.length; i++) {
         const n = names[i];
-        const id = lookup.get(norm(n)) || (byId.has(n) ? n : null);
+        const id = exact.get(n) || lookup.get(norm(n)) || (byId.has(n) ? n : null);
         if (id) found.push(id);
         else missing.push(n);
         if (i % 25 === 0) progress.show($t("import.matching"), i + 1, names.length), await tick();

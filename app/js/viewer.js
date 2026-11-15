@@ -61,12 +61,17 @@
     let job = 0;
     let shown = null; // [a, b]
     let shownZ = 1; // gezeigte Stufe (bei "fit" errechnet)
+    let shownS = 0; // gezeigte Seitenzahl nebeneinander (1 oder 2)
     const flat = () => !!(opts.flat && opts.flat());
     // Höhe vom oberen Rand der Seitenfläche bis zum Fensterrand (unabhängig davon, wie weit gescrollt ist)
+    // Schmale Fenster stapeln Liste und Seiten (Liste oben): dann wird zu den Seiten gescrollt, und es zählt die
+    // Fensterhöhe abzüglich der Blätterleiste, sonst bliebe nur der Rest unter der Liste (Tablet hochkant: Doppelseite in Briefmarkengröße)
     function availH() {
       let top = root.getBoundingClientRect().top;
       for (let el = root.parentElement; el; el = el.parentElement) top += el.scrollTop;
-      return window.innerHeight - top - 16;
+      const h = window.innerHeight - top - 16;
+      if (h >= window.innerHeight / 2) return h;
+      return window.innerHeight - (pager.getBoundingClientRect().height || 0) - 40;
     }
     // Seitenzahl (1 oder 2) und Stufe für die verfügbare Fläche
     function layout() {
@@ -118,13 +123,17 @@
       if (s === 2 && a === 0 && b === 0 && !flat()) pages.find((pg, i) => idx(pg, i) === 0)?.insertAdjacentHTML("beforebegin", `<div class="page-ghost"></div>`);
     }
 
-    async function show(to = g) {
+    // again: zweiter Durchgang nach dem Nachmessen (höchstens einer, damit nichts pendelt)
+    async function show(to = g, again = false) {
       const my = ++job;
       const cur = () => my === job;
-      const { s, z } = layout();
-      if (z !== shownZ) root.scrollLeft = 0;
-      shownZ = z;
-      root.style.setProperty("--page-zoom", z.toFixed(3));
+      let { s, z } = layout();
+      const applyZoom = () => {
+        if (z !== shownZ) root.scrollLeft = 0;
+        shownZ = z;
+        root.style.setProperty("--page-zoom", z.toFixed(3));
+      };
+      applyZoom();
       let n = opts.count();
       let [a, b] = n ? spreadAt(to, s, n, flat()) : [0, 0];
       const p = opts.ensure ? opts.ensure(a, b, cur) : null;
@@ -132,6 +141,9 @@
         if (n) renderPager(a, b, n, true);
         await p;
         if (!cur()) return;
+        // während des Setzens kann sich die Fläche geändert haben (Leisten gefüllt, Scrollleiste): neu bemessen
+        ({ s, z } = layout());
+        applyZoom();
         n = opts.count();
         [a, b] = spreadAt(to, s, n, flat());
       }
@@ -142,9 +154,14 @@
       }
       g = a;
       opts.pos && opts.pos.set(a);
+      shownS = s;
       reveal(a, b, s);
       renderPager(a, b, n, false);
       opts.onShow && opts.onShow(a, b);
+      // nachmessen: die gefüllte Blätterleiste (Umbruch) und die Leisten verschieben die Fläche erst jetzt;
+      // ohne das blieb beim ersten Setzen auf dem Tablet eine Doppelseite stehen, bis man blätterte
+      const l = layout();
+      if (!again && (l.s !== s || Math.abs(l.z - z) > 0.001)) return show(a, true);
     }
 
     function go(where) {
@@ -198,6 +215,21 @@
       clearTimeout(resizeT);
       resizeT = setTimeout(() => opts.active() && show(), 150);
     });
+    // Breite der Fläche ändert sich auch ohne Fenster-resize (Leisten gefüllt oder eingeklappt, Scrollleiste, mobiler Viewport)
+    if (window.ResizeObserver) {
+      let lastW = 0, roT = null;
+      new ResizeObserver(() => {
+        const w = root.clientWidth;
+        if (!w || w === lastW) return;
+        lastW = w;
+        clearTimeout(roT);
+        roT = setTimeout(() => {
+          if (!opts.active() || !shown) return;
+          const l = layout();
+          if (l.s !== shownS || Math.abs(l.z - shownZ) > 0.001) show();
+        }, 120);
+      }).observe(root);
+    }
 
     return {
       show,

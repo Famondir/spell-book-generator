@@ -510,6 +510,36 @@ export const CASES = [
     },
   },
   {
+    // Tablet (Blackview Tab 11 SE, 800 × 1280 CSS-Pixel): das erste Setzen des Buchs zeigt gleich die passende Seitenzahl,
+    // nicht erst nach dem Blättern; Maßstab ist ein frisches Neuberechnen (resize)
+    name: "ui-buch-tablet-erstes-setzen",
+    book: "klein",
+    run: async (t) => {
+      const u = t.ui;
+      for (const mobile of [false, true]) for (const [w, h] of [[800, 1280], [1280, 800]]) for (const z of [1, "fit"]) {
+        await t.resize(w, h, mobile);
+        await t.eval(`localStorage.setItem("spellbook.pageZoom", ${JSON.stringify(JSON.stringify(z))}); true`);
+        await t.reload();
+        await t.eval(`APP_TEST.load({ book: ${JSON.stringify(BOOKS.klein)} }) && true`);
+        await t.click(u.tab("book"));
+        await t.settled();
+        // vor dem ersten Blättern messen: genau dort stand auf dem Tablet die Doppelseite
+        const now = `[document.querySelectorAll("#book-pages > .page:not(.offstage), #book-pages > .page-ghost").length, getComputedStyle(document.querySelector("#book-pages")).getPropertyValue("--page-zoom")]`;
+        const before = await t.eval(now);
+        const wideBefore = await t.eval(`document.documentElement.scrollWidth <= innerWidth + 1`);
+        await t.eval(`window.dispatchEvent(new Event("resize")), true`);
+        await t.sleep(300);
+        await t.settled();
+        const tag = `${mobile ? "mobil " : ""}${w}×${h}, Zoom ${z}`;
+        await t.expect(`${tag}: erstes Setzen wie neu berechnet (Seiten, Zoom)`, now, before);
+        await t.expect(`${tag}: beim ersten Setzen nicht breiter als das Fenster`, `${wideBefore}`, true);
+        await t.expect(`${tag}: Fläche nicht breiter als das Fenster`, `document.documentElement.scrollWidth <= innerWidth + 1`, true);
+        if (w === 800) await t.expect(`${tag}: hochkant eine Seite`, visibleNos(u.bookPages), (v) => v.length === 1);
+      }
+      await t.resize(1600, 1100);
+    },
+  },
+  {
     // Zoom nur für die Seiten: Oberfläche gleich groß, Satz unverändert, Doppelseite wird bei Bedarf zur Einzelseite
     name: "ui-seitenzoom",
     book: "klein",
@@ -1111,7 +1141,8 @@ export const CASES = [
     run: async (t) => {
       await t.eval(`PROFILE_STORE.save(PROFILE_STORE.parse(${JSON.stringify(testPackage())})); CHARS.update(CHARS.active(), { profile: "mirla" }); true`);
       await t.reload();
-      await t.eval(`APP_TEST.load({ book: ${JSON.stringify(BOOKS.klein)} }) && true`);
+      // gleiche Namen nach Normalisierung (Peace Bond / Peacebond)
+      await t.eval(`APP_TEST.load({ book: ${JSON.stringify([...BOOKS.klein, "Peace Bond", "Peacebond"])} }) && true`);
       await t.eval(DIALOG_STUBS);
       await t.click(t.ui.settingsBtn);
       await t.click("#btn-export");
@@ -1120,11 +1151,13 @@ export const CASES = [
       // anderes Gerät: gespeicherte Profile weg, Datei als „Umzug“
       await t.eval(`Object.keys(localStorage).filter((k) => /^spellbook\.(profiles?|vademecum)/.test(k)).forEach((k) => localStorage.removeItem(k)); true`);
       out.character = "Umzug";
+      // Alltagszauber, den nur das mitgebrachte Profil kennt (auf dem neuen Gerät erst nach dem Neuladen bekannt)
+      out.ids.push("nur-im-profil");
       await t.eval(`__dlg.answers = [true]; __file("#file-import", "umzug-zauberbuch.json", ${JSON.stringify(JSON.stringify(out))})`);
       await awaitSelfReload(t);
       await t.expect("neuer Charakter mit Profil", `[CHARS.current().name, CHARS.current().profile, PROFILE.owner]`, ["Umzug", "mirla", "Mirla Test"]);
       await t.expect("Vademecum-Eintrag mitgereist", `PROFILE_STORE.vademecum("nethys") && PROFILE_STORE.vademecum("nethys").title`, out.profilePackage.vademecum.nethys.title);
-      await t.expect("Buch mitgereist", `JSON.parse(localStorage.getItem(CHARS.key("book"))).length`, BOOKS.klein.length);
+      await t.expect("Buch mitgereist, vollständig", `(() => { const b = JSON.parse(localStorage.getItem(CHARS.key("book"))); return [b.length, ["peace-bond", "peacebond", "nur-im-profil"].every((x) => b.includes(x))]; })()`, [BOOKS.klein.length + 3, true]);
     },
   },
 

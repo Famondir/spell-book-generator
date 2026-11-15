@@ -139,8 +139,10 @@ async function loadApp(c, cls, fresh = true, deity) {
   }
   await c.evaluate(`document.fonts ? document.fonts.ready.then(() => true) : true`);
 }
-async function viewport(c, w = 1600, h = 1100) {
-  await c.send("Emulation.setDeviceMetricsOverride", { width: w, height: h, deviceScaleFactor: 1, mobile: false });
+// mobile: wie ein Mobilgerät (meta viewport, Touch, Pixeldichte 1,5), z. B. Tablet
+async function viewport(c, w = 1600, h = 1100, mobile = false) {
+  await c.send("Emulation.setDeviceMetricsOverride", { width: w, height: h, deviceScaleFactor: mobile ? 1.5 : 1, mobile });
+  await c.send("Emulation.setTouchEmulationEnabled", { enabled: mobile });
 }
 
 // --- Prüfungen im Browser (läuft in der Seite) -------------------------------------------
@@ -264,8 +266,8 @@ function helpers(c, errs) {
     forward: async () => (await c.evaluate(`history.forward()`), await sleep(250)),
     // Bildschirmfoto für die Durchsicht von Hand (nicht für Sollwerte)
     shot: async (file) => writeFileSync(file, Buffer.from((await c.send("Page.captureScreenshot", { format: "png" })).data, "base64")),
-    resize: async (w, h = 1100) => {
-      await viewport(c, w, h);
+    resize: async (w, h = 1100, mobile = false) => {
+      await viewport(c, w, h, mobile);
       await c.evaluate(`window.dispatchEvent(new Event("resize"))`);
       await sleep(150);
     },
