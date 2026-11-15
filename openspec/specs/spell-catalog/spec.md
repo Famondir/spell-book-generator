@@ -39,3 +39,14 @@ Die Detailansicht SHALL den Zauber als Seiten der Tradition des aktiven Charakte
 - **WENN** ein Paladin aktiv ist und Bless Weapon gewählt wird
 - **DANN** zeigt die Detailansicht die Brevierseite mit Andachtsbild statt der Kreisseiten
 
+### Requirement: Zweisprachige Suche
+Die Suche SHALL englische Zaubernamen und, sobald vorhanden, deutsche Namen (deutsche Regeldaten, Alltagszauber) finden. Die Liste MUST den Namen in der Regelsprache zeigen und den anderen klein daneben; Filterbegriffe (Schulen, Klassen, Grade) MUST in der Oberflächensprache erscheinen. Import und Export MUST weiter englische Namen verwenden.
+
+#### Scenario: Suche nach deutschem Namen
+- **WENN** deutsche Regeldaten vorliegen und „Feuerball“ gesucht wird
+- **DANN** erscheint Fireball in der Liste
+
+#### Scenario: Export bleibt englisch
+- **WENN** mit `rulesLang = de` exportiert wird
+- **DANN** enthält die Datei die englischen Zaubernamen
+

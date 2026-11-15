@@ -8,10 +8,6 @@ Umgesetzt im Change `add-formula-languages` (Formelsprachen je Herkunft, Lautsch
 
 Offen für später: zweite Welle (Gotisch/Zwergisch, Biblisches Hebräisch, Altpersisch, Vedisches Sanskrit), Originalschriften im Schriftband, Handschrift im Buch je Leben.
 
-## Essenzen in Teilen statt Prozent
-
-Im Zauberbuch die Essenzanteile wie ein Rezept schreiben statt als Prozentzahlen, mit „stark“ und „schwach“ für Zwischenwerte. Beispiel Vis 32 %, Terra 28 %, Spatium 12 %, Vita 11 %, Aqua 9 %, Ignis 8 % → „drei Teile Vis, knapp drei Teile Terra, je ein starkes Teil Spatium und Vita, je ein schwaches Teil Aqua und Ignis“. Klingt nach Formel, nicht nach Statistik. Im Lehrwerk von Anfang an so; fürs Zauberbuch ein eigener kleiner Change.
-
 ## Harrow fürs Orakel
 
 Für ein späteres Orakel: das Harrow-Deck (54 Karten, 6 Farben × 9 Gesinnungen; Hämmer, Schlüssel, Schilde, Bücher, Sterne, Kronen) als Wahrsagekarten. Verwandt mit der Astrologie der Tafel der Zeit, aber eigenes Thema. Notizen dazu in `data/research/zeit-und-sterne-golarion.md`, Abschnitt 6.

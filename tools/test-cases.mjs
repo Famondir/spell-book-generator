@@ -69,6 +69,37 @@ export const UI = {
 const visibleNos = (root) => `[...document.querySelectorAll(${JSON.stringify(root + " > .page:not(.offstage)")})].map((p) => p.querySelector(".page-foot span:last-child").textContent.trim())`;
 const text = (sel) => `(document.querySelector(${JSON.stringify(sel)})?.textContent || "").replace(/\\s+/g, " ").trim()`;
 
+
+// Profilpakete (profiles-as-data): Dialoge und Downloads in der Seite abfangen, Dateien in Datei-Eingaben legen.
+// __dlg.answers: Antworten für confirm der Reihe nach (leer = true); __dlg.alerts/confirms: gezeigte Texte;
+// __downloads: [{ name, text }]; __file(sel, name, text): Datei wählen wie im Dialog
+const DIALOG_STUBS = `(() => {
+  window.__dlg = { alerts: [], confirms: [], answers: [] };
+  window.alert = (m) => { __dlg.alerts.push(String(m)); };
+  window.confirm = (m) => { __dlg.confirms.push(String(m)); return __dlg.answers.length ? __dlg.answers.shift() : true; };
+  window.__downloads = [];
+  const click = HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click = function () {
+    if (!this.download) return click.call(this);
+    const name = this.download;
+    __downloads.push(fetch(this.href).then((r) => r.text()).then((text) => ({ name, text })));
+  };
+  window.__file = (sel, name, text) => {
+    const el = document.querySelector(sel), dt = new DataTransfer();
+    dt.items.add(new File([text], name));
+    el.files = dt.files;
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+  };
+  return true;
+})()`;
+// Testpaket: Profil „Mirla Test“ (Schlüssel mirla) mit Vademecum-Eintrag für Nethys
+const testPackage = (over = {}) => JSON.stringify({ format: "spellbook-profile", version: 1, key: "mirla", label: "Mirla Test", exported: "2026-11-01T10:00:00Z", profile: { owner: "Mirla Test", bookTitle: "Prüfbuch der Kreise" }, vademecum: { nethys: { title: "Vademecum des Prüfhauses" } }, ...over });
+// Warten, bis die App sich selbst neu geladen hat (location.reload in der App)
+const awaitSelfReload = async (t) => {
+  await t.until(`!window.__dlg && !!(window.APP_TEST && document.readyState === "complete")`, 20000);
+  await t.sleep(100);
+};
+
 export const CASES = [
   // --- Satz: Buch -------------------------------------------------------------------------
   { name: "buch-leer-a5", book: "leer", job: "book" },
@@ -123,7 +154,9 @@ export const CASES = [
     name: "ui-druckknoepfe",
     book: "klein",
     run: async (t) => {
-      await t.eval(`window.print = () => { window.__pages = document.querySelectorAll("#print-root .page").length; window.__printed = (window.__printed || 0) + 1; window.dispatchEvent(new Event("afterprint")); }`);
+      await t.eval(`window.print = () => { window.__pages = document.querySelectorAll("#print-root .page").length; window.__title = document.title; window.__path = decodeURIComponent(location.pathname.split("/").pop()); window.__printed = (window.__printed || 0) + 1; window.dispatchEvent(new Event("afterprint")); }`);
+      const appTitle = await t.eval(`document.title`);
+      const appPath = await t.eval(`location.pathname`);
       for (const [btn, view] of [["#btn-print-book", "book"], ["#btn-print-rules", "book"], ["#btn-print-scrolls", "book"], ["#btn-print-primer", "theory"], ["#btn-print-checks", "theory"]]) {
         await t.click(t.ui.tab(view));
         await t.settled();
@@ -132,6 +165,11 @@ export const CASES = [
         await t.until(`(window.__printed || 0) > ${n}`);
         await t.expect(`${btn}: Seiten gesetzt`, `window.__pages > 0`, true);
         await t.expect(`${btn}: Druck vorbereitet und aufgeräumt`, `document.getElementById("print-root").children.length === 0 && !document.body.classList.contains("printing")`, true);
+        // Dateiname beim Speichern als PDF: eigener Seitentitel je Auftrag, danach wieder der alte
+        await t.expect(`${btn}: eigener Titel beim Druck, danach zurückgesetzt`, `window.__title !== ${JSON.stringify(appTitle)} && window.__title.length > 0 && document.title === ${JSON.stringify(appTitle)}`, true);
+        // Firefox nimmt bei window.print() oft den letzten Pfadteil statt des Titels: der trägt beim Druck denselben Namen
+        // (Chrome sperrt das Umschreiben unter file://, nimmt dort aber ohnehin den Titel)
+        await t.expect(`${btn}: Adresse trägt beim Druck den Namen, danach wieder die alte`, `(window.__path === window.__title || location.protocol === "file:") && location.pathname === ${JSON.stringify(appPath)}`, true);
       }
     },
   },
@@ -298,6 +336,22 @@ export const CASES = [
       await t.expect("Zaubertrick ohne Tinte", `generateTexts(SPELLS.map(analyze).find((m) => m.level === 0)).ink`, "");
       await t.expect("keine Zahlen, keine Regeln, keine Tinte in Randnotizen", `(() => { const bad = []; for (const m of SPELLS.slice(0, 400).map(analyze)) { const x = generateTexts(m); if (/\\d|Bonus|Stufe|SG/.test(x.ink)) bad.push(m.name); if (x.notes.some((n) => /Tinte/.test(n))) bad.push("Notiz: " + m.name); } return bad.slice(0, 5); })()`, []);
       await t.expect("Tinte steht in den Entsprechungen", `(() => { const m = ${find}; return BOOK.spellPages(m, generateTexts(m), { detail: true }).map((p) => p.html).join("").includes('<p class="ink"><b>Tinte</b>'); })()`, true);
+    },
+  },
+
+  // --- Essenzanteile im Buch in Teilen, in der Oberfläche in Prozent ---------------------------
+  {
+    name: "ui-essenzen-in-teilen",
+    book: "klein",
+    run: async (t) => {
+      const mk = `(() => { const m = SPELLS.map(analyze).find((x) => x.level >= 4); return { ...m, essences: [{ id: "lux", pct: 90 }, { id: "vis", pct: 10 }] }; })()`;
+      const ring = (lang) => `(() => { const m = ${mk}; const prev = I18N.lang.book; I18N.lang.book = "${lang}"; try { return circleAnnotations(m).find((a) => /Essen/.test(a.k)).t; } finally { I18N.lang.book = prev; } })()`;
+      await t.expect("Beschriftung Essenzring in Teilen", ring("de"), "neun Teile Lux, ein Teil Vis.");
+      await t.expect("Beschriftung Essenzring englisch", ring("en"), "nine parts Lux, one part Vis.");
+      await t.expect("Lauftext ohne Prozent", `(() => { const m = ${mk}; const x = generateTexts(m); return JSON.stringify(x).includes("Lux 90 %") || !JSON.stringify(x).includes("neun Teile Lux"); })()`, false);
+      await t.expect("Essenzanalyse mit Teilen", `(() => { const m = ${mk}; const h = BOOK.spellPages(m, generateTexts(m), { detail: true }).map((p) => p.html).join(""); return [...h.matchAll(/class="esspct">([^<]*)</g)].map((x) => x[1]); })()`, ["neun Teile", "ein Teil"]);
+      await t.expect("Lesart des Andachtsbilds ohne Prozent", `(() => { const m = ${mk}; return VITRAIL.legend(m, DEITIES.find((d) => d.colors) || DEITIES[0]).find((l) => l.key === "accent").t.includes("neun Teile Lux"); })()`, true);
+      await t.expect("Tooltip in der Liste weiter in Prozent", `(() => { const l = [...document.querySelectorAll(".ess[title]")].slice(0, 5); return l.length > 0 && l.every((x) => / %/.test(x.title)); })()`, true);
     },
   },
 
@@ -963,6 +1017,160 @@ export const CASES = [
     run: async (t) => {
       await t.eval(`DEVOTION.setText(PREP.api.dayList()[0].id, "diary", "TAGEBUCH-ORIGINAL")`);
       await t.expect("Kopie ohne Andachtsbuch", `(() => { const c = CHARS.create("Kopie", null, CHARS.active()); const r = localStorage.getItem("spellbook.c." + c.id + ".journal"); CHARS.remove(c.id); return r; })()`, null);
+    },
+  },
+
+
+  // --- Profilpakete (profiles-as-data) ----------------------------------------------------------
+  {
+    name: "ui-profil-laden",
+    book: "klein",
+    deity: "nethys",
+    run: async (t) => {
+      await t.eval(DIALOG_STUBS);
+      await t.click(t.ui.settingsBtn);
+      await t.eval(`__file("#file-profile", "mirla.profil.json", ${JSON.stringify(testPackage())})`);
+      await t.until(`__dlg.alerts.length > 0`);
+      await t.expect("Meldung: gespeichert", `__dlg.alerts[0] === I18N.t("prof.loaded", { name: "Mirla Test" })`, true);
+      await t.expect("in der Verwaltung als gespeichert", `[...document.querySelectorAll("#set-profiles .prof-list li.stored .prof-name")].map((x) => x.textContent)`, ["Mirla Test"]);
+      await t.expect("in der Profilauswahl", `[...document.querySelectorAll("#char-profile option")].some((o) => o.value === "mirla")`, true);
+      // Durchsicht von Hand: PROF_SHOTS=<ordner> node tools/test-browser.mjs --only ui-profil-laden [--ui-lang en] [--with-profile]
+      if (process.env.PROF_SHOTS) { await t.eval(`document.querySelector("#set-profiles").scrollIntoView()`); await t.shot(process.env.PROF_SHOTS + "/profile-" + (await t.eval(`I18N.lang.ui`)) + ".png"); }
+      await t.eval(`(() => { const s = document.querySelector("#char-profile"); s.value = "mirla"; s.dispatchEvent(new Event("change")); return true; })()`);
+      await t.reload();
+      await t.expect("Profil wirkt nach dem Neuladen", `[CHARS.current().profile, PROFILE.owner, PROFILE.bookTitle]`, ["mirla", "Mirla Test", "Prüfbuch der Kreise"]);
+      // Datei vor Speicher: mit data/vademecum.local.js (--with-profile) gilt deren Eintrag
+      await t.expect("Vademecum aus dem Paket (sonst aus der Datei)", `VADEMECUM_BOOK.build({}).title === ((VADEMECUM.local || {}).nethys ? VADEMECUM.local.nethys.title : "Vademecum des Prüfhauses")`, true);
+    },
+  },
+  {
+    name: "ui-profil-ersetzen",
+    book: "klein",
+    run: async (t) => {
+      await t.eval(DIALOG_STUBS);
+      await t.click(t.ui.settingsBtn);
+      await t.eval(`__file("#file-profile", "a.profil.json", ${JSON.stringify(testPackage())})`);
+      await t.until(`__dlg.alerts.length === 1`);
+      await t.eval(`__file("#file-profile", "b.profil.json", ${JSON.stringify(testPackage({ exported: "2026-11-15T10:00:00Z", profile: { owner: "Mirla Test", bookTitle: "Neuer Stand" } }))})`);
+      await t.until(`__dlg.alerts.length === 2`);
+      await t.expect("Rückfrage nennt beide Daten", `["2026-11-01T10:00:00Z", "2026-11-15T10:00:00Z"].every((d) => __dlg.confirms[0].includes(new Date(d).toLocaleDateString(I18N.locale())))`, true);
+      await t.expect("ein Profil, neuer Stand", `[PROFILE_STORE.index().length, PROFILE_STORE.data("mirla").bookTitle, PROFILE_STORE.entry("mirla").exported]`, [1, "Neuer Stand", "2026-11-15T10:00:00Z"]);
+      // Abbrechen behält den alten Stand
+      await t.eval(`__dlg.answers = [false]; __file("#file-profile", "c.profil.json", ${JSON.stringify(testPackage({ exported: "2026-11-20T10:00:00Z", profile: { owner: "Mirla Test", bookTitle: "Verworfen" } }))})`);
+      await t.until(`__dlg.confirms.length === 2`);
+      await t.sleep(100);
+      await t.expect("Abbrechen: alter Stand bleibt", `PROFILE_STORE.data("mirla").bookTitle`, "Neuer Stand");
+      // anderes Profil unter demselben Schlüssel: als eigenes anlegen
+      await t.eval(`__file("#file-profile", "d.profil.json", ${JSON.stringify(testPackage({ label: "Jemand Anders", profile: { owner: "Jemand Anders" } }))})`);
+      await t.until(`PROFILE_STORE.index().length === 2`);
+      await t.expect("eigener Schlüssel aus dem Label", `PROFILE_STORE.entry("jemand-anders") && PROFILE_STORE.data("jemand-anders").owner`, "Jemand Anders");
+      await t.expect("Mirla unverändert", `PROFILE_STORE.data("mirla").bookTitle`, "Neuer Stand");
+    },
+  },
+  {
+    name: "ui-profil-fremde-dateien",
+    book: "klein",
+    run: async (t) => {
+      await t.eval(DIALOG_STUBS);
+      await t.click(t.ui.settingsBtn);
+      await t.eval(`__file("#file-profile", "liste.json", JSON.stringify({ book: ["Fireball"] }))`);
+      await t.until(`__dlg.alerts.length === 1`);
+      await t.expect("Meldung: kein Profilpaket", `__dlg.alerts[0] === I18N.t("prof.notPackage")`, true);
+      await t.eval(`__file("#file-profile", "neu.profil.json", ${JSON.stringify(testPackage({ version: 99 }))})`);
+      await t.until(`__dlg.alerts.length === 2`);
+      await t.expect("Meldung: neuere Fassung", `__dlg.alerts[1] === I18N.t("prof.newerVersion", { v: 99 })`, true);
+      await t.eval(`window.__ran = false; __file("#file-profile", "profile.local.js", "window.__ran = true; window.PROFILE_LOCAL = {};")`);
+      await t.until(`__dlg.alerts.length === 3`);
+      await t.expect("JS-Datei: Hinweis, nicht ausgeführt", `[__dlg.alerts[2] === I18N.t("prof.jsFile"), window.__ran]`, [true, false]);
+      await t.expect("nichts gespeichert", `PROFILE_STORE.index().length`, 0);
+    },
+  },
+  {
+    name: "ui-profil-entfernen",
+    book: "klein",
+    run: async (t) => {
+      // APP_TEST.load speichert nicht: Buch für den Vergleich selbst ablegen
+      await t.eval(`PROFILE_STORE.save(PROFILE_STORE.parse(${JSON.stringify(testPackage())})); CHARS.update(CHARS.active(), { profile: "mirla" }); localStorage.setItem(CHARS.key("book"), JSON.stringify(["fireball", "light"])); true`);
+      await t.reload();
+      await t.expect("Profil aktiv", `PROFILE.owner`, "Mirla Test");
+      await t.eval(DIALOG_STUBS);
+      await t.click(t.ui.settingsBtn);
+      await t.click('#set-profiles li[data-key="mirla"] [data-prof="remove"]');
+      await t.expect("Rückfrage gezeigt", `__dlg.confirms.length`, 1);
+      await t.expect("Profil und Vademecum-Eintrag entfernt", `[PROFILE_STORE.index().length, localStorage.getItem("spellbook.profile.mirla"), localStorage.getItem("spellbook.vademecum.nethys")]`, [0, null, null]);
+      await t.reload();
+      await t.expect("neutrales Profil", `PROFILE.owner !== "Mirla Test" && !CHARS.profileData()`, true);
+      await t.expect("Buch unverändert", `localStorage.getItem(CHARS.key("book"))`, '["fireball","light"]');
+    },
+  },
+  {
+    // Rundreise: Charakter mit Profil exportieren, auf „anderem Gerät“ (Speicher ohne Profile) als neuen Charakter importieren
+    name: "ui-profil-charakter-umzug",
+    book: "klein",
+    deity: "nethys",
+    run: async (t) => {
+      await t.eval(`PROFILE_STORE.save(PROFILE_STORE.parse(${JSON.stringify(testPackage())})); CHARS.update(CHARS.active(), { profile: "mirla" }); true`);
+      await t.reload();
+      await t.eval(`APP_TEST.load({ book: ${JSON.stringify(BOOKS.klein)} }) && true`);
+      await t.eval(DIALOG_STUBS);
+      await t.click(t.ui.settingsBtn);
+      await t.click("#btn-export");
+      const out = JSON.parse((await t.eval(`Promise.all(__downloads)`))[0].text);
+      await t.expect("Export: Profil und Vademecum der Gottheit", `${JSON.stringify([!!out.profilePackage && out.profilePackage.profile.owner, Object.keys((out.profilePackage || {}).vademecum || {})])}`, ["Mirla Test", ["nethys"]]);
+      // anderes Gerät: gespeicherte Profile weg, Datei als „Umzug“
+      await t.eval(`Object.keys(localStorage).filter((k) => /^spellbook\.(profiles?|vademecum)/.test(k)).forEach((k) => localStorage.removeItem(k)); true`);
+      out.character = "Umzug";
+      await t.eval(`__dlg.answers = [true]; __file("#file-import", "umzug-zauberbuch.json", ${JSON.stringify(JSON.stringify(out))})`);
+      await awaitSelfReload(t);
+      await t.expect("neuer Charakter mit Profil", `[CHARS.current().name, CHARS.current().profile, PROFILE.owner]`, ["Umzug", "mirla", "Mirla Test"]);
+      await t.expect("Vademecum-Eintrag mitgereist", `PROFILE_STORE.vademecum("nethys") && PROFILE_STORE.vademecum("nethys").title`, out.profilePackage.vademecum.nethys.title);
+      await t.expect("Buch mitgereist", `JSON.parse(localStorage.getItem(CHARS.key("book"))).length`, BOOKS.klein.length);
+    },
+  },
+
+  {
+    // installierbare Web-App unter file://: kein Service Worker, kein Knopf, Verweis auf die Online-Fassung
+    name: "ui-installhinweis-datei",
+    run: async (t) => {
+      await t.click(t.ui.settingsBtn);
+      await t.expect("Verweis auf die Online-Fassung, kein Knopf", `[document.querySelector("#set-install-note a")?.href, document.getElementById("btn-install").hidden]`, ["https://famondir.github.io/spell-book-generator/", true]);
+      await t.expect("kein Service Worker", `navigator.serviceWorker ? navigator.serviceWorker.getRegistrations().then((r) => r.length).catch(() => 0) : 0`, 0);
+    },
+  },
+  {
+    // Offline-Betrieb über einen eigenen HTTP-Server (Service Worker, Vorladen, Aktualisierung)
+    name: "node-offline",
+    node: async ({ root }) => tool(root, "offline", ["tools/offline-test.mjs"]),
+  },
+  {
+    // Service Worker: Vorladeliste vollständig (installierbare Web-App)
+    name: "node-sw-vorladeliste",
+    node: async ({ root }) => tool(root, "vorladeliste", ["tools/sw-check.mjs"]),
+  },
+  {
+    // Datei vor Speicher: gespeichertes Profil mit dem Schlüssel einer Datei wird überdeckt (Browser-Tests sperren PROFILE_LOCAL)
+    name: "node-profil-datei-vor-speicher",
+    node: async ({ root }) => {
+      const { readFileSync } = await import("node:fs");
+      const vm = await import("node:vm");
+      const mem = new Map();
+      const ctx = { console, I18N: { t: (k) => k }, localStorage: { getItem: (k) => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)), removeItem: (k) => mem.delete(k) }, location: { reload() {} } };
+      ctx.window = ctx;
+      vm.createContext(ctx);
+      ctx.PROFILE_LOCAL = { owner: "Aus der Datei" };
+      ctx.VADEMECUM = { local: { nethys: { title: "Datei-Vademecum" } } };
+      for (const f of ["app/js/profile-store.js", "app/js/chars.js"]) vm.runInContext(readFileSync(`${root}/${f}`, "utf8"), ctx, { filename: f });
+      const r = vm.runInContext(`(() => {
+        const pkg = (key, owner, vmTitle) => PROFILE_STORE.build(key, owner, { owner }, { nethys: { title: vmTitle } });
+        PROFILE_STORE.save(pkg("local", "Alter Stand", "Gespeichertes Vademecum"));
+        PROFILE_STORE.save(pkg("mirla", "Mirla", "Gespeichertes Vademecum"));
+        CHARS.refreshProfiles();
+        const ps = CHARS.profiles();
+        return { list: ps.map((p) => p.key + ":" + p.source + ":" + p.data.owner), shadowed: CHARS.shadowed().map((x) => x.key), vm: vademecumEntry("nethys").title,
+          removeShared: (PROFILE_STORE.remove("local"), localStorage.getItem("spellbook.vademecum.nethys") !== null), removeLast: (PROFILE_STORE.remove("mirla"), localStorage.getItem("spellbook.vademecum.nethys")) };
+      })()`, ctx);
+      const want = { list: ["local:file:Aus der Datei", "mirla:stored:Mirla"], shadowed: ["local"], vm: "Datei-Vademecum", removeShared: true, removeLast: null };
+      return JSON.stringify(r) === JSON.stringify(want) ? [] : [{ rule: "vorrang", detail: JSON.stringify(r) }];
     },
   },
 

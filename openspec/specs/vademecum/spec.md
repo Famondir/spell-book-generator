@@ -2,7 +2,6 @@
 
 ## Purpose
 Andachts- und Lehrband im Reiter „Lehre“ für Charaktere mit Gottheit: Kapitelgerüst aus `data/vademecum.js`, Texte je Gottheit aus der privaten Datei `data/vademecum.local.js` (sonst eine dünne Fassung aus den Gottheitsdaten), Tempelfarben, Festkalender, Randnotizen der Profilstimmen mit Verweisen, Satz, Betrachter und Druck in A5.
-
 ## Requirements
 ### Requirement: Vademecum für Charaktere mit Gottheit
 Die App SHALL für jeden Charakter mit Gottheit (göttliche Klasse oder arkane Klasse mit Schutzgottheit) ein Vademecum im Format A5 bereitstellen. Ohne Gottheit MUST es kein Vademecum geben.
@@ -23,7 +22,7 @@ Das Vademecum SHALL das Gerüst aus `data/vademecum.js` haben: Titelblatt, Vorre
 - **DANN** fehlt das Kapitel, und die römische Zählung der übrigen Kapitel bleibt lückenlos
 
 ### Requirement: Inhaltsquellen
-Die Texte SHALL aus dem Eintrag der Gottheit in der lokalen Datei `data/vademecum.local.js` kommen, wenn sie geladen ist: Tempel (Name, Ort, Schwerpunkt), Verfasser, Farben, Vorrede, Kapiteltexte, Feste und Sinnsprüche. Ohne Eintrag MUST das Vademecum nur aus den Gottheitsdaten (Beiname, Gesinnung, Zuständigkeiten, Domänen, Symbol, Farben) und den erzeugten Teilen bestehen. Das Repository MUST NOT Texte enthalten, die an ein bestimmtes Setting gebunden sind; die lokale Datei MUST gitignored sein.
+Die Texte SHALL aus dem Eintrag der Gottheit in der lokalen Datei `data/vademecum.local.js` kommen, wenn sie geladen ist, sonst aus einem im Browser gespeicherten Vademecum-Eintrag dieser Gottheit (siehe `profile-transfer`): Tempel (Name, Ort, Schwerpunkt), Verfasser, Farben, Vorrede, Kapiteltexte, Feste und Sinnsprüche. Ohne Eintrag MUST das Vademecum nur aus den Gottheitsdaten (Beiname, Gesinnung, Zuständigkeiten, Domänen, Symbol, Farben) und den erzeugten Teilen bestehen. Das Repository MUST NOT Texte enthalten, die an ein bestimmtes Setting gebunden sind; die lokale Datei MUST gitignored sein.
 
 #### Scenario: Ohne lokale Datei
 - **WENN** ein Paladin der Iomedae aktiv ist und kein Eintrag für Iomedae existiert
@@ -32,6 +31,10 @@ Die Texte SHALL aus dem Eintrag der Gottheit in der lokalen Datei `data/vademecu
 #### Scenario: Mit lokaler Datei
 - **WENN** `data/vademecum.local.js` einen Eintrag für Nethys hat und Nethys die Gottheit ist
 - **DANN** tragen Titelblatt, Vorrede und Kapitel die Texte dieser Datei
+
+#### Scenario: Gespeicherter Eintrag
+- **WENN** `data/vademecum.local.js` fehlt, aber ein Vademecum-Eintrag für Nethys gespeichert ist und Nethys die Gottheit ist
+- **DANN** tragen Titelblatt, Vorrede und Kapitel die Texte des gespeicherten Eintrags
 
 ### Requirement: Tempelfarben
 Hat die lokale Datei Tempelfarben, SHALL das Vademecum Zierrat, Kapitelköpfe und Initialen in diesen Farben setzen; sonst MUST es die heiligen Farben der Gottheit verwenden.

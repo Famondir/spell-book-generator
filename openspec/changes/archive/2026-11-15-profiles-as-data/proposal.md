@@ -25,7 +25,8 @@ Das persönliche Profil (`data/profile.local.js`) und die lokalen Vademecum-Text
 ## Impact
 
 - `app/js/chars.js` (`profiles()` um gespeicherte Profile ergänzen), `app/js/profile.js` (unverändertes Mischen, neue Quelle)
-- `index.html`: kleines Ladeskript nach `data/vademecum.local.js`, das gespeicherte Vademecum-Einträge in `window.VADEMECUM.local` einträgt. Dazu der Abschnitt „Profile“ im Einstellungsdialog.
+- Neu `app/js/profile-store.js` (Paket, Speicher, `vademecumEntry`), vor `chars.js` geladen; `app/js/vademecum.js` und `app/js/time.js` fragen Vademecum-Einträge darüber ab
+- `index.html`: Block „Profile“ im Einstellungsdialog (Abschnitt Charakter)
 - `app/js/app.js`: Charakter-Export und -Import (`#btn-export`, `#file-import`), Profilauswahl `#char-profile`
 - `data/lang/de.js`, `data/lang/en.js`: Oberflächentexte
 - `docs/GUIDE.md`, README: Profil auf ein anderes Gerät bringen

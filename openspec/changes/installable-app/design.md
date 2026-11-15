@@ -34,10 +34,10 @@ Ein Test (`tools/sw-check.mjs`) vergleicht die Liste mit `git ls-files` und den 
 - Fremde Herkünfte gibt es keine (keine Google Fonts, alles liegt im Repo), also fasst der Service Worker nichts Fremdes an.
 
 ### 4. Cache-Name mit Version, Aufräumen bei `activate`
-`CACHE = 'spellbook-vN'`. Hochgezählt wird nur, wenn sich die Vorladeliste ändert. Der Test aus Entscheidung 2 erinnert daran, sobald sich die Liste gegenüber der letzten Fassung ändert. `skipWaiting` + `clients.claim` wie beim Tricorder.
+`CACHE = 'spellbook-vN'`. Hochzählen ist nur nötig, um alte Einträge zu leeren. Eine neue Datei in der Vorladeliste ändert `sw.js` ohnehin, also installiert der Browser ihn neu und lädt die Liste in denselben Cache. Entfernte Dateien bleiben harmlos liegen. `skipWaiting` + `clients.claim` wie beim Tricorder. Vorladen mit `cache: 'reload'`, am HTTP-Cache vorbei. Die Vorladeliste enthält auch `LICENSE-OGL.txt` (Link in der Fußzeile).
 
 ### 5. Symbole aus der eigenen Kreiszeichnung
-`tools/make-icons.mjs` rendert im headless Chrome einen festen Zauberkreis (z. B. *Arcane Mark* oder *Read Magic*) auf Pergamentgrund und schreibt `icon-192.png`, `icon-512.png` und `icon-maskable-512.png` mit Sicherheitsrand für die maskierbare Fassung. Die Symbole sind neutral, nicht an Kirran gebunden und wiederholbar erzeugbar.
+`tools/make-icons.mjs` holt den Kreis von *Arcane Mark* über den SVG-Export der App (neutrales Profil) und rendert ihn im headless Chrome mit kräftigeren Linien und ohne Schriftband auf Pergamentgrund und schreibt `icon-192.png`, `icon-512.png` und `icon-maskable-512.png` mit Sicherheitsrand für die maskierbare Fassung. Die Symbole sind neutral, nicht an Kirran gebunden und wiederholbar erzeugbar.
 *Alternative:* von Hand gezeichnet. Dann sähe das Symbol nicht nach der App aus.
 
 ### 6. Manifest
@@ -55,6 +55,7 @@ Chrome/Edge melden `beforeinstallprompt`: Die App fängt das ab und zeigt in den
 - [Erste Installation lädt ~10 MB] → einmalig. Danach gehen nur bedingte Anfragen raus. Hinweis in der Anleitung (WLAN).
 - [Vorladeliste veraltet] → Test aus Entscheidung 2 in der normalen Testrunde
 - [Drucken aus der installierten App (Android/iOS)] → im Test auf echten Geräten prüfen. Falls `window.print()` in `standalone` nicht geht: Hinweis „zum Drucken im Browser öffnen“.
+- [Neuladen im laufenden Tab innerhalb von 10 Minuten nach einem Deploy zeigt noch die alte Fassung: Der Speicher-Cache des Renderers liefert frische Skripte (`max-age=600` von GitHub Pages) noch vor dem Service Worker] → Ein echter Neustart der App hat keinen Speicher-Cache, dann revalidiert der Service Worker. Der Offline-Test stellt den Neustart durch Leeren des Browser-Caches nach.
 - [Service Worker liefert nach einem fehlerhaften Deploy alte Dateien] → durch Netzwerk zuerst unkritisch. Notfalls hebt ein neuer Cache-Name alles auf.
 - [Getrennte Speicher file:// ↔ github.io bleiben bestehen] → gewollt. Der Umzug läuft über `profiles-as-data`.
 
@@ -64,4 +65,4 @@ Deploy über GitHub Pages wie bisher. Zurückrollen: `sw.js` durch eine Fassung 
 
 ## Open Questions
 
-- Welcher Zauberkreis wird das Symbol? Vorschlag: *Arcane Mark*, weil er neutral ist und jeder Magier ihn hat.
+- Keine. Symbol: *Arcane Mark* (neutral, jeder Magier hat ihn).

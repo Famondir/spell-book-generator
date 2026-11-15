@@ -8,6 +8,8 @@ Erzeugt ein In-Game-Zauberbuch: Zu jedem Zauber gibt es einen magischen Kreis, d
 
 `index.html` im Browser öffnen (Doppelklick genügt, kein Server und kein Internet nötig). Eine bebilderte Anleitung (englisch) steht in [docs/GUIDE.md](docs/GUIDE.md).
 
+**Als App installieren** (Online-Fassung; Handy, Tablet, Rechner): *Einstellungen → Bestand & Export → Als App installieren* (Chrome, Edge) oder im Browsermenü „Zum Startbildschirm hinzufügen“, in Safari „Teilen → Zum Home-Bildschirm“. Danach läuft die App auch offline. Beim ersten Besuch lädt der Service Worker (`sw.js`) alle Dateien vor, etwa 10 MB. Mit Netz holt jeder Start die aktuelle Fassung (Netzwerk zuerst, Cache als Rückfall). Charaktere und Profile kommen per „Liste exportieren“ bzw. „Profil exportieren“ in die App. Auf iPhone und iPad hat die installierte App einen eigenen Speicher, getrennt von Safari: Dateien dort in der App laden. Unter `file://` gibt es keinen Service Worker, die Doppelklick-Fassung bleibt wie bisher.
+
 - **Verzeichnis**: alle Zauber durchsuchen und filtern (Grad, Schule, Essenz, Regelwerk/Alltagszauber), mit **+** ins Buch aufnehmen
 - **Ausführliche Ansicht** (Schalter in der Zauberansicht): jeder Zauber in voller Länge mit beschriftetem Kreis
 - **Kreis anklicken**: großes Fenster mit Erläuterung aller Schichten, Beschriftung und SVG-Export
@@ -23,7 +25,7 @@ Seitenumfang: Grad 0 und Alltagszauber = ½ Seite, Grad n = n Seiten. Jeder Grad
 
 ## Mehrere Charaktere
 
-Oben rechts wählst du den Charakter. Jeder hat sein eigenes Buch, eigene Einstellungen, Vorbereitung und Protokoll; in den Einstellungen lassen sich Charaktere anlegen, umbenennen, duplizieren und löschen und je Charakter ein Profil, eine **Klasse** und eine **Gottheit** wählen (bei Paladinen Pflicht, bei Magiern eine freiwillige **Schutzgottheit** für Andacht und Tagebuch). Alles liegt nur im Browser – zum Sichern oder für ein anderes Gerät „Liste exportieren“ (die Datei enthält den Charakternamen; beim Import lässt sie sich als neuer Charakter anlegen).
+Oben rechts wählst du den Charakter. Jeder hat sein eigenes Buch, eigene Einstellungen, Vorbereitung und Protokoll; in den Einstellungen lassen sich Charaktere anlegen, umbenennen, duplizieren und löschen und je Charakter ein Profil, eine **Klasse** und eine **Gottheit** wählen (bei Paladinen Pflicht, bei Magiern eine freiwillige **Schutzgottheit** für Andacht und Tagebuch). Alles liegt nur im Browser – zum Sichern oder für ein anderes Gerät „Liste exportieren“ (die Datei enthält den Charakternamen und sein Profil samt Vademecum-Eintrag seiner Gottheit; beim Import lässt sie sich als neuer Charakter anlegen).
 
 ## Paladine: das Brevier
 
@@ -71,7 +73,11 @@ Alles, was Besitzer, Welt und Tonfall bestimmt, steht in **Profilen**:
 | `data/profile.local.example.js` | kommentierte Vorlage |
 | `data/profile.local.js` | **dein** Profil – überschreibt einzelne Felder, wird von Git ignoriert |
 
-Vorgehen: Vorlage nach `data/profile.local.js` kopieren, Felder anpassen, Seite neu laden. Für mehrere Charaktere registriert `data/profile.local.js` mehrere Profile unter `window.PROFILES_LOCAL` (siehe Vorlage); jeder Charakter wählt seines in den Einstellungen. Anpassbar sind:
+Vorgehen: Vorlage nach `data/profile.local.js` kopieren, Felder anpassen, Seite neu laden. Für mehrere Charaktere registriert `data/profile.local.js` mehrere Profile unter `window.PROFILES_LOCAL` (siehe Vorlage); jeder Charakter wählt seines in den Einstellungen.
+
+**Profil auf ein anderes Gerät bringen** (Handy, Tablet, Online-Fassung): Profil am Rechner in der Datei bearbeiten, Seite neu laden, unter *Einstellungen → Charakter → Profile* „Exportieren“ wählen. Es entsteht ein Profilpaket `<name>.profil.json` mit dem Profil und den Texten aus `data/vademecum.local.js`. Auf dem anderen Gerät „Profil laden …“: Das Paket liegt dann im Browser (`localStorage`, `spellbook.profile.<schlüssel>`, `spellbook.vademecum.<gottheit>`) und ist wählbar wie ein Profil aus der Datei. Noch einfacher geht es mit „Liste exportieren“, denn diese Datei trägt das Profil des Charakters mit. Ein neuer Stand mit demselben Schlüssel ersetzt den alten nach Rückfrage. Gibt es denselben Schlüssel auch als Datei, gilt die Datei. Geladen werden nur JSON-Pakete, `.js`-Dateien führt die App nie aus.
+
+Anpassbar sind:
 
 - `owner`, `bookTitle`, `subtitle` – Titelblatt und Randnotizen
 - `calendar` (Monatsnamen, irdische Entsprechung `earth`, Monatslängen `days`, Jahr) und `places` – Übungsprotokoll und Notizen
@@ -119,6 +125,7 @@ Werkzeuge: `tools/formula-lang-check.mjs` prüft alle Lexika auf Vollständigkei
 | `app/js/prepare.js` | Tagesvorbereitung, Abstreichen, Ingame-Datum, Nutzungsprotokoll |
 | `app/js/stats.js` | Verlauf und Statistik der Spieltage |
 | `app/js/chars.js` | Charakter-Slots: getrennter Speicher je Charakter (mit Klasse und Gottheit) |
+| `app/js/profile-store.js` | Profilpakete im Browser: Export, Laden, Ersetzen, Entfernen; Vademecum-Einträge aus Datei oder Speicher |
 | `app/js/classes.js` | Klassen als Daten (Zauberliste, Grade, Joker, Bezeichnungen) und aktive Klasse/Gottheit |
 | `app/js/vitrail.js` | Andachtsbild: Bleiglasfenster aus Analyse und Gottheit, Motivbibliothek der Symbole |
 | `app/js/prayer.js` | Gebete: Kanon der Kirche nach Gesinnung und Zwiespalt, Beinamen- und Domänenwörterbuch, Stimme der Gottheit für Tagesgebete |
@@ -131,6 +138,10 @@ Werkzeuge: `tools/formula-lang-check.mjs` prüft alle Lexika auf Vollständigkei
 | `tools/parse_spells.py` | erzeugt `data/spells.js` aus AoN-Seiten (`spells/*.aspx`) und dem d20pfsrd-Export (`data/spell_full*.tsv`); beide Rohdaten sind nicht im Repository |
 | `tools/seal-entries.html`, `gm-entries.example.json` | Werkzeug des Spielleiters: Einträge versiegeln (Spielerdatei und Spickzettel) |
 | `tools/preview.mjs`, `preview.example.json` | Vorschau-PDF ausgewählter Seiten (Buch, Lehrheft, Vademecum) je Sprache und Bildschirmfotos für die Anleitung; Auswahl per Spec-Datei |
+| `manifest.webmanifest`, `sw.js`, `app/icons/` | installierbare Web-App: Manifest, Service Worker (Vorladeliste `PRECACHE`, Netzwerk zuerst), Symbole |
+| `tools/make-icons.mjs` | erzeugt die App-Symbole aus dem Kreis von *Arcane Mark* (SVG-Export der App) |
+| `tools/sw-check.mjs` | prüft die Vorladeliste in `sw.js` gegen die ausgelieferten Dateien und die Verweise in `index.html` |
+| `tools/offline-test.mjs` | Offline-Test über einen eigenen HTTP-Server: Vorladen, Start ohne Netz, Aktualisierung, Installationshinweis |
 | `tools/test-browser.mjs`, `test-cases.mjs`, `test-baseline.json` | Browser-Tests für Satz und Bedienung, Testfälle, Sollwerte (siehe unten) |
 
 ## Browser-Tests
@@ -150,6 +161,20 @@ node tools/test-browser.mjs --pdf /tmp/pdf   # je Satz-Fall ein PDF zum Durchbl�
 - `--update` nur nach einer gewollten Änderung an Satz oder Texten, nachdem die gemeldete Seite in der App angesehen wurde; die neuen Sollwerte gehören in denselben Commit.
 - Der Lauf nutzt ein frisches Browserprofil (der eigene `localStorage` bleibt unberührt) und blendet `data/profile.local.js` aus; mit `--with-profile` wird es geladen, die Sollwerte stehen dann in `tools/test-baseline.local.json` (nicht im Repository).
 - Neue Fälle kommen in `tools/test-cases.mjs`; die Selektoren der Bedienungsfälle stehen dort gesammelt (`UI`).
+- Die Fälle `node-sw-vorladeliste` und `node-offline` prüfen die installierbare Web-App. Eine neue Datei in `app/` oder `data/` gehört in `PRECACHE` in `sw.js`, sonst schlägt `node-sw-vorladeliste` fehl.
+
+### Service Worker im Notfall abschalten
+
+Liefert eine veröffentlichte Fassung des Service Workers Unsinn, ersetzt man `sw.js` durch diese Fassung. Sie löscht alle Caches, meldet sich ab und lädt offene Fenster neu:
+
+```js
+self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("activate", (e) => e.waitUntil((async () => {
+  for (const k of await caches.keys()) await caches.delete(k);
+  await self.registration.unregister();
+  for (const c of await self.clients.matchAll({ type: "window" })) c.navigate(c.url);
+})()));
+```
 
 ## Planung
 

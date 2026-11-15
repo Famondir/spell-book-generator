@@ -152,7 +152,7 @@
     const sch = (m) => E(school(m));
     const ess = (id) => T.ESS[id];
     const essE = (id) => E(ess(id));
-    const pctList = (m) => m.essences.map((e) => `${ess(e.id).latin} ${e.pct} %`).join(", ");
+    const essParts = (m) => T.partsEn(m.essences);
     const shapeE = (m) => E(m.shape);
     const rangeName = (m) => E(m.range).de || "";
     const durE = (m) => E(m.duration);
@@ -245,7 +245,7 @@
         t: `${sc.principle} ${sc.de} is the art of ${sc.art}. This formula does so in the form ${SHAPE_NOUN[m.shape.kind][1]}.`,
       });
       // 2. Essences
-      let et = `The charge of the formula is spread over ${m.essences.length === 1 ? "a single essence" : WORD[m.essences.length] + " essences"}: ${pctList(m)}. ${essE(m.primary).text}`;
+      let et = `The charge of the formula is spread over ${m.essences.length === 1 ? "a single essence" : WORD[m.essences.length] + " essences"}: ${essParts(m)}. ${essE(m.primary).text}`;
       if (m.essences[1]) {
         const e1 = ess(m.essences[1].id), x1 = E(e1);
         et += ` ${e1.latin} (${x1.de}) works as the second essence: ${String(x1.text).split(". ")[0].replace(/\.$/, "")}.`;
@@ -312,7 +312,7 @@
       const sc = sch(m);
       const subs = m.subschools.length ? " (" + m.subschools.map((s) => E(T.SUBSCHOOLS[s]).de || s).join(", ") + ")" : "";
       out.push({ k: "Core seal", t: `${sc.figure} – school of ${sc.de}${subs}. At the centre the principal essence, ${ess(m.primary).latin}.` });
-      out.push({ k: "Essence ring", t: `Segments by share: ${pctList(m)}.` });
+      out.push({ k: "Essence ring", t: `Segments by share: ${essParts(m)}.` });
       out.push({ k: "Ring of duration", t: `${durE(m).ring}${m.duration.dismissible ? ", with a key notch" : ""}.` });
       if (m.signs.length) out.push({ k: "Ring of signs", t: cap(m.signs.map((s) => `${signE(s).de.toLowerCase()} (${s.dir === "in" ? "inwards" : "outwards"})`).join(", ")) + "." });
       out.push({ k: "Spacing rings", t: `${m.range.rings} – ${rangeValue(m)}.` });

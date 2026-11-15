@@ -65,7 +65,7 @@ Die App, die das Profil aus der Datei geladen hat, exportiert es mit `JSON.strin
 
 ### 3. Vorrang: Datei vor Speicher
 
-`CHARS.profiles()` liefert die Profile aus der Datei und dann die gespeicherten, deren Schlüssel nicht schon aus der Datei kommt. Gleiches gilt für Vademecum-Einträge: Ein kleines Ladeskript direkt nach `data/vademecum.local.js` trägt gespeicherte Einträge nur dort ein, wo `VADEMECUM.local[gottheit]` fehlt. So bleibt am Laptop die Datei die Quelle der Wahrheit. Ein versehentlich importierter alter Stand überdeckt sie nicht. In der Verwaltung ist ein überdecktes gespeichertes Profil als solches gekennzeichnet.
+`CHARS.profiles()` liefert die Profile aus der Datei und dann die gespeicherten, deren Schlüssel nicht schon aus der Datei kommt. Gleiches gilt für Vademecum-Einträge: `vademecumEntry(id)` (in `profile-store.js`) liefert den Eintrag aus `VADEMECUM.local`, sonst den gespeicherten; `vademecum.js` und `time.js` fragen nur noch darüber. (Erst geplant war ein Ladeskript, das gespeicherte Einträge in `VADEMECUM.local` schreibt; die Browser-Tests frieren `VADEMECUM.local` aber ein, und ein Lookup hält Datei und Speicher sauber getrennt.) So bleibt am Laptop die Datei die Quelle der Wahrheit. Ein versehentlich importierter alter Stand überdeckt sie nicht. In der Verwaltung ist ein überdecktes gespeichertes Profil als solches gekennzeichnet.
 
 ### 4. Schlüssel und Ersetzen
 

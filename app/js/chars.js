@@ -28,13 +28,28 @@ window.CHARS = (function () {
     }
   };
 
-  // verfügbare lokale Profile: PROFILE_LOCAL (bisher, „lokal“) und PROFILES_LOCAL { key: { label, … } }
-  function profiles() {
+  // verfügbare lokale Profile: PROFILE_LOCAL (bisher, „lokal“) und PROFILES_LOCAL { key: { label, … } } aus der Datei,
+  // dazu im Browser gespeicherte Profilpakete (PROFILE_STORE); bei gleichem Schlüssel gilt die Datei.
+  // Eintrag: { key, label, data, source: "file" | "stored", exported? }
+  function fileProfiles() {
     const out = [];
-    if (window.PROFILE_LOCAL) out.push({ key: "local", label: window.PROFILE_LOCAL.label || window.PROFILE_LOCAL.owner || I18N.t("char.localProfile"), data: window.PROFILE_LOCAL });
-    for (const [key, data] of Object.entries(window.PROFILES_LOCAL || {})) out.push({ key, label: data.label || data.owner || key, data });
+    if (window.PROFILE_LOCAL) out.push({ key: "local", label: window.PROFILE_LOCAL.label || window.PROFILE_LOCAL.owner || I18N.t("char.localProfile"), data: window.PROFILE_LOCAL, source: "file" });
+    for (const [key, data] of Object.entries(window.PROFILES_LOCAL || {})) out.push({ key, label: data.label || data.owner || key, data, source: "file" });
     return out;
   }
+  let profCache = null;
+  function profiles() {
+    if (profCache) return profCache;
+    const out = fileProfiles();
+    const S = window.PROFILE_STORE;
+    if (S) for (const e of S.index()) if (!out.some((p) => p.key === e.key)) {
+      const data = S.data(e.key);
+      if (data) out.push({ key: e.key, label: e.label || data.owner || e.key, data, source: "stored", exported: e.exported });
+    }
+    return (profCache = out);
+  }
+  // gespeicherte Profile, die von einer Datei gleichen Schlüssels überdeckt werden (für die Verwaltung)
+  const shadowed = () => (window.PROFILE_STORE ? PROFILE_STORE.index().filter((e) => fileProfiles().some((p) => p.key === e.key)) : []);
 
   let list = json(P + "chars", null);
   // einmalige Übernahme der Daten aus der Zeit vor den Charakter-Slots
@@ -96,6 +111,9 @@ window.CHARS = (function () {
     current,
     active: () => active,
     profiles,
+    shadowed,
+    // nach Speichern oder Entfernen eines Profilpakets neu einlesen
+    refreshProfiles: () => (profCache = null),
     profileData: () => {
       const c = current();
       return c && c.profile ? (profiles().find((p) => p.key === c.profile) || {}).data || null : null;

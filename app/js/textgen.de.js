@@ -171,7 +171,8 @@
 
   const school = (m) => T.SCHOOLS[m.school] || T.SCHOOLS.universal;
   const ess = (id) => T.ESS[id];
-  const pctList = (m) => m.essences.map((e) => `${ess(e.id).latin} ${e.pct} %`).join(", ");
+  // Essenzanteile wie ein Rezept in Teilen (dieselbe Formulierung wie im Lehrheft)
+  const essParts = (m) => T.parts(m.essences);
   const fmtM = (ft) => {
     const m = Math.round((ft * 0.3) * 10) / 10;
     return (m >= 1000 ? (m / 1000).toLocaleString("de-DE", { maximumFractionDigits: 1 }) + " km" : m.toLocaleString("de-DE") + " m");
@@ -220,7 +221,7 @@
       t: `${sc.principle} ${U.cap(sc.de)} ist die Kunst, ${sc.art}. Diese Formel tut dies in Gestalt ${SHAPE_CASE[m.shape.kind][1]}.`,
     });
     // 2. Essenzen
-    let et = `Die Ladung der Formel verteilt sich auf ${m.essences.length === 1 ? "eine einzige Essenz" : m.essences.length + " Essenzen"}: ${pctList(m)}. ${e0.text}`;
+    let et = `Die Ladung der Formel verteilt sich auf ${m.essences.length === 1 ? "eine einzige Essenz" : m.essences.length + " Essenzen"}: ${essParts(m)}. ${e0.text}`;
     if (m.essences[1]) {
       const e1 = ess(m.essences[1].id);
       et += ` Als zweite Essenz wirkt ${e1.latin} (${e1.de}): ${e1.text.split(". ")[0]}.`;
@@ -278,7 +279,7 @@
     const out = [];
     const sc = school(m);
     out.push({ k: "Kernsiegel", t: `${sc.figure} – Schule der ${sc.de}${m.subschools.length ? " (" + m.subschools.map((s) => T.SUBSCHOOLS[s].de).join(", ") + ")" : ""}. Im Zentrum die Hauptessenz ${ess(m.primary).latin}.` });
-    out.push({ k: "Essenzring", t: `Segmente nach Anteil: ${pctList(m)}.` });
+    out.push({ k: "Essenzring", t: `Segmente nach Anteil: ${essParts(m)}.` });
     out.push({ k: "Dauerring", t: `${m.duration.ring}${m.duration.dismissible ? ", mit Schlüsselkerbe" : ""}.` });
     if (m.signs.length) out.push({ k: "Zeichenring", t: m.signs.map((s) => `${s.de} (${s.dir === "in" ? "nach innen" : "nach außen"})`).join(", ") + "." });
     out.push({ k: "Weitenringe", t: `${m.range.rings} – ${m.range.de}.` });

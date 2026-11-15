@@ -3,9 +3,9 @@
 A tour of the app in ten minutes, and how to turn the neutral book into **your character's** book.
 
 **Live version:** <https://famondir.github.io/spell-book-generator/>. The app starts in your browser's language (English or German, otherwise English); add `?lang=en` or `?lang=de` to the address to choose, or switch any time under *Settings → Language*.
-Nothing to install, no account. Your book is stored in your browser only.
+Nothing to install, no account. Your book is stored in your browser only. If you like, you can [install it as an app](#install-as-an-app) and use it offline at the table.
 
-**Contents:** [1. Find spells](#1-find-spells) · [2. Read a circle](#2-read-a-circle) · [3. Build and print your book](#3-build-and-print-your-book) · [4. Prepare spells for the day](#4-prepare-spells-for-the-day) · [5. Lore: primer and vademecum](#5-lore-primer-and-vademecum) · [6. Characters and settings](#6-characters-and-settings) · [7. Make it yours: the character profile](#7-make-it-yours-the-character-profile) · [8. Your own preview PDF](#8-your-own-preview-pdf)
+**Contents:** [1. Find spells](#1-find-spells) · [2. Read a circle](#2-read-a-circle) · [3. Build and print your book](#3-build-and-print-your-book) · [4. Prepare spells for the day](#4-prepare-spells-for-the-day) · [5. Lore: primer and vademecum](#5-lore-primer-and-vademecum) · [6. Characters and settings](#6-characters-and-settings) · [7. Make it yours: the character profile](#7-make-it-yours-the-character-profile) · [8. Your own preview PDF](#8-your-own-preview-pdf) · [Install as an app](#install-as-an-app)
 
 ---
 
@@ -95,7 +95,8 @@ Top right: choose the character. Each character has their own book, settings, pr
 - **Book**: owner, title, rule references on the spell pages (rules-volume number, QR code to Archives of Nethys, source).
 - **Print**: paper sizes, background on/off.
 - **Language**: interface, book texts and rules each in English or German, feet or metres.
-- **Library & export**: import a spell list (xlsx with a "Name" column, csv, txt, json) and export everything as json, including preparations and the log. **Export regularly**: the browser is the only place your data lives.
+- **Character → Profiles**: export a profile as a file, load one from another device, remove stored ones (see *Taking your profile to another device* below).
+- **Library & export**: import a spell list (xlsx with a "Name" column, csv, txt, json) and export everything as json, including preparations, the log and the character's profile. **Export regularly**: the browser is the only place your data lives.
 
 ---
 
@@ -128,6 +129,18 @@ Profiles are files on your computer, so for this you need a **local copy** (the 
 4. Open `index.html` by double-click. In *Settings → Character → Profile*, choose your profile.
 
 `data/profile.local.js` never leaves your computer, and Git ignores it if you work with a clone. For several characters, register several profiles under `window.PROFILES_LOCAL` (see the template).
+
+### Taking your profile to another device
+
+The profile file only exists on your computer, but the app can carry it as data. That's how it gets to your phone, a tablet or the hosted page:
+
+1. Edit `data/profile.local.js` on your computer as usual and reload `index.html`.
+2. *Settings → Character → Profiles*: press **Export** next to your profile. You get a file like `kirran.profile.json` with the profile and the Vademecum texts from `data/vademecum.local.js`.
+3. On the other device, open the app, go to *Settings → Character → Profiles → Load profile …* and pick that file. The profile is now stored in that browser and can be chosen under *Profile* like one from a file.
+
+**Even simpler:** *Settings → Library & export → Export list* puts the character's profile (and the Vademecum entry of its deity) into the export. Importing that one file on the other device brings book, preparation, journal **and** profile across.
+
+When you change the profile, export it again and load it on the other device: a profile with the same name is **replaced**, not duplicated (the app asks first and shows both dates). On your computer the file always wins over a stored copy. The app never runs `.js` files you load, only `.json` profile packages it exported itself. Whoever gets an export file also gets the profile in it.
 
 ### Filling it with an AI
 
@@ -171,3 +184,17 @@ The spec says which book, which character profile, which languages and which pag
 *Rules text: Open Game Content under the OGL 1.0a (see [LICENSE-OGL.txt](../LICENSE-OGL.txt)).*
 
 *Spellbook Generator uses trademarks and/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy ([paizo.com/licenses/communityuse](https://paizo.com/licenses/communityuse)). We are expressly prohibited from charging you to use or access this content. Spellbook Generator is not published, endorsed, or specifically approved by Paizo. For more information about Paizo Inc. and Paizo products, visit [paizo.com](https://paizo.com).*
+
+---
+
+## Install as an app
+
+The live version can be installed on your phone, tablet or computer: its own icon, no browser bar, and it **works offline** after the first visit (the whole app, about 10 MB, is downloaded once, so use Wi-Fi the first time). With a connection, every start picks up the latest version.
+
+- **Android (Chrome, Edge, Samsung Internet)** and **desktop Chrome/Edge**: *Settings → Library & export → Install as app*, or *Install app* / *Add to Home screen* in the browser menu.
+- **iPhone/iPad (Safari)**: *Share → Add to Home Screen*.
+
+Your books live in the browser, so the installed app starts **without your characters**. Bring them along with *Export list* (one file per character, including its profile) or *Character → Profiles → Export*, then import that file **in the installed app**. On Android the installed app shares its storage with Chrome, so anything already loaded in the browser tab is there too. **On iPhone and iPad the installed app has its own storage**, separate from Safari: load your files inside the app itself.
+
+The double-click version (`index.html` from a download) can't be installed; browsers only install apps from a web address.
+

@@ -2,6 +2,8 @@
 // 1. Diese Datei nach data/profile.local.js kopieren.
 // 2. Felder anpassen – alles, was hier fehlt, kommt aus dem neutralen data/profile.js.
 // 3. index.html neu laden.
+// 4. Für ein anderes Gerät (Handy, Online-Fassung): Einstellungen → Charakter → Profile → „Exportieren“
+//    erzeugt ein Profilpaket (.json); dort mit „Profil laden …“ einlesen. Die .js-Datei selbst wird nie geladen.
 //
 // Tipp für KI-Unterstützung: Gib einer KI diese Datei, data/profile.js und eine Beschreibung deines
 // Charakters (Volk, Klasse, Gottheit, Herkunft, Kampagne, Tonfall) und lass dir die Felder füllen.

@@ -259,8 +259,8 @@
       store.set("detailView", state.detailView);
       renderDetail();
     };
-    $("#d-print").onclick = () => printPages(pages.join(""));
-    $("#d-scroll").onclick = () => printPages(BOOK.scrollPages(m, t, { paper: state.settings.scrollPaper }).map(TYPESET.pageHTML).join(""), state.settings.scrollPaper);
+    $("#d-print").onclick = () => printPages(pages.join(""), null, undefined, null, t.title);
+    $("#d-scroll").onclick = () => printPages(BOOK.scrollPages(m, t, { paper: state.settings.scrollPaper }).map(TYPESET.pageHTML).join(""), state.settings.scrollPaper, undefined, null, $t("file.scroll") + " " + t.title);
     TYPESET.autofit($("#detail")); // kein (i): der Regelblock steht in der Verzeichnisansicht schon links daneben
   }
 
@@ -299,7 +299,7 @@
         <div class="pages preview">${pages.join("")}</div>
       </div>`;
     $("#d-add").onclick = () => toggleBook(x.s.id);
-    $("#d-print").onclick = () => printPages(pages.join(""));
+    $("#d-print").onclick = () => printPages(pages.join(""), null, undefined, null, t.title);
     $("#d-own").onchange = (ev) => {
       const v = ev.target.value.replace(/\s+$/, "");
       if (v) state.prayers[x.s.id] = v;
@@ -614,7 +614,7 @@
     );
     const dlg = $("#full-modal");
     dlg.querySelector(".fm-head").innerHTML = `<h3>${e(t.title)}</h3><div class="muted">${e(t.epithet)} · ${e(RULES.name(x.s))} · ${$tn("detail.pages", sp.length)}</div>`;
-    dlg.querySelector(".fm-print").onclick = () => { dlg.close(); printPages(pages.join("")); };
+    dlg.querySelector(".fm-print").onclick = () => { dlg.close(); printPages(pages.join(""), null, undefined, null, t.title); };
     const root = $("#full-pages");
     root.innerHTML = pages.join("");
     root.classList.add("fitting");
@@ -1077,7 +1077,24 @@
   let printIds = 0;
   let printing = false;
   // Druckvorbereitung ohne Druckdialog (auch für die Browser-Tests): setzt in #print-root und lässt es stehen
+  // Vorgeschlagener Dateiname beim Speichern als PDF: Chrome nimmt den Seitentitel. Firefox druckt bei window.print()
+  // eine Kopie des Dokuments, deren Titel oft leer ankommt, und greift dann zum letzten Pfadteil der Adresse
+  // („index.html.pdf“). Darum für die Dauer des Drucks beides umstellen: Titel und Dateiteil der Adresse.
+  let titleBeforePrint = null;
+  let pathBeforePrint = null;
+  function printTitle(name) {
+    const who = (CHARS.current()?.name || "").trim();
+    return [who, name || $t("app.title")].filter(Boolean).join(" – ").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim();
+  }
   function endPrint() {
+    if (titleBeforePrint != null) document.title = titleBeforePrint;
+    titleBeforePrint = null;
+    if (pathBeforePrint != null && location.pathname !== pathBeforePrint) {
+      try {
+        history.replaceState(history.state, "", pathBeforePrint + location.search + location.hash);
+      } catch {}
+    }
+    pathBeforePrint = null;
     document.body.classList.remove("printing");
     $("#print-root").innerHTML = "";
     printing = false;
@@ -1125,7 +1142,7 @@
     }
     return root;
   }
-  async function printPages(pages, paperOverride, label, after) {
+  async function printPages(pages, paperOverride, label, after, name) {
     if (printing) return;
     printing = true;
     window.addEventListener("afterprint", endPrint);
@@ -1134,6 +1151,15 @@
     } catch (err) {
       endPrint();
       throw err;
+    }
+    titleBeforePrint = document.title;
+    document.title = printTitle(name);
+    try {
+      pathBeforePrint = location.pathname;
+      const path = pathBeforePrint.replace(/[^/]*$/, encodeURIComponent(document.title));
+      history.replaceState(history.state, "", path + location.search + location.hash);
+    } catch {
+      pathBeforePrint = null;
     }
     setTimeout(() => window.print(), 50);
   }
@@ -1159,41 +1185,43 @@
       const all = bookAll();
       const vi = o.vol ?? view.vol;
       const v = all.volumes[Math.min(vi, all.volumes.length - 1)];
-      return { pages: v.pages, label: all.volumes.length > 1 ? $t("print.vol", { r: U.ROMAN[v.vi + 1] }) : $t("print.book") };
+      const multi = all.volumes.length > 1;
+      const file = $t(DIVINE ? "file.brev" : "file.book") + (multi ? " " + $t("file.vol", { r: U.ROMAN[v.vi + 1] }) : "");
+      return { pages: v.pages, label: multi ? $t("print.vol", { r: U.ROMAN[v.vi + 1] }) : $t("print.book"), file };
     },
     rules: () => {
       const d = bookAll();
-      return d.entries.length ? { pages: BOOK.rulesBook(d.entries, state.settings), label: $t("print.rules"), after: BOOK.rulesIndex } : null;
+      return d.entries.length ? { pages: BOOK.rulesBook(d.entries, state.settings), label: $t("print.rules"), after: BOOK.rulesIndex, file: $t("file.rules") } : null;
     },
     scrolls: () => {
       const entries = bookEntries();
-      return entries.length ? { pages: entries.flatMap(({ m, t }) => BOOK.scrollPages(m, t, { paper: state.settings.scrollPaper })), paper: state.settings.scrollPaper, label: $t("print.scrolls") } : null;
+      return entries.length ? { pages: entries.flatMap(({ m, t }) => BOOK.scrollPages(m, t, { paper: state.settings.scrollPaper })), paper: state.settings.scrollPaper, label: $t("print.scrolls"), file: $t("file.scrolls") } : null;
     },
-    primer: () => ({ pages: primerData().parts.flatMap((p) => p.pages), label: $t("print.primer") }),
+    primer: () => ({ pages: primerData().parts.flatMap((p) => p.pages), label: $t("print.primer"), file: $t("file.primer") }),
     // Vademecum: fertig gesetzte Seiten (Seitenzahlen je Hälfte, Verweise aufgelöst); half: nur diese Hälfte
     // ohne Häkchen „Kapitel IX mitdrucken“: eigener Satz ohne das Kapitel (Seitenzahlen und Verweise stimmen)
     vademecum: async (o = {}) => {
       if (!hasVm()) return null;
       const hooks = o.hooks ?? store.get("vmPrintHooks", true);
       const d = hooks ? vmData() : { key: vmData().key + "|ohne-ix", ...VADEMECUM_BOOK.build({ deity: window.DEITY, entries: bookEntries(), settings: state.settings, omit: ["hooks"] }) };
-      return { pages: { set: await vmPrintHTML(d, o.half) }, label: $t("print.vademecum") };
+      return { pages: { set: await vmPrintHTML(d, o.half) }, label: $t("print.vademecum"), file: $t("file.vademecum") + (o.half != null && vmCache?.halves[o.half]?.name ? " – " + vmCache.halves[o.half].name : "") };
     },
     // Andachtsblatt des laufenden Spieltages und Andachtsbuch: immer A5
     devotion: () => {
       if (!DEVOTION.enabled()) return null;
       const d = PREP.api.dayList().find((x) => x.current);
-      return { pages: DEVOTION.sheetPages(d), paper: "a5", label: $t("dv.sheet") };
+      return { pages: DEVOTION.sheetPages(d), paper: "a5", label: $t("dv.sheet"), file: $t("dv.sheet") + (d?.ingameText ? " " + d.ingameText : "") };
     },
-    devotionBook: () => (DEVOTION.enabled() ? { pages: DEVOTION.bookPages(), paper: "a5", label: $t("dv.bookTitle") } : null),
+    devotionBook: () => (DEVOTION.enabled() ? { pages: DEVOTION.bookPages(), paper: "a5", label: $t("dv.bookTitle"), file: $t("dv.bookTitle") } : null),
     checks: async () => {
       const d = primerData();
       const at = await primerRefs(d);
-      return { pages: d.sheet((id) => at[id]), label: $t("print.checks") };
+      return { pages: d.sheet((id) => at[id]), label: $t("print.checks"), file: $t("file.checks") };
     },
   };
   async function printJob(kind, opts) {
     const job = await JOBS[kind](opts);
-    if (job) printPages(job.pages, job.paper, job.label, job.after);
+    if (job) printPages(job.pages, job.paper, job.label, job.after, job.file);
   }
   $("#btn-print-scrolls").onclick = () => printJob("scrolls");
   $("#btn-print-book").onclick = () => printJob("book");
@@ -1448,6 +1476,7 @@
     $("#set-primer-master").placeholder = (PROFILE.primer && PROFILE.primer.master && PROFILE.primer.master.name) || $t("set.book.masterDefault");
     renderCharAdmin();
     renderKnownLangs();
+    renderInstall();
     langHint();
     bookLangHint();
     showSettingsSec(state.ui.settingsSec);
@@ -1534,6 +1563,9 @@
   $("#btn-export").onclick = () => {
     const ch = CHARS.current();
     const data = { character: ch.name, profile: ch.profile, cls: CLASS.id, deity: ch.deity || null, prayers: state.prayers, book: [...state.book].map((id) => byId.get(id)?.s.name).filter(Boolean), settings: state.settings, preparation: PREP.exportData(), journal: DEVOTION.exportData() };
+    // Profilpaket: Profil des Charakters und Vademecum-Eintrag seiner Gottheit, damit eine Datei den ganzen Charakter trägt
+    const prof = ch.profile && CHARS.profiles().find((p) => p.key === ch.profile);
+    if (prof) data.profilePackage = profilePackage(prof, window.DEITY ? [DEITY.id] : []);
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
     a.download = (ch.name || state.settings.owner || "zauberbuch").toLowerCase().replace(/[^a-z0-9äöüß]+/g, "-") + "-zauberbuch.json";
@@ -1543,7 +1575,7 @@
     const file = ev.target.files[0];
     if (!file) return;
     try {
-      let names = [], settings = null, preparation = null, character = null, profile = null, extra = {}, prayers = null, journal = null;
+      let names = [], settings = null, preparation = null, character = null, profile = null, extra = {}, prayers = null, journal = null, profileFromPackage = false;
       if (/\.xlsx$/i.test(file.name)) names = await IMPORT.xlsxNames(await file.arrayBuffer());
       else if (/\.json$/i.test(file.name)) {
         const data = JSON.parse(await file.text());
@@ -1556,6 +1588,12 @@
         if (data.deity) extra.deity = data.deity;
         prayers = data.prayers || null;
         journal = data.journal || null;
+        // Profilpaket zuerst speichern (Rückfragen wie bei „Profil laden“); der Charakter nutzt dann dessen Schlüssel
+        if (data.profilePackage) {
+          const r = storePackage(PROFILE_STORE.check(data.profilePackage));
+          profile = r.key;
+          profileFromPackage = !r.kept || CHARS.current().profile !== r.key;
+        }
       } else names = IMPORT.textNames(await file.text());
       const norm = (n) => String(n).toLowerCase().replace(/[^a-z0-9äöüß]/g, "");
       const lookup = new Map(ALL.map((x) => [norm(x.s.name), x.s.id]));
@@ -1608,9 +1646,14 @@
       if (state.view === "book") renderBook();
       if (state.view === "prepare") PREP.render();
       alert($t("import.done", { n: found.length, m: state.book.size }) + (missing.length ? "\n" + $t("import.missing", { n: missing.length, list: missing.slice(0, 30).join(", ") + (missing.length > 30 ? " …" : "") }) : ""));
+      // mitgebrachtes Profil: Charakter damit verbinden; neues oder geändertes Profil wirkt erst nach dem Neuladen
+      if (profileFromPackage) {
+        CHARS.update(CHARS.active(), { profile });
+        location.reload();
+      }
     } catch (err) {
       progress.hide();
-      alert($t("import.error") + " " + err.message);
+      alert(err.code ? profError(err) : $t("import.error") + " " + err.message);
     }
     ev.target.value = "";
   };
@@ -1646,6 +1689,7 @@
     renderDeityPicker();
     $("#char-del").disabled = CHARS.list().length < 2;
     $("#char-hint").textContent = charReload ? $t("set.char.reload") : $tn("set.char.count", CHARS.list().length);
+    renderProfiles();
   }
   $("#char-name").onchange = (ev) => {
     CHARS.update(CHARS.active(), { name: ev.target.value.trim() || CHARS.current().name });
@@ -1701,6 +1745,117 @@
   $("#char-del").onclick = () => {
     const c = CHARS.current();
     if (confirm($t("set.char.delConfirm", { name: c.name }))) CHARS.remove(c.id);
+  };
+
+  // --- Installierbare Web-App (sw.js, manifest.webmanifest) -------------------------------
+  // Chrome/Edge bieten die Installation per beforeinstallprompt an: abfangen, als Knopf in den Einstellungen zeigen.
+  // Safari meldet nichts: kurzer Hinweis. Unter file:// gibt es keinen Service Worker: Verweis auf die Online-Fassung.
+  let installPrompt = null;
+  const standalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const appleTouch = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  window.addEventListener("beforeinstallprompt", (ev) => {
+    ev.preventDefault();
+    installPrompt = ev;
+    renderInstall();
+  });
+  window.addEventListener("appinstalled", () => {
+    installPrompt = null;
+    renderInstall();
+  });
+  function renderInstall() {
+    const note = $("#set-install-note");
+    $("#btn-install").hidden = !installPrompt;
+    if (location.protocol === "file:") {
+      const url = document.querySelector('meta[property="og:url"]').content;
+      note.innerHTML = e($t("set.install.file")).replace("{link}", `<a href="${e(url)}" target="_blank" rel="noopener">${e(url)}</a>`);
+    } else note.textContent = $t(standalone() ? "set.install.done" : installPrompt ? "set.install.note" : appleTouch() ? "set.install.ios" : "set.install.other");
+  }
+  $("#btn-install").onclick = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    await installPrompt.userChoice.catch(() => null);
+    installPrompt = null;
+    renderInstall();
+  };
+  // installiert: dauerhaften Speicher erbitten, damit Bücher und gespeicherte Profile nicht aufgeräumt werden
+  if (standalone() && navigator.storage && navigator.storage.persist) navigator.storage.persisted().then((p) => p || navigator.storage.persist()).catch(() => {});
+
+  // --- Profilpakete (profile-store.js): verwalten, exportieren, laden -----------------------
+  const profDate = (iso) => (iso ? new Date(iso).toLocaleDateString(I18N.locale()) : "–");
+  const profSlug = (s) => String(s || "profil").toLowerCase().replace(/[^a-z0-9äöüß]+/g, "-").replace(/^-|-$/g, "") || "profil";
+  const profLabel = (pkg) => pkg.label || (pkg.profile && pkg.profile.owner) || pkg.key;
+  function downloadJson(name, data) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: "application/json" }));
+    a.download = name;
+    a.click();
+  }
+  // Paket eines Profils; Vademecum: die genannten Gottheiten oder alle geladenen Einträge (Datei und gespeichert)
+  function profilePackage(p, deityIds = null) {
+    const ids = deityIds || [...new Set([...Object.keys((window.VADEMECUM && VADEMECUM.local) || {}), ...PROFILE_STORE.vademecumIds()])];
+    return PROFILE_STORE.build(p.key, p.label, p.data, Object.fromEntries(ids.map((id) => [id, window.vademecumEntry(id)])));
+  }
+  function profError(err) {
+    if (err.code === "notPackage") return $t("prof.notPackage");
+    if (err.code === "newerVersion") return $t("prof.newerVersion", { v: err.version });
+    if (err.code === "quota") return $t("prof.quota", { kb: Math.ceil(err.size / 1024) });
+    return $t("import.error") + " " + err.message;
+  }
+  // Paket speichern, mit Rückfragen: anderes Profil unter demselben Schlüssel → eigener Schlüssel anbieten;
+  // schon gespeichert → ersetzen oder behalten. Ergebnis { key, kept, shadowed }; wirft bei vollem Speicher.
+  function storePackage(pkg) {
+    let key = pkg.key;
+    const name = profLabel(pkg);
+    const cur = CHARS.profiles().find((p) => p.key === key);
+    const st = PROFILE_STORE.entry(key);
+    // dasselbe Profil kommt hier schon aus der Datei: nichts speichern, die Datei gilt ohnehin
+    if (cur && cur.source === "file" && cur.label === name) return { key, kept: true, shadowed: true };
+    if (cur && cur.label !== name && confirm($t("prof.otherLabel", { old: cur.label, oldSrc: cur.source === "file" ? $t("set.prof.file") : $t("set.prof.stored", { date: profDate(st && st.exported) }), name, newDate: profDate(pkg.exported) }))) {
+      key = PROFILE_STORE.freeKey(name, CHARS.profiles().map((p) => p.key));
+    } else if (st && !confirm($t("prof.replace", { name, old: profDate(st.exported), new: profDate(pkg.exported) }))) return { key, kept: true };
+    PROFILE_STORE.save({ ...pkg, label: name }, key);
+    CHARS.refreshProfiles();
+    return { key, kept: false, shadowed: CHARS.profiles().find((p) => p.key === key).source === "file" };
+  }
+  function renderProfiles() {
+    const list = CHARS.profiles();
+    const shadowed = CHARS.shadowed();
+    const row = (p, cls, src, canExport, canRemove) => `<li class="${cls}" data-key="${e(p.key)}"><span class="prof-name">${e(p.label)}</span> <span class="prof-src">${e(src)}</span>${canExport ? ` <button type="button" data-prof="export">${$t("set.prof.export")}</button>` : ""}${canRemove ? ` <button type="button" data-prof="remove" class="danger">${$t("set.prof.remove")}</button>` : ""}</li>`;
+    $("#set-profiles .prof-list").innerHTML =
+      list.map((p) => row(p, p.source, p.source === "file" ? $t("set.prof.file") : $t("set.prof.stored", { date: profDate(p.exported) }), true, p.source === "stored")).join("") +
+      shadowed.map((x) => row({ key: x.key, label: x.label || x.key }, "stored shadowed", $t("set.prof.shadowed", { date: profDate(x.exported) }), false, true)).join("") ||
+      `<li class="muted">${$t("set.prof.none")}</li>`;
+  }
+  $("#set-profiles .prof-list").onclick = (ev) => {
+    const b = ev.target.closest("button[data-prof]");
+    if (!b) return;
+    const key = b.closest("li").dataset.key;
+    if (b.dataset.prof === "export") {
+      const p = CHARS.profiles().find((x) => x.key === key);
+      if (p) downloadJson(profSlug(p.label) + $t("prof.suffix"), profilePackage(p));
+    } else {
+      const st = PROFILE_STORE.entry(key);
+      if (!st || !confirm($t("set.prof.removeConfirm", { name: st.label || key }))) return;
+      PROFILE_STORE.remove(key);
+      CHARS.refreshProfiles();
+      if (CHARS.current().profile === key) charReload = true;
+      renderCharAdmin();
+    }
+  };
+  $("#file-profile").onchange = async (ev) => {
+    const file = ev.target.files[0];
+    ev.target.value = "";
+    if (!file) return;
+    if (/\.js$/i.test(file.name)) return alert($t("prof.jsFile"));
+    try {
+      const pkg = PROFILE_STORE.parse(await file.text());
+      const r = storePackage(pkg);
+      if (!r.kept && CHARS.current().profile === r.key) charReload = true;
+      if (!r.kept || r.shadowed) alert($t(r.shadowed ? "prof.loadedShadowed" : "prof.loaded", { name: profLabel(pkg) }));
+      renderCharAdmin();
+    } catch (err) {
+      alert(profError(err));
+    }
   };
 
   // --- Kreis groß anzeigen ----------------------------------------------------------

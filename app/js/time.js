@@ -147,7 +147,7 @@
     const deity = window.DEITY;
     // lokale Vademecum-Feste sind Profiltexte: nur in der Sprache des Profils
     const sameLang = !window.PROFILE || !PROFILE.localLang || PROFILE.localLang === LANG();
-    const vm = (sameLang && deity && window.VADEMECUM && (VADEMECUM.local || {})[deity.id]) || null;
+    const vm = (sameLang && deity && window.vademecumEntry(deity.id)) || null;
     const own = ((vm && vm.feasts) || []).map((f) => ({ ...f, deity: deity.name }));
     const pf = (PB().devotion || {}).feasts || [];
     // derselbe Tag: Name aus dem Vademecum, fehlender Text aus der Andacht (dort steht das Gebet des Tages)

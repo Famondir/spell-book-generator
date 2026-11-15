@@ -9,6 +9,11 @@
   <meta property="og:title" content="Spellbook Generator (Pathfinder 1e)">
   <meta property="og:description" content="A magic circle, spoken formula, gestures, theory and marginal notes for every spell – print your character's spellbook. Free, in the browser, English and German.">
   <meta property="og:url" content="https://famondir.github.io/spell-book-generator/">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#f4f1ea">
+  <link rel="icon" type="image/png" sizes="192x192" href="app/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="app/icons/icon-180.png">
+  <meta name="apple-mobile-web-app-title" content="Zauberbuch">
   <link rel="stylesheet" href="app/style.css">
 </head>
 <body>
@@ -42,6 +47,7 @@
           <div class="char-admin">
             <label><span data-i18n="set.char.name">Name</span> <input id="char-name"></label>
             <label><span data-i18n="set.char.profile">Profil</span> <select id="char-profile"></select></label>
+            <fieldset id="set-profiles" class="profiles"><legend data-i18n="set.prof.title">Profile</legend><div class="muted" data-i18n="set.prof.note">Profile aus data/profile.local.js oder als Profilpaket geladen. Zum Mitnehmen auf ein anderes Gerät hier exportieren und dort laden.</div><ul class="prof-list"></ul><div class="row"><label class="filebtn"><span data-i18n="set.prof.load">Profil laden …</span> <input type="file" id="file-profile" accept=".json,.js,application/json" hidden></label></div></fieldset>
             <label><span data-i18n="set.char.cls">Klasse</span> <select id="char-cls"></select></label>
             <div id="char-deity-row" class="deity-row">
               <label><span id="char-deity-label" data-i18n="set.char.deity">Gottheit</span> <input id="char-deity" list="deity-list" autocomplete="off" data-i18n-attr="placeholder:set.char.deityPh" placeholder="Name eintippen …"></label>
@@ -110,13 +116,15 @@
         </section>
         <section class="set-sec" data-sec="bestand" hidden>
           <h3 data-i18n="set.nav.data">Bestand &amp; Export</h3>
-          <p class="muted set-note" data-i18n="set.data.note">Der Export enthält Buch, Einstellungen, eigene Gebete, Vorbereitung, Protokoll und Andachtsbuch dieses Charakters. Importiert werden Zauberlisten als xlsx (Spalte „Name“), csv, txt oder ein früherer Export.</p>
+          <p class="muted set-note" data-i18n="set.data.note">Der Export enthält Buch, Einstellungen, eigene Gebete, Vorbereitung, Protokoll und Andachtsbuch dieses Charakters, dazu sein Profil samt Vademecum-Texten (wer die Datei bekommt, hat also auch das Profil). So zieht ein Charakter mit einer Datei auf ein anderes Gerät um. Importiert werden Zauberlisten als xlsx (Spalte „Name“), csv, txt oder ein früherer Export.</p>
           <div class="row">
             <button type="button" id="btn-export" data-i18n="set.data.export">Liste exportieren</button>
             <label class="filebtn"><span data-i18n="set.data.import">Liste importieren (xlsx, csv, txt, json)</span> <input type="file" id="file-import" accept=".json,.xlsx,.csv,.txt,application/json" hidden></label>
           </div>
           <p class="muted set-note" data-i18n="set.data.clearNote">Entfernt alle Zauber aus dem Buch dieses Charakters.</p>
           <div class="row"><button type="button" id="btn-clear" class="danger" data-i18n="set.data.clear">Buch leeren</button></div>
+          <p class="muted set-note" id="set-install-note"></p>
+          <div class="row"><button type="button" id="btn-install" data-i18n="set.install.btn" hidden>Als App installieren</button></div>
         </section>
       </div>
       <div class="set-foot"><button value="ok" class="primary" data-i18n="common.done">Fertig</button></div>
@@ -292,6 +300,7 @@
   <script src="data/profile.js"></script>
   <!-- optional, eigene Backstory (siehe data/profile.local.example.js); fehlt die Datei, gilt das neutrale Profil -->
   <script src="data/profile.local.js" onerror="this.remove()"></script>
+  <script src="app/js/profile-store.js"></script>
   <script src="app/js/chars.js"></script>
   <script src="app/js/profile.js"></script>
   <script src="data/spells.js"></script>
@@ -351,5 +360,7 @@
   <script src="app/js/stats.js"></script>
   <script src="app/js/route.js"></script>
   <script src="app/js/app.js"></script>
+  <!-- installierbare Web-App: Service Worker nur über http(s), unter file:// bleibt alles wie bisher -->
+  <script>if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});</script>
 </body>
 </html>

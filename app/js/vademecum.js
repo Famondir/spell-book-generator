@@ -46,7 +46,8 @@
     return out || String(n);
   };
 
-  const entryOf = (deity) => (deity && sameLang() && (V().local || {})[deity.id]) || null;
+  // Eintrag aus data/vademecum.local.js, sonst aus einem gespeicherten Profilpaket (profile-store.js)
+  const entryOf = (deity) => (deity && sameLang() && window.vademecumEntry(deity.id)) || null;
 
   // ---------------------------------------------------------------------------
   // Hälften

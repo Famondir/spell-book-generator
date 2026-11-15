@@ -21,7 +21,7 @@ export function loadApp({ withProfile = false, extra = [] } = {}) {
   const files = [
     "app/js/i18n.js", "data/lang/de.js", "data/lang/en.js", "data/profile.js",
     withProfile && "data/profile.local.js",
-    "app/js/chars.js", "app/js/profile.js", "data/spells.js", "data/everyday_spells.js", "data/everyday_spells.en.js", "data/deities.js", "app/js/deity-colors.js", "data/custom_texts.js",
+    "app/js/profile-store.js", "app/js/chars.js", "app/js/profile.js", "data/spells.js", "data/everyday_spells.js", "data/everyday_spells.en.js", "data/deities.js", "app/js/deity-colors.js", "data/custom_texts.js",
     "app/js/util.js", "app/js/classes.js", "app/js/everyday.js", "app/js/theory.js", "app/js/analyze.js",
     ...langFiles(withProfile),
     "app/js/lang.js", "app/fonts/widths.js", "app/js/scripts.js", "app/js/textgen.de.js", "app/js/textgen.en.js", "app/js/textgen.js", ...extra,

@@ -81,7 +81,7 @@
     return `<h4>${b("sp.essence")}</h4><div class="essbars">${m.essences
       .map((x) => {
         const E = T.ESS[x.id];
-        return `<div class="essrow">${glyphSVG("essence", x.id, { s: 8, cls: x.id === m.primary ? "accent" : "" })}<span class="essname">${E.latin}</span><span class="essbar"><i style="width:${x.pct}%"></i></span><span class="esspct">${x.pct} %</span></div><p class="esstext">${e(enOf(E).text)}</p>`;
+        return `<div class="essrow">${glyphSVG("essence", x.id, { s: 8, cls: x.id === m.primary ? "accent" : "" })}<span class="essname">${E.latin}</span><span class="essbar"><i style="width:${x.pct}%"></i></span><span class="esspct">${e(EN() ? T.partPhraseEn(x.pct) : T.partPhrase(x.pct))}</span></div><p class="esstext">${e(enOf(E).text)}</p>`;
       })
       .join("")}</div>`;
   }

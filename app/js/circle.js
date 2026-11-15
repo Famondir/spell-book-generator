@@ -473,7 +473,7 @@
     if (m.range.tier > 0) add(polar(0, 0, R.range0 - ((m.range.tier - 1) * R.rangeStep) / 2, 42), "Weitenringe", `${m.range.tier} Ring${m.range.tier > 1 ? "e" : ""}: ${m.range.de}.`);
     const slots = signSlots(m);
     if (slots.length) add(polar(0, 0, R.signs + 20, slots[0].a - 8), "Zeichenring", m.signs.map((x) => `${x.de} (${x.dir === "in" ? "nach innen" : "nach außen"})`).join(", ") + ".");
-    add(polar(0, 0, R.ess + 16, 200), "Essenzring", m.essences.map((e) => `${T.ESS[e.id].latin} ${e.pct} %`).join(", ") + ".");
+    add(polar(0, 0, R.ess + 16, 200), "Essenzring", T.parts(m.essences) + ".");
     add(polar(0, 0, R.dur, 135), "Dauerring", `${m.duration.ring}.`);
     add(polar(0, 0, R.core * 0.85, 250), "Kernsiegel", `${sc.figure} – ${sc.de}.`);
     add([22, 20], "Hauptessenz", `${T.ESS[m.primary].latin} (${T.ESS[m.primary].de}).`);
@@ -625,7 +625,7 @@
     Ordnungsknoten: (m) => ["Knots of order", `${m.level} knot${m.level > 1 ? "s" : ""} for the ${ORDINAL_EN[m.level]} order${m.level >= 3 ? ", joined into a star" : ""}.`],
     Weitenringe: (m) => ["Spacing rings", `${m.range.tier} ring${m.range.tier > 1 ? "s" : ""}: ${["personal", "touch", "close range", "medium range", "long range", "unlimited range"][m.range.tier]}.`],
     Zeichenring: (m) => ["Ring of signs", m.signs.map((x) => `${enOf(x).de} (${x.dir === "in" ? "inwards" : "outwards"})`).join(", ") + "."],
-    Essenzring: (m, a) => ["Essence ring", a.t],
+    Essenzring: (m) => ["Essence ring", window.THEORY.partsEn(m.essences) + "."],
     Dauerring: (m) => ["Ring of duration", `${enOf(m.duration).ring}.`],
     Kernsiegel: (m) => { const sc = enOf(window.THEORY.SCHOOLS[m.school] || window.THEORY.SCHOOLS.universal); return ["Core seal", `${sc.figure} – ${sc.de}.`]; },
     Hauptessenz: (m) => ["Principal essence", `${window.THEORY.ESS[m.primary].latin} (${enOf(window.THEORY.ESS[m.primary]).de}).`],

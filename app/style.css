@@ -456,6 +456,8 @@ table.aff td { text-align: center; font-size: 0.8em; background: color-mix(in sr
 .page b, .page strong { font-weight: 800; color: var(--rubric); }
 .page .rules-title { color: var(--rubric); }
 .essbars .esstext { font-size: 0.85em; margin: 0 0 0.35em 1.7em; }
+/* Anteil in Teilen („achteinhalb Teile“, „one and a half parts“): feste Spalte, damit die Balken gleich lang bleiben */
+.essbars .esspct { width: 9.5em; white-space: nowrap; font-variant-numeric: normal; }
 .counter::after { content: ""; display: block; clear: both; }
 .longf .lf { font-family: var(--font-title); letter-spacing: 0.04em; margin-bottom: 0.15em; }
 .longf .lf span { display: inline-block; width: 1.6em; color: var(--rubric); font-weight: 600; }
@@ -679,6 +681,13 @@ label.toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 1
 .rules-modal form { flex-direction: row; }
 fieldset.refs { border: 1px solid var(--ui-line); border-radius: 6px; padding: 6px 10px; display: flex; flex-direction: column; gap: 4px; }
 fieldset.refs legend { font-size: 0.9em; color: var(--ui-muted); }
+fieldset.profiles { border: 1px solid var(--ui-line); border-radius: 6px; padding: 6px 10px; display: flex; flex-direction: column; gap: 6px; }
+fieldset.profiles legend { font-size: 0.9em; color: var(--ui-muted); }
+.prof-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.prof-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.prof-list .prof-name { font-weight: 600; }
+.prof-list .prof-src { color: var(--ui-muted); font-size: 0.9em; flex: 1; }
+.prof-list li.shadowed .prof-name { font-weight: normal; color: var(--ui-muted); }
 fieldset.known-langs { border: 1px solid var(--ui-line); border-radius: 6px; padding: 6px 10px; display: flex; flex-direction: column; gap: 4px; }
 fieldset.known-langs[hidden] { display: none; }
 fieldset.known-langs legend { font-size: 0.9em; color: var(--ui-muted); }
