@@ -5,7 +5,7 @@
 //   node tools/test-browser.mjs                 alle Fälle
 //   node tools/test-browser.mjs --only lehrheft nur Fälle, deren Name „lehrheft“ enthält (auch: satz, ui, node)
 //   node tools/test-browser.mjs --update        Sollwerte der gelaufenen Satz-Fälle übernehmen
-//   --with-profile   data/profile.local.js laden (eigene Sollwerte in test-baseline.local.json)
+//   --with-profile   data/profile.local.js laden (eigene Sollwerte in test-baseline.local.json; Fälle mit noProfile entfallen)
 //   --json           Ergebnis maschinenlesbar     --pdf <ordner>   je Satz-Fall ein PDF ablegen
 //   --verbose        Konsolenausgaben der App zeigen
 import { spawn, execFileSync } from "node:child_process";
@@ -302,7 +302,9 @@ async function runUI(c, cs) {
 
 // --- Ablauf -------------------------------------------------------------------------------
 const matches = (cs) => !ONLY || cs.name.includes(ONLY) || (ONLY === "satz" && cs.job) || (ONLY === "ui" && cs.run) || (ONLY === "node" && cs.node);
-const cases = CASES.filter(matches);
+// noProfile: Fälle, die den neutralen Stand ohne lokales Profil erwarten, entfallen mit --with-profile
+const skipped = WITH_PROFILE ? CASES.filter((x) => x.noProfile && matches(x)) : [];
+const cases = CASES.filter((x) => matches(x) && !(WITH_PROFILE && x.noProfile));
 if (!cases.length) {
   console.error("Keine Fälle für --only " + ONLY);
   process.exit(2);
@@ -377,5 +379,5 @@ if (UPDATE) {
 // mit --update zählen Sollwert-Abweichungen nicht als Fehler
 const failed = results.filter((r) => r.errs.some((e) => !(UPDATE && e.rule === "sollwert")));
 if (JSON_OUT) console.log(JSON.stringify({ chrome: br.chrome, results: results.map(({ prints, ...r }) => r) }, null, 1));
-else log(`\n${results.length} Fälle, ${results.length - failed.length} bestanden, ${failed.length} fehlgeschlagen`);
+else log(`\n${results.length} Fälle, ${results.length - failed.length} bestanden, ${failed.length} fehlgeschlagen${skipped.length ? `, ${skipped.length} übersprungen (ohne Profil: ${skipped.map((x) => x.name).join(", ")})` : ""}`);
 process.exit(failed.length ? 1 : 0);

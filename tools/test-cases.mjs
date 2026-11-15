@@ -81,6 +81,8 @@ export const CASES = [
   { name: "buch-klein-baende-band1", book: "klein", settings: { maxPages: 50 }, job: "book", opts: { vol: 0 } },
   { name: "buch-klein-baende-band2", book: "klein", settings: { maxPages: 50 }, job: "book", opts: { vol: 1 } },
   { name: "buch-gross-a5", book: "gross", job: "book", limit: 20000 },
+  // englisches Buch (Buchsprache Englisch): eigene Sollwerte, Kreise wie im deutschen (node-zweisprachig)
+  { name: "buch-klein-en", book: "klein", settings: { bookLang: "en" }, job: "book" },
   // --- Satz: weitere Aufträge -----------------------------------------------------------
   { name: "regelband-klein", book: "klein", job: "rules" },
   { name: "regelband-klein-en", book: "klein", settings: { rulesLang: "en" }, job: "rules" },
@@ -798,6 +800,8 @@ export const CASES = [
   // --- Andacht (Schutzgottheit am Magier) ------------------------------------------------------
   {
     name: "ui-andacht-texte",
+    // erwartet den neutralen Ablauf ohne lokales Profil
+    noProfile: true,
     book: "klein",
     deity: "nethys",
     run: async (t) => {
@@ -857,6 +861,8 @@ export const CASES = [
   },
   {
     name: "ui-andacht-rueckschau",
+    // erwartet den neutralen Ablauf ohne lokales Profil
+    noProfile: true,
     book: "klein",
     deity: "nethys",
     run: async (t) => {
@@ -995,6 +1001,11 @@ export const CASES = [
   {
     name: "node-originalschriften",
     node: async ({ withProfile, root }) => tool(root, "originalschriften", ["tools/script-check.mjs", ...(withProfile ? ["--with-profile"] : [])]),
+  },
+  // Zweisprachigkeit: Kreise in beiden Buchsprachen gleich, Texte deterministisch, Englisch ohne deutsche Reste
+  {
+    name: "node-zweisprachig",
+    node: async ({ withProfile, root }) => tool(root, "zweisprachig", ["tools/bilingual-check.mjs", ...(withProfile ? ["--with-profile"] : [])]),
   },
   // Formelsprachen im Buch: fremde Formeln, Brückennotizen ohne Doppelungen, höchstens eine Notiz je Seite bzw. Hälfte
   {

@@ -93,7 +93,7 @@
     if (!x.t) x.tc = null;
     else if (x.tk !== k) ((x.tc = { ...x.tc, [x.tk]: x.t }), (x.t = x.tc[k] || null));
     x.tk = k;
-    return (x.t = x.t || (DIVINE ? PRAYER.texts(model(x), window.DEITY) : generateTexts(model(x), { name: state.settings.owner })));
+    return (x.t = x.t || (DIVINE ? PRAYER.texts(model(x), window.DEITY) : generateTexts(model(x), { name: PROFILE.bookValue(state.settings, "owner") })));
   };
   FORMULA.setBook(() => ALL.filter((x) => state.book.has(x.s.id)).map(model));
   ALL.forEach(model);
@@ -1449,6 +1449,7 @@
     renderCharAdmin();
     renderKnownLangs();
     langHint();
+    bookLangHint();
     showSettingsSec(state.ui.settingsSec);
     dlg.showModal();
     dlg.querySelector(".set-nav button.on")?.focus();
@@ -1476,6 +1477,14 @@
     $("#set-lang-hint").textContent = f.elements.rulesLang.value === "de" ? (RULES.hasData() ? $t("set.lang.hintData", { n: Object.keys(window.RULES_DE).length }) : $t("set.lang.hintNoData")) : "";
   }
   dlg.querySelector('[name="rulesLang"]').addEventListener("change", langHint);
+  // Hinweis zur Buchsprache: Profiltexte gelten nur in der Sprache des Profils (localization: einsprachige Profiltexte)
+  function bookLangHint() {
+    const l = dlg.querySelector('[name="bookLang"]').value, el = $("#set-lang-profile-hint");
+    const show = !!(PROFILE.foreign && PROFILE.foreign(l));
+    el.hidden = !show;
+    el.textContent = show ? $t("set.lang.profileForeign", { lang: $t("set.lang.name." + PROFILE.localLang) }) : "";
+  }
+  dlg.querySelector('[name="bookLang"]').addEventListener("change", bookLangHint);
   // Abschnitte des Dialogs: immer genau einer sichtbar, der zuletzt gewählte wird gemerkt
   function showSettingsSec(sec) {
     if (!dlg.querySelector(`.set-sec[data-sec="${sec}"]`)) sec = "charakter";

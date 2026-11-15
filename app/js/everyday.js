@@ -4,6 +4,7 @@
   // Profil: eigene Alltagszauber ergänzen, einzelne ausblenden, Flavour ersetzen
   const P = (window.PROFILE && window.PROFILE.everyday) || {};
   const removed = new Set(P.remove || []);
+  const own = new Set((P.add || []).map((e) => e.name)); // eigene Alltagszauber des Profils: einsprachig
   const list = [...(window.EVERYDAY_SPELLS || []), ...(P.add || [])].filter((e) => !removed.has(e.name));
   const sources = window.EVERYDAY_SOURCES || {};
   // Englische Fassung (data/everyday_spells.en.js): Schlüssel = deutscher Name, die Id bleibt
@@ -45,6 +46,7 @@
       inspirationEn: e.inspiration && sources[e.inspiration] ? { ...sources[e.inspiration], ...(sourcesEn[e.inspiration] || {}) } : null,
       // Flavour aus dem Profil gilt nur in der Sprache des Profils (localization: einsprachige Profiltexte)
       ownFlavor: !!(P.flavor && P.flavor[e.name]),
+      fromProfile: own.has(e.name),
       en: EN[e.name] || null,
       baseSource: base.source,
       essHint: e.ess || null,

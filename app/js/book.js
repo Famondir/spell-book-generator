@@ -3,7 +3,15 @@
 (function () {
   const T = window.THEORY;
   const e = U.esc;
-  const SCHOOL_DE = (m) => m.schoolInfo.de;
+  // Beschriftungen der Zauberseiten in der Buchsprache (data/lang/*.js, Schlüssel „sp.*“)
+  const b = (k, v) => I18N.b(k, v);
+  const EN = () => I18N.lang.book === "en";
+  const enOf = (x) => (EN() && x && x.en) || x;
+  const SCHOOL_DE = (m) => (EN() ? (T.SCHOOLS[m.school] || T.SCHOOLS.universal).en.de : m.schoolInfo.de);
+  const SUB_DE = (s) => (EN() ? T.SUBSCHOOLS[s].en.de : T.SUBSCHOOLS[s].de);
+  // „III. Ordnung“ / „Fingerübung“ / „Alltagszauber“
+  const orderLabel = (m) => (m.spell && m.spell.everyday ? b("sp.everyday") : m.level === 0 ? b("sp.cantrip") : b("sp.order", { r: U.ROMAN[m.level] }));
+  const q = (x) => (EN() ? `“${x}”` : `„${x}“`);
 
   // ---------------------------------------------------------------------------
   // Bausteine
@@ -35,61 +43,61 @@
   }
   function head(m, t, small, ref) {
     return `<header class="sp-head ${small ? "small" : ""}">${quickGlyph(m, { cls: "sp-quick" })}${refBlock(m, ref)}
-      <div class="sp-meta">${m.spell.everyday ? "Alltagszauber" : m.level === 0 ? "Fingerübung" : U.ROMAN[m.level] + ". Ordnung"} · ${e(SCHOOL_DE(m))}${m.subschools.length ? " (" + m.subschools.map((s) => T.SUBSCHOOLS[s].de).join(", ") + ")" : ""}</div>
+      <div class="sp-meta">${orderLabel(m)} · ${e(SCHOOL_DE(m))}${m.subschools.length ? " (" + m.subschools.map(SUB_DE).join(", ") + ")" : ""}</div>
       <h2 class="sp-title">${e(t.title)}</h2>
       <div class="sp-epithet">${e(t.epithet)}</div>
-      <div class="sp-rulename">${e(RULES.name(m))}${m.spell.everyday ? ` · nach ${e(RULES.name(window.SPELLS.find((x) => x.name === m.spell.base) || m))}` : ""}</div>
+      <div class="sp-rulename">${e(RULES.name(m))}${m.spell.everyday ? ` · ${b("sp.after")} ${e(RULES.name(window.SPELLS.find((x) => x.name === m.spell.base) || m))}` : ""}</div>
     </header>`;
   }
   const circleBox = (m, t, cls, opts = {}) => `<figure class="circle-box ${cls}">${renderCircle(m, { text: t.formula.band, ...opts })}</figure>`;
   function formulaBlock(t, withTone = true) {
-    const tech = t.formula.tech ? `<div class="tech">Fachformel: <i>${e(t.formula.tech)}</i></div>` : "";
-    return `<div class="formula">${t.formula.lines.map((l) => `<div class="fl">${e(l)}</div>`).join("")}${tech}${withTone ? `<div class="tone">Vortrag: ${e(t.formula.tone)}.</div>` : ""}</div>`;
+    const tech = t.formula.tech ? `<div class="tech">${b("sp.tech")}: <i>${e(t.formula.tech)}</i></div>` : "";
+    return `<div class="formula">${t.formula.lines.map((l) => `<div class="fl">${e(l)}</div>`).join("")}${tech}${withTone ? `<div class="tone">${b("sp.tone")}: ${e(t.formula.tone)}.</div>` : ""}</div>`;
   }
   function componentsBlock(m, t) {
     const c = m.components;
-    const tags = [c.V && "V", c.S && "S", c.M && "M", c.F && "F", c.DF && "GF"].filter(Boolean).join(" · ");
-    return `<div class="comp"><span class="comp-tags">${tags || "—"}</span> <span class="comp-time">${e(m.casting.de)}</span>
-      ${t.materials.map((x) => `<div class="mat"><b>${e(x.k)}:</b> ${e(x.t)}${x.orig ? ` <i class="orig">„${e(x.orig)}“</i>` : ""}</div>`).join("")}</div>`;
+    const tags = [c.V && "V", c.S && "S", c.M && "M", c.F && "F", c.DF && b("sp.df")].filter(Boolean).join(" · ");
+    return `<div class="comp"><span class="comp-tags">${tags || "—"}</span> <span class="comp-time">${e(EN() ? U.cap(m.casting.en) : m.casting.de)}</span>
+      ${t.materials.map((x) => `<div class="mat"><b>${e(x.k)}:</b> ${e(x.t)}${x.orig ? ` <i class="orig">${q(e(x.orig))}</i>` : ""}</div>`).join("")}</div>`;
   }
-  const gesturesBlock = (t, n) => `<h4>Gesten</h4><ol class="gest">${t.gestures.slice(0, n || 99).map((g) => `<li>${e(g.replace(/\.?$/, "."))}</li>`).join("")}</ol>`;
+  const gesturesBlock = (t, n) => `<h4>${b("sp.gestures")}</h4><ol class="gest">${t.gestures.slice(0, n || 99).map((g) => `<li>${e(g.replace(/\.?$/, "."))}</li>`).join("")}</ol>`;
   const theoryBlock = (t, heads) =>
-    t.theory.filter((p) => !heads || heads.includes(p.h)).map((p) => `<h4>${e(p.h)}</h4><p>${e(p.t)}</p>`).join("");
-  const structureBlock = (t) => `<h4>Aufbau des Kreises</h4><dl class="struct">${t.structure.map((s) => `<dt>${e(s.k)}</dt><dd>${e(s.t)}</dd>`).join("")}</dl>`;
+    t.theory.filter((p) => !heads || heads.includes(p.id) || heads.includes(p.h)).map((p) => `<h4>${e(p.h)}</h4><p>${e(p.t)}</p>`).join("");
+  const structureBlock = (t) => `<h4>${b("sp.struct")}</h4><dl class="struct">${t.structure.map((s) => `<dt>${e(s.k)}</dt><dd>${e(s.t)}</dd>`).join("")}</dl>`;
   const stepsBlock = (t, compact) =>
-    `<h4>Ausführung</h4><div class="steps ${compact ? "compact" : ""}">${t.steps
+    `<h4>${b("sp.steps")}</h4><div class="steps ${compact ? "compact" : ""}">${t.steps
       .map((p, i) => `<div class="phase"><div class="ph">${U.ROMAN[i + 1]}. ${e(p.h)}</div><ol>${p.items.map((x) => `<li>${e(x.replace(/\.?$/, "."))}</li>`).join("")}</ol></div>`)
       .join("")}</div>`;
   const note = (txt) => (txt ? `<aside class="note">${e(txt)}</aside>` : "");
   function calibrationBlock(t) {
     if (!t.calibration) return "";
     const c = t.calibration;
-    return `<h4>Kalibrierung nach Zauberstufe</h4><table class="calib"><tr>${c.cols.map(([, h]) => `<th>${e(h)}</th>`).join("")}</tr>${c.rows
+    return `<h4>${b("sp.calib")}</h4><table class="calib"><tr>${c.cols.map(([, h]) => `<th>${e(h)}</th>`).join("")}</tr>${c.rows
       .map((r) => `<tr>${c.cols.map(([k]) => `<td>${e(r[k] ?? "")}</td>`).join("")}</tr>`)
       .join("")}</table>`;
   }
   function essenceBlock(m) {
-    return `<h4>Essenzanalyse</h4><div class="essbars">${m.essences
+    return `<h4>${b("sp.essence")}</h4><div class="essbars">${m.essences
       .map((x) => {
         const E = T.ESS[x.id];
-        return `<div class="essrow">${glyphSVG("essence", x.id, { s: 8, cls: x.id === m.primary ? "accent" : "" })}<span class="essname">${E.latin}</span><span class="essbar"><i style="width:${x.pct}%"></i></span><span class="esspct">${x.pct} %</span></div><p class="esstext">${e(E.text)}</p>`;
+        return `<div class="essrow">${glyphSVG("essence", x.id, { s: 8, cls: x.id === m.primary ? "accent" : "" })}<span class="essname">${E.latin}</span><span class="essbar"><i style="width:${x.pct}%"></i></span><span class="esspct">${x.pct} %</span></div><p class="esstext">${e(enOf(E).text)}</p>`;
       })
       .join("")}</div>`;
   }
   function correspondBlock(t) {
     const c = t.correspond;
-    return `<h4>Entsprechungen</h4><table class="corr"><tr><th>Stunde</th><td>${e(c.hour)}</td><th>Gestirn</th><td>${e(c.planet)}</td></tr><tr><th>Farbe</th><td>${e(c.color)}</td><th>Metall</th><td>${e(c.metal)}</td></tr><tr><th>Richtung</th><td>${e(c.dir)}</td><th>Himmel</th><td>${e(c.body)}</td></tr></table>${t.ink ? `<p class="ink"><b>Tinte</b> ${e(t.ink)}</p>` : ""}`;
+    return `<h4>${b("sp.correspond")}</h4><table class="corr"><tr><th>${b("sp.corr.hour")}</th><td>${e(c.hour)}</td><th>${b("sp.corr.planet")}</th><td>${e(c.planet)}</td></tr><tr><th>${b("sp.corr.color")}</th><td>${e(c.color)}</td><th>${b("sp.corr.metal")}</th><td>${e(c.metal)}</td></tr><tr><th>${b("sp.corr.dir")}</th><td>${e(c.dir)}</td><th>${b("sp.corr.body")}</th><td>${e(c.body)}</td></tr></table>${t.ink ? `<p class="ink"><b>${b("sp.ink")}</b> ${e(t.ink)}</p>` : ""}`;
   }
-  const failureBlock = (t) => `<h4>Fehlerbilder und Rückschlag</h4><dl class="struct">${t.failure.map((f) => `<dt>${e(f.k)}</dt><dd>${e(f.t)}</dd>`).join("")}</dl>`;
+  const failureBlock = (t) => `<h4>${b("sp.failure")}</h4><dl class="struct">${t.failure.map((f) => `<dt>${e(f.k)}</dt><dd>${e(f.t)}</dd>`).join("")}</dl>`;
   const counterBlock = (m, t) =>
-    `<h4>Gegenformel</h4><div class="counter">${`<figure class="circle-box mini mirror">${renderCircle(m, { layers: ["outer", "signs", "essence", "duration", "core"], zoom: 250 })}</figure>`}<p>${e(t.counter.t)}</p></div>`;
+    `<h4>${b("sp.counter")}</h4><div class="counter">${`<figure class="circle-box mini mirror">${renderCircle(m, { layers: ["outer", "signs", "essence", "duration", "core"], zoom: 250 })}</figure>`}<p>${e(t.counter.t)}</p></div>`;
   const practiceBlock = (t) =>
-    `<h4>Übungsprotokoll</h4><table class="calib"><tr><th>Datum</th><th>Ort</th><th>Ergebnis</th></tr>${t.practice.map((p) => `<tr><td>${e(p.date)}</td><td>${e(p.place)}</td><td>${e(p.result)}</td></tr>`).join("")}</table>`;
+    `<h4>${b("sp.practice")}</h4><table class="calib"><tr><th>${b("sp.practice.date")}</th><th>${b("sp.practice.place")}</th><th>${b("sp.practice.result")}</th></tr>${t.practice.map((p) => `<tr><td>${e(p.date)}</td><td>${e(p.place)}</td><td>${e(p.result)}</td></tr>`).join("")}</table>`;
   const longFormulaBlock = (t) =>
-    `<h4>Die Formel in Langform</h4><p class="hint">Für das Wirken unter erschwerten Umständen: Anrufung (A) und Antwort (R) wechseln sich ab; die Antwort darf auch gedacht werden.</p><div class="longf">${t.longFormula
+    `<h4>${b("sp.longf")}</h4><p class="hint">${b("sp.longf.hint")}</p><div class="longf">${t.longFormula
       .map((l) => `<div class="lf ${l.k}"><span>${l.k}</span>${e(l.t)}</div>`)
       .join("")}</div>`;
-  const learningBlock = (t) => `<h4>Herkunft und Abschrift</h4><p>${e(t.learning)}</p>`;
+  const learningBlock = (t) => `<h4>${b("sp.learning")}</h4><p>${e(t.learning)}</p>`;
   // short: nur die deutsche Einordnung; der englische Mythic-Regeltext steht im Regelkasten/-anhang
   // Die mythische Variante als In-Game-Text. Der englische Mythic-Text ist Regeltext und steht nur
   // im Regelkasten bzw. Regelanhang.
@@ -98,32 +106,41 @@
     const txt = m.spell.mythic;
     const aug = [...txt.matchAll(/Augmented \((\d+)(?:st|nd|rd|th)\)/g)].map((x) => +x[1]);
     const two = /(two|2) uses of mythic power/i.test(txt);
+    const ordEn = (n) => n + (n % 10 === 1 && n !== 11 ? "st" : n % 10 === 2 && n !== 12 ? "nd" : n % 10 === 3 && n !== 13 ? "rd" : "th");
     if (short)
-      return `<h4>Mythische Resonanz</h4><p>Mit Mythenkraft überladbar: äußerer Ring doppelt, Mythenpunkt im Kern${aug.length ? `; ab dem ${aug[0]}. Mythenrang ein dritter Ring${two ? " für einen zweiten Zug Mythenkraft" : ""}` : ""}.</p>`;
-    let p = "Wer den Funken der Mythen trägt, kann diese Formel mit eigener Mythenkraft überladen. Der Kreis bleibt derselbe; nur der äußere Ring wird doppelt gezogen, mit neun Mythenpunkten besetzt, und ein Mythenpunkt in den Kern gesetzt.";
-    if (aug.length) p += ` Ab dem ${aug.join(". bzw. ")}. Mythenrang lässt sich die Überladung weiter steigern: Dann wird ein dritter, gestrichelter Ring gezogen${two ? ", und die Formel verlangt einen zweiten Zug Mythenkraft" : ""}.`;
-    const fig = short ? "" : `<figure class="circle-box mythic-box">${renderCircle(m, { text: t.formula.band, mythic: aug.length ? "augmented" : true, zoom: 275 })}<figcaption>Mythisch überladener Kreis</figcaption></figure>`;
-    return `<h4>Mythische Resonanz</h4><p>${e(p)}</p>${fig}`;
+      return EN()
+        ? `<h4>${b("sp.mythic")}</h4><p>Can be overcharged with mythic power: outer ring doubled, a mythic point in the core${aug.length ? `; from the ${ordEn(aug[0])} mythic tier a third ring${two ? " for a second draw of mythic power" : ""}` : ""}.</p>`
+        : `<h4>${b("sp.mythic")}</h4><p>Mit Mythenkraft überladbar: äußerer Ring doppelt, Mythenpunkt im Kern${aug.length ? `; ab dem ${aug[0]}. Mythenrang ein dritter Ring${two ? " für einen zweiten Zug Mythenkraft" : ""}` : ""}.</p>`;
+    let p = EN()
+      ? "Whoever bears the spark of myth can overcharge this formula with their own mythic power. The circle stays the same; only the outer ring is drawn double, set with nine mythic points, and a mythic point is placed in the core."
+      : "Wer den Funken der Mythen trägt, kann diese Formel mit eigener Mythenkraft überladen. Der Kreis bleibt derselbe; nur der äußere Ring wird doppelt gezogen, mit neun Mythenpunkten besetzt, und ein Mythenpunkt in den Kern gesetzt.";
+    if (aug.length) p += EN()
+      ? ` From the ${aug.map(ordEn).join(" or ")} mythic tier the overcharge can be raised further: then a third, dashed ring is drawn${two ? ", and the formula demands a second draw of mythic power" : ""}.`
+      : ` Ab dem ${aug.join(". bzw. ")}. Mythenrang lässt sich die Überladung weiter steigern: Dann wird ein dritter, gestrichelter Ring gezogen${two ? ", und die Formel verlangt einen zweiten Zug Mythenkraft" : ""}.`;
+    const fig = short ? "" : `<figure class="circle-box mythic-box">${renderCircle(m, { text: t.formula.band, mythic: aug.length ? "augmented" : true, zoom: 275 })}<figcaption>${b("sp.mythic.fig")}</figcaption></figure>`;
+    return `<h4>${b("sp.mythic")}</h4><p>${e(p)}</p>${fig}`;
   }
-  function annotatedBlock(m, t, h = "Beschrifteter Kreis") {
+  function annotatedBlock(m, t, h = b("sp.annotated")) {
     const list = circleAnnotations(m);
     return `<h4>${e(h)}</h4><figure class="circle-box annotated-box">${renderCircle(m, { text: t.formula.band, annotate: true })}</figure>
       <ol class="annot-list">${list.map((a) => `<li value="${a.n}"><b>${e(a.k)}:</b> ${e(a.t)}</li>`).join("")}</ol>`;
   }
   const QUICK_RING_DE = { instant: "oben offener Kreis", rounds: "Kreis mit zwei Zeitmarken", minutes: "gestrichelter Kreis", hours: "doppelter Kreis", days: "dreifacher Kreis", permanent: "Kreis mit Schwanz", concentration: "Kreis mit Faden" };
+  const QUICK_RING_EN = { instant: "a circle open at the top", rounds: "a circle with two time marks", minutes: "a dashed circle", hours: "a double circle", days: "a triple circle", permanent: "a circle with a tail", concentration: "a circle with a thread" };
   // Absichtszeichen mit Herkunft: Anlaute der gedruckten Kernzeile in der Schrift ihrer Sprache
   const quickLettersDe = (m) => `${quickMarksHTML(m).join(" und ")} aus der Kernzeile`;
   function quickBlock(m) {
+    if (EN()) return `<h4>${b("sp.quick")}</h4><div class="quick-row">${quickGlyph(m)}<p>For drawing in haste: ${QUICK_RING_EN[m.duration.kind] || "a circle open to the right"}, within it ${m.school === "universal" ? "the cross" : "the short figure of " + e(SCHOOL_DE(m))} and ${THEORY.ESS[m.primary].latin} at the centre, beside it ${quickMarksHTML(m).join(" and ")} from the core line${m.level ? `, ${m.level} dot${m.level > 1 ? "s" : ""} for the order` : ""}. It works only for one who has drawn the full circle at least once.</p></div>`;
     return `<h4>Schnellglyphe</h4><div class="quick-row">${quickGlyph(m)}<p>Für das Zeichnen in Eile: ${QUICK_RING_DE[m.duration.kind] || "rechts offener Kreis"}, darin ${m.schoolInfo.de === "Universalmagie" ? "das Kreuz" : "die Kurzfigur der " + e(m.schoolInfo.de)} und ${THEORY.ESS[m.primary].latin} im Zentrum, daneben ${quickLettersDe(m)}${m.level ? `, ${m.level} Punkt${m.level > 1 ? "e" : ""} für die Ordnung` : ""}. Wirkt nur für den, der den vollen Kreis schon einmal gezeichnet hat.</p></div>`;
   }
   function submatricesBlock(m, t) {
     const parts = [
-      ["Kern", ["core"], 80],
-      ["Essenz & Zeichen", ["essence", "signs"], 150],
-      ["Weite & Ordnung", ["range", "order"], 205],
-      ["Band & Schwellen", ["outer", "gates", "sr"], 255],
+      [b("sp.subm.core"), ["core"], 80],
+      [b("sp.subm.ess"), ["essence", "signs"], 150],
+      [b("sp.subm.range"), ["range", "order"], 205],
+      [b("sp.subm.band"), ["outer", "gates", "sr"], 255],
     ];
-    return `<h4>Teilmatrizen</h4><p class="hint">Zum Üben werden die Schichten einzeln gezeichnet, bevor der vollständige Kreis gelingt.</p><div class="subm">${parts
+    return `<h4>${b("sp.subm")}</h4><p class="hint">${b("sp.subm.hint")}</p><div class="subm">${parts
       .map(([h, layers, z]) => `<figure class="circle-box sub">${renderCircle(m, { layers, zoom: z + 15, text: t.formula.band })}<figcaption>${e(h)}</figcaption></figure>`)
       .join("")}</div>`;
   }
@@ -131,20 +148,21 @@
   function glossaryBlock(t) {
     const words = [];
     for (const l of t.formula.lines) for (const w of l.toLowerCase().replace(/[!,.]/g, "").split(/\s+/)) if (w && !words.includes(w)) words.push(w);
-    const rows = words.filter((w) => T.GLOSSARY[w]);
+    const G = EN() && T.GLOSSARY_EN ? T.GLOSSARY_EN : T.GLOSSARY;
+    const rows = words.filter((w) => G[w]);
     if (rows.length < 3) return "";
-    return `<h4>Wortglossar der Formel</h4><div class="gloss">${rows.map((w) => `<div><b>${e(w)}</b> – ${e(T.GLOSSARY[w])}</div>`).join("")}</div>`;
+    return `<h4>${b("sp.gloss")}</h4><div class="gloss">${rows.map((w) => `<div><b>${e(w)}</b> – ${e(G[w])}</div>`).join("")}</div>`;
   }
   function sketchBlock(m, t) {
     const r = U.rng(m.seed ^ 0x9e37);
     const drafts = [
-      [["core", "essence", "signs", "outer"], "Dauerring vergessen – die Ladung lief aus."],
-      [["core", "duration", "signs", "outer", "range"], "Ohne Essenzring: Der Kern blieb stumm."],
-      [["essence", "duration", "signs", "outer", "order"], "Kernsiegel ausgelassen – keine Richtung, kein Verb."],
-      [["core", "essence", "duration", "range"], "Schriftband nicht gezogen. Nichts geschah."],
+      [["core", "essence", "signs", "outer"], b("sp.sketch.1")],
+      [["core", "duration", "signs", "outer", "range"], b("sp.sketch.2")],
+      [["essence", "duration", "signs", "outer", "order"], b("sp.sketch.3")],
+      [["core", "essence", "duration", "range"], b("sp.sketch.4")],
     ];
     const pick = r.sample(drafts, 2);
-    return `<h4>Verworfene Entwürfe</h4><div class="sketches">${pick
+    return `<h4>${b("sp.sketches")}</h4><div class="sketches">${pick
       .map(([layers, cap]) => `<figure class="circle-box sketch">${renderCircle(m, { layers, zoom: 260, text: t.formula.band })}<figcaption>${e(cap)}</figcaption></figure>`)
       .join("")}</div>`;
   }
@@ -157,7 +175,7 @@
       .sort((a, b) => Math.abs(a.level - m.level) - Math.abs(b.level - m.level))
       .slice(0, 6);
     if (!rel.length) return "";
-    return `<h4>Verwandte Formeln</h4><ul class="related">${rel.map((o) => `<li>${e(generateTexts(o).title)} <span>(${e(o.name)}, ${o.level === 0 ? "Fingerübung" : U.ROMAN[o.level] + ". Ordnung"})</span></li>`).join("")}</ul>`;
+    return `<h4>${b("sp.related")}</h4><ul class="related">${rel.map((o) => `<li>${e(generateTexts(o).title)} <span>(${e(o.name)}, ${o.level === 0 ? b("sp.cantrip") : b("sp.order", { r: U.ROMAN[o.level] })})</span></li>`).join("")}</ul>`;
   }
 
   // ---------------------------------------------------------------------------
@@ -179,10 +197,10 @@
       formula: () => formulaBlock(t),
       comp: () => componentsBlock(m, t),
       theory: () => theoryBlock(t),
-      theory2: () => theoryBlock(t, ["Grundsatz der Schule", "Essenzen", "Weite und Dauer"]),
-      wirk: () => theoryBlock(t, ["Grundsatz der Schule"]).replace(/<h4>.*?<\/h4>/, "<h4>Wirkprinzip</h4>"),
+      theory2: () => theoryBlock(t, ["school", "ess", "reach", "Grundsatz der Schule", "Essenzen", "Weite und Dauer"]),
+      wirk: () => theoryBlock(t, ["school", "Grundsatz der Schule"]).replace(/<h4>.*?<\/h4>/, `<h4>${b("sp.wirk")}</h4>`),
       struct: () => structureBlock(t),
-      detail: () => `<figure class="circle-box detail">${renderCircle(m, { layers: ["core", "essence", "duration", "signs"], zoom: 150 })}<figcaption>Kern, Essenz- und Zeichenring vergrößert</figcaption></figure>`,
+      detail: () => `<figure class="circle-box detail">${renderCircle(m, { layers: ["core", "essence", "duration", "signs"], zoom: 150 })}<figcaption>${b("sp.detail")}</figcaption></figure>`,
       gest: () => gesturesBlock(t),
       steps: () => stepsBlock(t),
       stepsC: () => stepsBlock(t, true),
@@ -278,7 +296,7 @@
   function scrollPages(m, t, opts = {}) {
     const a4 = opts.paper === "a4";
     const front = `<div class="scroll-front">
-        <div class="sp-meta">${m.spell.everyday ? "Alltagszauber" : m.level === 0 ? "Fingerübung" : U.ROMAN[m.level] + ". Ordnung"} · ${e(m.schoolInfo.de)}</div>
+        <div class="sp-meta">${orderLabel(m)} · ${e(SCHOOL_DE(m))}</div>
         <h2 class="sp-title">${e(t.title)}</h2>
         <div class="sp-epithet">${e(t.epithet)}</div>
         <figure class="circle-box scroll-circle">${renderCircle(m, { text: t.formula.band })}</figure>
@@ -287,8 +305,8 @@
     const back = `${head(m, t, true)}${formulaBlock(t)}${componentsBlock(m, t)}${gesturesBlock(t, 4)}
       ${rulesBox(m)}`;
     return [
-      { html: front, spell: m.id, cls: "scroll-page", running: "Schriftrolle" },
-      { html: back, spell: m.id, cls: "scroll-page scroll-back flow" + (a4 ? " a4native" : ""), running: "Schriftrolle · Rückseite" },
+      { html: front, spell: m.id, cls: "scroll-page", running: b("sp.scroll") },
+      { html: back, spell: m.id, cls: "scroll-page scroll-back flow" + (a4 ? " a4native" : ""), running: b("sp.scrollBack") },
     ];
   }
 
@@ -335,11 +353,11 @@
     pages.push({
       cls: "title-page",
       html: `<div class="tp"><div class="tp-sigil">${renderCircle(analyze(window.SPELLS.find((s) => s.name === "Arcane Mark") || window.SPELLS[0]), { layers: ["outer", "signs", "essence", "duration", "core", "order"], text: "", zoom: 260 })}</div>
-        <h1>${e(settings.bookTitle)}</h1><div class="tp-owner">${e(settings.owner)}</div><div class="tp-sub">${e(settings.subtitle || "")}</div></div>`,
+        <h1>${e(PROFILE.bookValue(settings, "bookTitle"))}</h1><div class="tp-owner">${e(PROFILE.bookValue(settings, "owner"))}</div><div class="tp-sub">${e(PROFILE.bookValue(settings, "subtitle") || "")}</div></div>`,
     });
     // Anatomie eines Kreises (Beispiel: Feuerball oder erster Zauber)
     const sample = analyze(window.SPELLS.find((s) => s.name === "Fireball"));
-    const st = generateTexts(sample, { name: settings.owner });
+    const st = generateTexts(sample, { name: PROFILE.bookValue(settings, "owner") });
     pages.push({
       html: `<h3>Von der Lesart der Kreise</h3><p>Jede Formel in diesem Buch ist als Kreis notiert. Ein Kreis wird von außen nach innen gelesen und von innen nach außen gezeichnet. Die Lehre folgt drei Sätzen:</p>
       <ol class="laws"><li><b>Der Kreis ist ein Fluss.</b> Was in ihm kreist, bleibt erhalten; was ihn verlässt, wirkt. Geschlossene Ringe halten eine Wirkung über die Zeit, eine offene Matrix gibt sie augenblicklich frei.</li>
@@ -657,7 +675,7 @@
           toc.push({ t, m, page: pendingHalf.no });
           pendingHalf = null;
         } else {
-          pendingHalf = { html: block, no: pageNo, running: m.spell.everyday ? "Alltagszauber" : "Fingerübungen", halves: true };
+          pendingHalf = { html: block, no: pageNo, running: m.spell.everyday ? b("sp.everydayPl") : b("sp.cantripPl"), halves: true };
           body.push(pendingHalf);
           toc.push({ t, m, page: pageNo });
           pageNo++;
@@ -679,7 +697,7 @@
     for (const c of chapters) {
       (c.listPages || []).forEach((lp, i) => {
         const part = c.items.slice(i * c.perList, (i + 1) * c.perList);
-        lp.html = `<h3>${divine() ? "Gebete" : "Formeln"} dieses Kapitels${i ? " (Forts.)" : ""}</h3><div class="ch-list">${part.map((x) => `<div class="ch-row"><span class="tq">${quickGlyph(x.m, { marks: false })}</span><span class="ch-nm">${e(x.t.title)}<i>${e(RULES.name(x.m))}</i></span><span class="tp">${x.page}</span></div>`).join("")}</div>`;
+        lp.html = `<h3>${divine() ? "Gebete dieses Kapitels" : b("book.chList")}${i ? b("book.contShort") : ""}</h3><div class="ch-list">${part.map((x) => `<div class="ch-row"><span class="tq">${quickGlyph(x.m, { marks: false })}</span><span class="ch-nm">${e(x.t.title)}<i>${e(RULES.name(x.m))}</i></span><span class="tp">${x.page}</span></div>`).join("")}</div>`;
       });
     }
     front.forEach((p, i) => pages.push({ ...p, no: i + 1, running: "" }));
@@ -688,9 +706,9 @@
         const chunk = toc.slice(i * PER_TOC, (i + 1) * PER_TOC);
         pages.push({
           no: front.length + i + 1,
-          running: "Verzeichnis",
-          html: (i === 0 ? `<h3>Verzeichnis der ${divine() ? "Gebete" : "Formeln"}</h3>` : "") +
-            `<table class="toc">${chunk.map((x) => `<tr><td class="tq">${quickGlyph(x.m, { marks: false })}</td><td class="tg">${x.m.spell.everyday ? "A" : x.m.level === 0 ? "0" : U.ROMAN[x.m.level]}</td><td>${e(x.t.title)}<span class="tn">${e(RULES.name(x.m))}</span></td><td class="tp">${x.page}</td></tr>`).join("")}</table>`,
+          running: divine() ? "Verzeichnis" : b("book.tocRunning"),
+          html: (i === 0 ? `<h3>${divine() ? "Verzeichnis der Gebete" : b("book.tocTitle")}</h3>` : "") +
+            `<table class="toc">${chunk.map((x) => `<tr><td class="tq">${quickGlyph(x.m, { marks: false })}</td><td class="tg">${x.m.spell.everyday ? b("book.everydayMark") : x.m.level === 0 ? "0" : U.ROMAN[x.m.level]}</td><td>${e(x.t.title)}<span class="tn">${e(RULES.name(x.m))}</span></td><td class="tp">${x.page}</td></tr>`).join("")}</table>`,
         });
       }
     }
@@ -812,7 +830,7 @@
       const a = keys[i], b = keys[j - 1];
       const nm = (x) => chapterName(x);
       if (a === b) return nm(a);
-      return /^\d$/.test(a) && /^\d$/.test(b) ? `${U.ROMAN[+a]}.–${U.ROMAN[+b]}. Grad` : `${nm(a)} – ${nm(b)}`;
+      return /^\d$/.test(a) && /^\d$/.test(b) ? (EN() && !divine() ? `Degrees ${U.ROMAN[+a]}–${U.ROMAN[+b]}` : `${U.ROMAN[+a]}.–${U.ROMAN[+b]}. Grad`) : `${nm(a)} – ${nm(b)}`;
     };
     const vols = [];
     for (let v = 0; v < k; v++) {
@@ -831,7 +849,9 @@
   // Brevier: Zauber außerhalb der Klassenliste (z. B. nach einem Klassenwechsel) landen als „Fremde Gebete“ am Ende
   const foreign = (m) => divine() && (m.spell.everyday || m.spell.levels[CLASS.list] == null);
   const chapterKey = (m) => (foreign(m) ? "foreign" : m.spell.everyday ? "everyday" : m.level === 0 ? "cantrip" : String(m.level));
-  const chapterName = (k) => (k === "foreign" ? "Fremde Gebete" : k === "everyday" ? "Alltagszauber" : k === "cantrip" ? "Zaubertricks" : U.ROMAN[+k] + ". Grad");
+  const chapterName = (k) => (divine() || !EN()
+    ? (k === "foreign" ? "Fremde Gebete" : k === "everyday" ? "Alltagszauber" : k === "cantrip" ? "Zaubertricks" : U.ROMAN[+k] + ". Grad")
+    : (k === "everyday" ? "Everyday spells" : k === "cantrip" ? "Cantrips" : "Degree " + U.ROMAN[+k]));
   // Sortierschlüssel der Kapitel (Zaubertricks vor Alltagszaubern, Fremde Gebete zuletzt)
   const rank = (m) => (foreign(m) ? 100 : 0) + m.level + (m.spell.everyday ? 0.5 : 0);
   const ORDINAL = ["", "erste", "zweite", "dritte", "vierte", "fünfte", "sechste", "siebte", "achte", "neunte"];
@@ -848,6 +868,20 @@
     8: ["Das Achteck bindet", "Acht Knoten binden Geist, Gestalt und Schicksal. Was diese Ordnung festhält, bleibt festgehalten.", "Sie wird selten gewirkt und nie leichtfertig."],
     9: ["Neun Knoten, die Grenze", "Die neunte Ordnung ist die Grenze dessen, was ein sterblicher Kreis tragen kann. Darüber hinaus beginnt das Reich der Götter.", "Wer hier zeichnet, hat jede Linie dieses Buches tausendmal gezogen."],
   };
+  const ORDINAL_EN = ["", "first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth"];
+  const CHAPTER_TEXT_EN = {
+    cantrip: ["Finger Exercises", "Circles without knots of order: one ring, one sign, one core. Nothing holds these formulas fast, and so they are never spent – they can be cast for as long as the hand stays steady.", "Whoever wishes to draw the great circles begins here. Every finger exercise teaches a single movement that returns later in mightier formulas."],
+    everyday: ["Small Arts", "Variants that stand in no textbook. Each takes a known formula and trims it down to exactly one purpose, until hardly any power is left – and in return it fits into a single breath.", "Gathered in inns, at markets and from other people's notebooks. Seldom useful, almost always a delight."],
+    1: ["One Knot Holds the Circle", "The first knot of order binds the formula to the caster. It does not reach far and does not hold long, but it obeys.", "Here one learns that a circle is only as good as its weakest line."],
+    2: ["Two Knots, One Axis", "With the second knot the circle gains an axis. Power can now be aimed, spread and held for a while.", "Most faults at this stage are imbalances: one knot pulls harder than the other."],
+    3: ["The Triangle Bears", "Three knots form the first stable figure. Formulas of the third order carry themselves, reach far and strike many at once.", "What succeeds here decides battles. So does what fails."],
+    4: ["The Square Opens", "Four knots stretch a field larger than the circle. Formulas of this order reach into rooms the caster cannot see.", "From here on every line demands patience; a square drawn in haste will not close."],
+    5: ["The Pentagram Connects", "Five knots connect places, planes and beings. The fifth order is the threshold of mastery.", "Whoever crosses it no longer merely draws circles – they bind them together."],
+    6: ["The Hexagon Endures", "Six knots give a formula duration and weight. It survives disturbances that tear smaller circles apart.", "The art lies in not letting the hexagon grow rigid."],
+    7: ["The Heptagon Reaches Out", "Seven knots cannot be closed in a single stroke. Formulas of this order touch planes, time and reality itself.", "Every fault here has consequences that last longer than the spell."],
+    8: ["The Octagon Binds", "Eight knots bind mind, shape and fate. What this order holds stays held.", "It is seldom cast and never lightly."],
+    9: ["Nine Knots, the Limit", "The ninth order is the limit of what a mortal circle can bear. Beyond it begins the realm of the gods.", "Whoever draws here has drawn every line of this book a thousand times."],
+  };
   function chapterFigure(k) {
     const n = /^\d$/.test(k) ? +k : 0;
     const pt = (i, r) => [Math.sin((2 * Math.PI * i) / n) * r, -Math.cos((2 * Math.PI * i) / n) * r].map((v) => v.toFixed(2)).join(" ");
@@ -863,7 +897,15 @@
   }
   function chapterHTML(k, no, cont) {
     if (divine()) return divineChapterHTML(k, no, cont);
-    const own = (window.PROFILE && PROFILE.chapters && PROFILE.chapters[k]) || null;
+    // eigene Kapiteltexte nur in der Sprache des Profils (PROFILE.forLang)
+    const PB = window.PROFILE && PROFILE.book ? PROFILE.book() : window.PROFILE;
+    const own = (PB && PB.chapters && PB.chapters[k]) || null;
+    if (EN()) {
+      const [sub, ...paras] = own || CHAPTER_TEXT_EN[k] || ["", ""];
+      const title = (k === "everyday" ? "Everyday Spells" : k === "cantrip" ? "Cantrips" : `Spells of the ${U.cap(ORDINAL_EN[+k])} Degree`) + (cont ? " (continued)" : "");
+      const kicker = /^\d$/.test(k) ? `The ${U.cap(ORDINAL_EN[+k])} Order` : k === "cantrip" ? "Without Order" : "Variants";
+      return `<div class="chapter"><div class="ch-kicker">Chapter ${U.ROMAN[no] || no} · ${kicker}</div><h1 class="ch-title">${e(title)}</h1>${chapterFigure(k)}<div class="ch-sub">${e(sub)}</div>${paras.map((p) => `<p>${e(p)}</p>`).join("")}</div>`;
+    }
     const [sub, ...paras] = own || CHAPTER_TEXT[k] || ["", ""];
     const title = (k === "everyday" ? "Alltagszauber" : k === "cantrip" ? "Zaubertricks" : `Zauber des ${U.ROMAN[+k]}. Grades`) + (cont ? " (Fortsetzung)" : "");
     const kicker = /^\d$/.test(k) ? `Die ${ORDINAL[+k]} Ordnung` : k === "cantrip" ? "Ohne Ordnung" : "Sonderformen";
@@ -897,7 +939,7 @@
   }
 
   // Leere Seite vor einem mehrseitigen Zauber
-  const fillerHTML = () => `<div class="filler"><svg viewBox="-50 -50 100 100" class="filler-orn"><circle r="44"/><circle r="38" class="thin"/><path d="M0-38L33 19-33 19Z M0 38L33-19-33-19Z" class="thin"/><circle r="6"/></svg><div class="filler-txt">Für Notizen</div></div>`;
+  const fillerHTML = () => `<div class="filler"><svg viewBox="-50 -50 100 100" class="filler-orn"><circle r="44"/><circle r="38" class="thin"/><path d="M0-38L33 19-33 19Z M0 38L33-19-33-19Z" class="thin"/><circle r="6"/></svg><div class="filler-txt">${b("book.filler")}</div></div>`;
 
   // Regelband: zweites Buch nur mit Regeltexten, nummeriert wie das Inhaltsverzeichnis des Zauberbuchs
   function rulesBook(entries, settings) {

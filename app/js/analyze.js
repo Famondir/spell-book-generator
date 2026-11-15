@@ -114,7 +114,8 @@
     else if (/round/.test(l)) (kind = "round"), (de = "Runden");
     else if (/minute/.test(l)) (kind = "minutes"), (de = "Minuten (Ritual)");
     else if (/hour|day/.test(l)) (kind = "hours"), (de = "Stunden (Ritual)");
-    return { kind, de, raw: c, ritual: kind === "minutes" || kind === "hours" };
+    const en = { standard: "standard action", swift: "swift action", immediate: "immediate action", fullround: "full-round action", round: "rounds", minutes: "minutes (ritual)", hours: "hours (ritual)" }[kind];
+    return { kind, de, en, raw: c, ritual: kind === "minutes" || kind === "hours" };
   }
 
   function parseComponents(c) {
