@@ -25,6 +25,6 @@
 
 ## 5. Geräte und Doku
 
-- [ ] 5.1 Auf echtem Android-Gerät installieren: Start, Offline, Drucken aus der App, Charakter-Import mit Profilpaket
-- [ ] 5.2 Auf iOS (falls verfügbar): getrennter Speicher bestätigt, Drucken
+- [x] 5.1 Auf echtem Android-Gerät installieren (Blackview Tab 11 SE, 11"): Start, Charakter-Import mit Profilpaket (377 Zauber), Buch als Einzelseite; gefunden und behoben: ids im Export, Nachmessen im Seitenbetrachter
+- [ ] 5.2 Auf iOS (falls verfügbar): getrennter Speicher bestätigt, Drucken – nicht getestet (kein iOS-Gerät); Hinweis auf den eigenen Speicher steht in Anleitung und Einstellungen
 - [x] 5.3 `docs/GUIDE.md` und README: Installieren je System, ~10 MB beim ersten Mal, iOS-Hinweis zum eigenen Speicher, Notfall-`sw.js` zum Abmelden
