@@ -54,6 +54,12 @@ window.VITRAIL = (function () {
     rosequartz: { de: "Rosenquarz", c: "#d7a3a8", tex: "vein", tc: "#efd0d2" },
     ivory: { de: "Bein", c: "#eadfc4", tex: "band", tc: "#d3c5a4" },
   };
+  // Englische Steinnamen (Buchsprache en)
+  const STONES_EN = {
+    marble: "marble", granite: "granite", slate: "slate", basalt: "basalt", obsidian: "obsidian", jasper: "red jasper", porphyry: "porphyry", bloodjasper: "blood jasper", carnelian: "carnelian", brownjasper: "brown jasper", sandstone: "sandstone", amber: "amber", tigereye: "tiger's eye", citrine: "citrine", gold: "gold inlay", silver: "silver inlay", bronze: "bronze inlay", malachite: "malachite", jade: "jade", aquamarine: "aquamarine", chalcedony: "chalcedony", lapis: "lapis lazuli", sodalite: "sodalite", amethyst: "amethyst", rhodonite: "rhodonite", rosequartz: "rose quartz", ivory: "bone",
+  };
+  // Buchsprache: nur „en“ schaltet um, alles andere bleibt deutsch
+  const EN = () => !!(window.I18N && I18N.lang.book === "en");
   const ESS_STONE = {
     ignis: "carnelian", aqua: "aquamarine", aer: "chalcedony", terra: "brownjasper", vita: "malachite", mors: "obsidian",
     lux: "citrine", umbra: "slate", mens: "amethyst", vis: "amber", ordo: "granite", fluxus: "rhodonite",
@@ -85,12 +91,19 @@ window.VITRAIL = (function () {
   const materialFor = (d) => (SETTING === "stone" || (SETTING === "auto" && isDwarven(d)) ? "stone" : "glass");
   const use = (id) => (MAT = MATS[id] || MATS.glass);
   const stoneOf = (key) => STONES[key] || STONES.granite;
+  const stoneName = (key) => (EN() ? STONES_EN[STONES[key] ? key : "granite"] : stoneOf(key).de);
   const essColor = (id) => (MAT.id === "stone" ? stoneOf(ESS_STONE[id]).c : ESS_GLASS[id]);
   // Wörter je Material (Legende, Vorspann)
   const WORDS = {
     glass: { lane: "Bahn", lanes: "Bahnen", stack: "nebeneinander", foils: "Kreise", item: "Fenster", items: "Fenster", piece: "Scheibe", pieces: "Scheiben", accent: "Akzentscheiben", base: "Grundscheiben", tym: "Rundfenster", read: "Vom Lesen der Fenster", stones: "Die Gläser", border: "Rote und helle Gläser am Rand" },
     stone: { lane: "Schicht", lanes: "Schichten", stack: "übereinander", foils: "Rauten", item: "Steinbild", items: "Steinbilder", piece: "Stein", pieces: "Steine", accent: "Akzentsteine", base: "Grundsteine", tym: "Sechseckfeld", read: "Vom Lesen der Steinbilder", stones: "Die Steine", border: "Rote und weiße Steine am Rand" },
   };
+
+  const WORDS_EN = {
+    glass: { lane: "lane", lanes: "lanes", stack: "side by side", foils: "circles", item: "window", items: "windows", piece: "pane", pieces: "panes", accent: "accent panes", base: "base panes", tym: "round window", read: "On Reading the Windows", stones: "The Glass", border: "Red and pale glass at the edge" },
+    stone: { lane: "layer", lanes: "layers", stack: "one above another", foils: "lozenges", item: "stone picture", items: "stone pictures", piece: "stone", pieces: "stones", accent: "accent stones", base: "base stones", tym: "hexagon field", read: "On Reading the Stone Pictures", stones: "The Stones", border: "Red and white stones at the edge" },
+  };
+  const wordsFor = (id) => (EN() ? WORDS_EN : WORDS)[id];
 
   // --- Geometrie ---------------------------------------------------------------------
   const f1 = (v) => Math.round(v * 10) / 10;
@@ -750,7 +763,7 @@ window.VITRAIL = (function () {
     for (const [k, d] of t) { const [mode, c] = k.split("|"); o += mode === "fill" ? `<path d="${d}" fill="${c}"/>` : `<path d="${d}" fill="none" stroke="${c}" stroke-width=".5"/>`; }
     return mini("0 0 24 24", o + `<path d="M1 1H23V23H1Z" fill="none" stroke="${MAT.ink}" stroke-width="1"/>`);
   }
-  const essStoneName = (id) => stoneOf(ESS_STONE[id]).de;
+  const essStoneName = (id) => stoneName(ESS_STONE[id]);
   function glassSwatch(c) {
     return mini("0 0 24 24", `<path d="M1 1H23V23H1Z" fill="${c}" stroke="${MAT.ink}" stroke-width="1.6"/><path d="M1 9L12 13L23 6M12 13L9 23" fill="none" stroke="${MAT.ink}" stroke-width="1.2"/><path d="M3 3H10L5 7Z" fill="#fff" opacity=".25"/>`);
   }
@@ -802,6 +815,9 @@ window.VITRAIL = (function () {
 
   // Lesart eines Fensters (für Dialog und Vorspann); Reihenfolge = Nummern der Beschriftung
   const CORNER_DE = { 3: "Dreieck", 4: "Viereck", 5: "Fünfeck", 6: "Sechseck", 7: "Siebeneck" };
+  const CORNER_EN = { 3: "triangle", 4: "square", 5: "pentagon", 6: "hexagon", 7: "heptagon" };
+  const DEGREE_EN = ["no degree", "first degree", "second degree", "third degree", "fourth degree", "fifth degree", "sixth degree", "seventh degree", "eighth degree", "ninth degree"];
+  const MOT_EN = { sword: "sword", sun: "sun", hammer: "hammer", anvil: "anvil", flame: "flame", shield: "shield", scales: "scales", eye: "eye", star: "star", crown: "crown", moon: "moon", key: "key", tree: "tree", feather: "feather", rose: "rose", rosette: "rosette" };
   const ANNOT_ORDER = ["lanes", "tym", "md", "accent", "base", "cells", "socle", "border"];
   function legend(m, deity) {
     const prev = MAT;
@@ -812,10 +828,43 @@ window.VITRAIL = (function () {
       MAT = prev;
     }
   }
-  function legendItems(m, deity) {
+  // Englische Lesart des Fensters (eigene Formulierung, keine Wort-für-Wort-Übersetzung)
+  function legendItemsEn(m, deity) {
     const T = window.THEORY;
-    const Wd = WORDS[MAT.id];
-    const stoneNames = (keys) => (MAT.id === "stone" ? ` (${keys.map((k) => stoneOf(k).de).join(", ")})` : "");
+    const Wd = wordsFor(MAT.id);
+    const stone = MAT.id === "stone";
+    const cap = (x) => x.charAt(0).toUpperCase() + x.slice(1);
+    const tl = (o) => (o && o.en ? o.en.de : o && o.de) || "";
+    const stoneNames = (keys) => (stone ? ` (${keys.map((k) => stoneName(k)).join(", ")})` : "");
+    const { front, back } = symbolMotifs(deity && deity.symbol);
+    const ed = (id) => T.ESS[id].en.de.replace(/ \(.*\)$/, "");
+    const kind = m.shape && m.shape.kind;
+    const cellMode = ["ray", "line", "cone"].includes(kind) ? (stone ? "stretched sideways, along the layers" : "stretched upright") : ["burst", "spread", "emanation", "sphere", "cylinder"].includes(kind) ? "in rings about the medallion" : stone ? "even hexagons" : "even";
+    const n = Math.max(1, m.level);
+    const items = [
+      { k: cap(Wd.lanes), key: "lanes", t: `${n} ${n > 1 ? Wd.lanes : Wd.lane} – ${DEGREE_EN[m.level] || m.level + "th degree"}. The higher the degree, the more ${Wd.lanes} ${Wd.stack}.` },
+      { k: stone ? "Hexagon field" : "Arch field", key: "tym", t: `${cap(Wd.tym)} above with the sacred symbol (${deity ? deity.symbol + " → " : ""}${MOT_EN[front]}${back ? " before " + MOT_EN[back] : ""}). The ${foilCount(m.school)} ${Wd.foils} about it are the foils of the tracery; their number shows the school (${tl(m.schoolInfo)}).` },
+      { k: "Medallion", key: "md", t: (() => {
+        const where = stone ? "in the middle of the layers" : "in the middle of the lanes";
+        const sp = medallionSpec(m);
+        const comps = COMP_KEYS.filter((c) => m.components && m.components[c]);
+        const petals = sp.petals ? `${sp.petals} petals for the range (${tl(m.range)})${sp.unlimited ? ", with rays" : ""}, ${sp.tip === "pointed" ? "pointed: a swift prayer" : sp.tip === "double" ? "two wreaths of petals: a long prayer" : "round: a prayer of the usual length"}` : `a closed disc for the range ${tl(m.range)}`;
+        return `Rosette ${where}, alternately in the colour of the principal essence ${T.ESS[m.primary].latin} (${ed(m.primary)})${m.essences[1] ? " and of the secondary essence " + T.ESS[m.essences[1].id].latin : ""}: ${petals}. The setting is ${sp.corners ? `a ${CORNER_EN[sp.corners]} for ${comps.length} ${comps.length === 1 ? "component" : "components"} (${comps.join(", ")})` : "round: no components"}${sp.sr ? "; the second ring shows resistance to spells" : ""}.`;
+      })() },
+      { k: cap(Wd.accent), key: "accent", t: `About every third ${Wd.piece} carries an essence colour, as often as its share: ${m.essences.map((x) => `${T.ESS[x.id].latin}${stone ? " (" + essStoneName(x.id) + ")" : ""} ${x.pct} %`).join(", ")}.` },
+      { k: cap(Wd.base), key: "base", t: deity && deity.colors.length ? `The remaining ${Wd.pieces} are in the sacred colours of ${deity.name}: ${deity.colors.map((c) => c.name).join(", ")}${stoneNames(deity.colors.map((c) => COLOR_STONE[c.name] || "granite"))}.` : `The remaining ${Wd.pieces} are in a palette after the alignment (the deity has no sacred colours)${stoneNames(ALIGN_STONE[(deity && deity.align) || "LG"] || ALIGN_STONE.LG)}.` },
+      { k: "Cells", key: "cells", t: `Shape of the ${Wd.pieces} follows the form of the working (${kind && T.SHAPES[kind] ? tl(T.SHAPES[kind]) : "free"}): ${cellMode}.` },
+      { k: "Socle", key: "socle", t: `A band at the foot of ${stone ? "the stone picture" : "each lane"}, after the duration: ${m.duration ? tl(m.duration) : "–"}.` },
+      { k: "Border", key: "border", t: m.save && m.save.type !== "none" ? `${Wd.border}: the target may resist (${tl(m.save)}).` : "No border: the target cannot resist." },
+    ];
+    return items.map((x, i) => ({ ...x, n: i + 1 }));
+  }
+
+  function legendItems(m, deity) {
+    if (EN()) return legendItemsEn(m, deity);
+    const T = window.THEORY;
+    const Wd = wordsFor(MAT.id);
+    const stoneNames = (keys) => (MAT.id === "stone" ? ` (${keys.map((k) => stoneName(k)).join(", ")})` : "");
     const { front, back } = symbolMotifs(deity && deity.symbol);
     const MOT = { sword: "Schwert", sun: "Sonne", hammer: "Hammer", anvil: "Amboss", flame: "Flamme", shield: "Schild", scales: "Waage", eye: "Auge", star: "Stern", crown: "Krone", moon: "Mond", key: "Schlüssel", tree: "Baum", feather: "Feder", rose: "Rose", rosette: "Rosette" };
     const ed = (id) => T.ESS[id].de.replace(/ \(.*\)$/, "");
@@ -846,11 +895,11 @@ window.VITRAIL = (function () {
     const prev = MAT;
     use(materialFor(d));
     try {
-      return fn(WORDS[MAT.id]);
+      return fn(wordsFor(MAT.id));
     } finally {
       MAT = prev;
     }
   };
-  const colorStoneName = (name) => stoneOf(COLOR_STONE[name] || "granite").de;
+  const colorStoneName = (name) => stoneName(COLOR_STONE[name] || "granite");
   return { render, ornament, legend, setMaterial, materialFor, withMaterial, isDwarven, essSwatch, essStoneName, essColor, colorStoneName, symbolMotifs, symbolSVG, palette, glassSwatch, medallionMini, foilsMini, socleMini, cellsMini, borderMini, foilCount, ESS_GLASS, MOTIFS };
 })();

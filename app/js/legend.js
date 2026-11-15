@@ -4,23 +4,27 @@
 (function () {
   const T = window.THEORY;
   const e = U.esc;
+  // Buchsprache: Beschriftungen und Namen kommen in „de“ oder „en“ (Unterobjekt .en der Theorie-Tabellen)
+  const EN = () => window.I18N && I18N.lang.book === "en";
+  const tx = (de, en) => (EN() ? en : de);
+  const enOf = (x) => (EN() && x && x.en) || x;
   const quickSVG = (k) => `<svg class="quick" viewBox="-40 -40 80 80">${(QUICK_SCHOOL[k] || QUICK_SCHOOL.universal)()}</svg>`;
 
-  const schools = (s = 12) => Object.entries(T.SCHOOLS).map(([k, x]) => ({ id: k, glyph: glyphSVG("school", k, { s }), name: x.de, latin: x.latin, sub: `${x.figure} · ${x.verb}` }));
+  const schools = (s = 12) => Object.entries(T.SCHOOLS).map(([k, x]) => ({ id: k, glyph: glyphSVG("school", k, { s }), name: enOf(x).de, latin: x.latin, sub: `${enOf(x).figure} · ${enOf(x).verb}` }));
   // sub: "plane" (Ebene und Gegenpol) oder "corr" (Stunde, Farbe, Metall, Richtung)
   function essences(s = 9, sub = "plane") {
-    const C = (window.TEXTGEN && TEXTGEN.CORRESPOND) || {};
+    const C = (window.TEXTGEN && (EN() ? TEXTGEN.LX("en").CORRESPOND : TEXTGEN.CORRESPOND)) || {};
     return T.ESSENCES.map((x) => {
       const c = C[x.id] || {};
-      return { id: x.id, glyph: glyphSVG("essence", x.id, { s }), name: x.latin, de: x.de, opp: T.ESS[x.opp].latin, sub: sub === "corr" ? [c.hour, c.color, c.metal, c.dir].filter(Boolean).join(" · ") : `${x.plane} · Gegenpol: ${T.ESS[x.opp].latin}` };
+      return { id: x.id, glyph: glyphSVG("essence", x.id, { s }), name: x.latin, de: enOf(x).de, opp: T.ESS[x.opp].latin, sub: sub === "corr" ? [c.hour, c.color, c.metal, c.dir].filter(Boolean).join(" · ") : `${enOf(x).plane} · ${tx("Gegenpol", "Opposite pole")}: ${T.ESS[x.opp].latin}` };
     });
   }
-  const signs = (s = 8) => Object.entries(T.SIGNS).map(([k, x]) => ({ id: k, glyph: glyphSVG("sign", k, { s }), name: x.de, sub: x.text }));
-  const alchemy = (s = 8) => Object.entries(T.ALCHEMY).map(([k, x]) => ({ id: k, glyph: glyphSVG("alch", k, { s }), name: x, plain: true }));
+  const signs = (s = 8) => Object.entries(T.SIGNS).map(([k, x]) => ({ id: k, glyph: glyphSVG("sign", k, { s }), name: enOf(x).de, sub: enOf(x).text }));
+  const alchemy = (s = 8) => Object.entries(T.ALCHEMY).map(([k, x]) => ({ id: k, glyph: glyphSVG("alch", k, { s }), name: EN() && T.ALCHEMY_EN ? T.ALCHEMY_EN[k] || x : x, plain: true }));
   // Kurzfiguren der Schulen; full: zusätzlich das volle Kernsiegel (Schlüssel im Lehrheft)
-  const quickSchools = (s = 12) => Object.entries(T.SCHOOLS).map(([k, x]) => ({ id: k, glyph: quickSVG(k), full: glyphSVG("school", k, { s }), name: x.de }));
+  const quickSchools = (s = 12) => Object.entries(T.SCHOOLS).map(([k, x]) => ({ id: k, glyph: quickSVG(k), full: glyphSVG("school", k, { s }), name: enOf(x).de }));
   // Was die Striche einer Schnellglyphe sagen
-  const QUICK_RULES = [
+  const QUICK_RULES_DE = [
     ["Kreis", "nach der Dauer, eine einfache Form des Dauerrings (Tafel „Kreise nach der Dauer“)."],
     ["Kurzfigur der Schule", "im Kreis: die Kurzform des Kernsiegels."],
     ["Hauptessenz", "in der Mitte, in Rubrik: dasselbe Zeichen wie im Essenzring."],
@@ -31,35 +35,52 @@
     ["Gestaltstrich", "außen oben am äußersten Ring, einer je Gestalt (Tafel „Gestaltstriche“); bei Zielen ein Strich mit Knoten je Ziel, höchstens drei."],
     ["Punkte", "unten: einer je Ordnung; Zaubertricks haben keine."],
   ];
+  const QUICK_RULES_EN = [
+    ["Circle", "by the duration, a simple form of the ring of duration (table “Circles by Duration”)."],
+    ["Short figure of the school", "in the circle: the short form of the core seal."],
+    ["Principal essence", "in the middle, in rubric: the same sign as in the essence ring."],
+    ["Intent", () => "beside the figure, left and right (for the eye and for the two circles: above and below; for the cross: obliquely above): the initial signs of the verb and of the essence word of the core line, " +
+      (window.SCRIPTS && SCRIPTS.mode() === "latin"
+        ? "in transliteration: capital letters, even for formulas from foreign tongues, whose initial sounds stand as the scholars transcribe them (Š, Ḫ, Ph)."
+        : "in the script of their own language: Latin capitals, Greek lower-case letters, the first cuneiform sign, the first sound sign of the hieroglyphs, an ogham stroke or a sign of the primeval tongue.")],
+    ["Shape stroke", "outside, at the top of the outermost ring, one for each shape (table “Shape Strokes”); for targets a stroke with one knot per target, three at most."],
+    ["Dots", "at the bottom: one for each order; finger exercises have none."],
+  ];
   // Tafeln: Kreisformen je Dauer und Gestaltstriche, jeweils mit kleiner Vorschau
   const QUICK_RING_ITEMS = [
     ["instant", "oben offen"], ["rounds", "zwei Zeitmarken"], ["minutes", "gestrichelt"], ["hours", "doppelt"],
     ["days", "dreifach"], ["permanent", "mit Schwanz"], ["concentration", "mit Faden"], ["special", "rechts offen"],
   ];
+  const QUICK_RING_ITEMS_EN = ["open at the top", "two time marks", "dashed", "double", "triple", "with a tail", "with a thread", "open at the right"];
   const QUICK_SHAPE_ITEMS = [
     ["ray", "Pfeil hinaus"], ["touch", "Pfeil herein"], ["targets", "Knoten", 1], ["targets", "zwei Knoten", 2], ["targets", "drei Knoten", 3],
     ["cone", "Keil"], ["line", "Doppelstrich"], ["burst", "Schrägstrahlen"], ["spread", "Welle"], ["emanation", "Bogen"],
     ["cylinder", "T"], ["wall", "Querstrich"], ["sphere", "Kreis mit Gürtel"], ["cube", "Quadrat"], ["object", "volles Quadrat"],
     ["self", "Schleife"], ["summon", "Tor"], ["sensor", "Auge"], ["symbol", "Rune"], ["other", "Schale"],
   ];
-  const quickRings = () => QUICK_RING_ITEMS.map(([k, sub]) => ({ id: k, glyph: QUICK_PART.ring(k), name: T.DURATIONS[k].de, sub }));
-  const quickShapes = () => QUICK_SHAPE_ITEMS.map(([k, sub, n]) => ({ id: k + (n || ""), glyph: QUICK_PART.shape(k, n), name: k === "targets" ? (n === 1 ? "ein Ziel" : n === 2 ? "zwei Ziele" : "drei und mehr") : T.SHAPES[k].de, sub }));
+  const QUICK_SHAPE_ITEMS_EN = ["arrow outwards", "arrow inwards", "knot", "two knots", "three knots", "wedge", "double stroke", "slanting rays", "wave", "arc", "T", "crossbar", "circle with a belt", "square", "filled square", "loop", "gate", "eye", "rune", "bowl"];
+  const quickRings = () => QUICK_RING_ITEMS.map(([k, sub], i) => ({ id: k, glyph: QUICK_PART.ring(k), name: enOf(T.DURATIONS[k]).de, sub: tx(sub, QUICK_RING_ITEMS_EN[i]) }));
+  const quickShapes = () => QUICK_SHAPE_ITEMS.map(([k, sub, n], i) => ({ id: k + (n || ""), glyph: QUICK_PART.shape(k, n), name: k === "targets" ? (n === 1 ? tx("ein Ziel", "one target") : n === 2 ? tx("zwei Ziele", "two targets") : tx("drei und mehr", "three or more")) : enOf(T.SHAPES[k]).de, sub: tx(sub, QUICK_SHAPE_ITEMS_EN[i]) }));
   // split: jede Regel als eigene Liste (fortlaufend nummeriert), damit der Satz zwischen ihnen umbrechen kann
   const quickRules = (split = false) => {
     const li = ([k, v]) => `<li><b>${e(k)}:</b> ${e(typeof v === "function" ? v() : v)}</li>`;
-    return split ? QUICK_RULES.map((r, i) => `<ol class="laws" start="${i + 1}">${li(r)}</ol>`).join("") : `<ol class="laws">${QUICK_RULES.map(li).join("")}</ol>`;
+    const R = tx(QUICK_RULES_DE, QUICK_RULES_EN);
+    return split ? R.map((r, i) => `<ol class="laws" start="${i + 1}">${li(r)}</ol>`).join("") : `<ol class="laws">${R.map(li).join("")}</ol>`;
   };
   // Woher die Buchstaben kommen: lateinische Kernzeile eines Beispiels, Anfangsbuchstaben hervorgehoben
   function quickSource(m) {
     const c = TEXTGEN.coreChoice(m), X = FORMULA.get("latin").lex;
     const w = (x) => `<b>${e(x[0])}</b>${e(x.slice(1))}`;
-    return `<p class="quick-src">Die Absicht steht in der Kernzeile: <i>${w(U.cap(c.imp))} ${w(c.ess)}, ${e(X.shape[m.shape.kind])}!</i> ergibt ${e(c.letters[0])} und ${e(c.letters[1])}. So teilen sich keine zwei Formeln derselben Liste eine Schnellglyphe.</p>`;
+    const line = `<i>${w(U.cap(c.imp))} ${w(c.ess)}, ${e(X.shape[m.shape.kind])}!</i>`;
+    return EN()
+      ? `<p class="quick-src">The intent stands in the core line: ${line} yields ${e(c.letters[0])} and ${e(c.letters[1])}. In this way no two formulas of the same list share a quick glyph.</p>`
+      : `<p class="quick-src">Die Absicht steht in der Kernzeile: ${line} ergibt ${e(c.letters[0])} und ${e(c.letters[1])}. So teilen sich keine zwei Formeln derselben Liste eine Schnellglyphe.</p>`;
   }
 
   // Darstellungen
   const label = (x) => x.plain ? e(x.name) : `<b>${e(x.name)}</b>${x.latin ? ` <i>${e(x.latin)}</i>` : ""}${x.de ? ` – ${e(x.de)}` : ""}`;
   const grid = (items, cls) => `<div class="legend-grid ${cls || ""}">${items.map((x) => `<div class="lg">${x.glyph}<div>${label(x)}${x.sub ? `<br><span>${e(x.sub)}</span>` : ""}</div></div>`).join("")}</div>`;
-  const table = (items, cls) => `<div class="pr-table ${cls || ""}">${items.map((x) => `<div class="pr-row">${x.glyph}<div>${label(x)}${x.opp && !x.sub.includes("Gegenpol") ? ` <span class="opp">⟷ ${e(x.opp)}</span>` : ""}${x.sub ? `<br><span class="corr">${e(x.sub)}</span>` : ""}</div></div>`).join("")}</div>`;
+  const table = (items, cls) => `<div class="pr-table ${cls || ""}">${items.map((x) => `<div class="pr-row">${x.glyph}<div>${label(x)}${x.opp && !/Gegenpol|Opposite pole/.test(x.sub) ? ` <span class="opp">⟷ ${e(x.opp)}</span>` : ""}${x.sub ? `<br><span class="corr">${e(x.sub)}</span>` : ""}</div></div>`).join("")}</div>`;
 
   // Kacheln: Vorschau oben, Name und Zusatz darunter (n Spalten)
   const tiles = (items, n, cls) => `<div class="legend-tiles c${n} ${cls || ""}">${items.map((x) => `<figure>${x.glyph}<figcaption>${e(x.name)}${x.sub ? `<br><span>${e(x.sub)}</span>` : ""}</figcaption></figure>`).join("")}</div>`;

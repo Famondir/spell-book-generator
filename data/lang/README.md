@@ -281,3 +281,13 @@ Enchantment, Evocation, Illusion, Necromancy, Transmutation (and Universal).
 | Quader (Schwellentor der Zähigkeit) | block |
 | Zeichen: Säule, Ausguss, Schwebe, Zug, Bruch, Richtung, Bündelung, Fenster, Raute, Sammlung, Dämpfung, Geschoss, Wiederkehr, Sicht, Gewebe, Maß, Regen, Bote | column, outpouring, hover, pull, breaking, direction, focusing, window, lozenge, gathering, damping, missile, recurrence, sight, weave, measure, rain, messenger |
 | Monate des neutralen Profils (…mond) | Icemoon, Thawmoon, Lentenmoon, Eastermoon, Joymoon, Fallowmoon, Haymoon, Harvestmoon, Autumnmoon, Vintagemoon, Fogmoon, Yulemoon |
+| Gemeinde (Antwort im Choral) / Festkalender / Choral {n} | congregation / calendar of feasts / hymn {n} |
+| Kanon der Kirche / Eigene Worte | canon of the church / the petitioner's own words |
+| Bahnen, Schichten, Pässe, Zellen, Sockel, Medaillon (Glasfenster, Steinintarsie) | lanes, layers, foils, cells, socle, medallion |
+| Bogenfeld / Sechseckfeld / Rundfenster | arch field / hexagon field / round window |
+| Zuständigkeiten, Lieblingswaffe, heiliges Symbol, heiliges Tier, heilige Farben | spheres of influence, favoured weapon, holy symbol, holy animal, holy colours |
+| Gestaltvektoren / Gestaltstriche / Kreise nach der Dauer / Große Ordnung | shape vectors / shape strokes / circles by duration / Great Order |
+| Eckstein Stimme/Geste/Stoff/Fokus | cornerstone voice/gesture/material/focus |
+| Lehrgeld / Zeichen des Meisters / Aufsicht / Sprechstunde | premium / the master's initials / overseer / the master's hour for questions |
+| Auslastung (Andachtsprotokoll) / Bitte ums Behalten | utilisation / prayer to remember |
+| Schutzgott (Tafel der Zeit) / Brauch | patron god / custom |

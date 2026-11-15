@@ -11,6 +11,7 @@
   const SUB_DE = (s) => (EN() ? T.SUBSCHOOLS[s].en.de : T.SUBSCHOOLS[s].de);
   // „III. Ordnung“ / „Fingerübung“ / „Alltagszauber“
   const orderLabel = (m) => (m.spell && m.spell.everyday ? b("sp.everyday") : m.level === 0 ? b("sp.cantrip") : b("sp.order", { r: U.ROMAN[m.level] }));
+  const tx = (de, en) => (EN() ? en : de);
   const q = (x) => (EN() ? `“${x}”` : `„${x}“`);
 
   // ---------------------------------------------------------------------------
@@ -120,8 +121,10 @@
     const fig = short ? "" : `<figure class="circle-box mythic-box">${renderCircle(m, { text: t.formula.band, mythic: aug.length ? "augmented" : true, zoom: 275 })}<figcaption>${b("sp.mythic.fig")}</figcaption></figure>`;
     return `<h4>${b("sp.mythic")}</h4><p>${e(p)}</p>${fig}`;
   }
+  // Beschriftungen des Kreises in der Buchsprache (circle.js)
+  const annotList = (m) => circleAnnotations(m);
   function annotatedBlock(m, t, h = b("sp.annotated")) {
-    const list = circleAnnotations(m);
+    const list = annotList(m);
     return `<h4>${e(h)}</h4><figure class="circle-box annotated-box">${renderCircle(m, { text: t.formula.band, annotate: true })}</figure>
       <ol class="annot-list">${list.map((a) => `<li value="${a.n}"><b>${e(a.k)}:</b> ${e(a.t)}</li>`).join("")}</ol>`;
   }
@@ -359,21 +362,31 @@
     const sample = analyze(window.SPELLS.find((s) => s.name === "Fireball"));
     const st = generateTexts(sample, { name: PROFILE.bookValue(settings, "owner") });
     pages.push({
-      html: `<h3>Von der Lesart der Kreise</h3><p>Jede Formel in diesem Buch ist als Kreis notiert. Ein Kreis wird von außen nach innen gelesen und von innen nach außen gezeichnet. Die Lehre folgt drei Sätzen:</p>
+      html: tx(`<h3>Von der Lesart der Kreise</h3><p>Jede Formel in diesem Buch ist als Kreis notiert. Ein Kreis wird von außen nach innen gelesen und von innen nach außen gezeichnet. Die Lehre folgt drei Sätzen:</p>
       <ol class="laws"><li><b>Der Kreis ist ein Fluss.</b> Was in ihm kreist, bleibt erhalten; was ihn verlässt, wirkt. Geschlossene Ringe halten eine Wirkung über die Zeit, eine offene Matrix gibt sie augenblicklich frei.</li>
       <li><b>Nichts entsteht aus nichts.</b> Jede Wirkung wird bezahlt – mit vorbereiteter Kraft, mit Stoff oder mit dem Wirker selbst.</li>
       <li><b>Erfassen, Lösen, Fügen.</b> Wer eine Formel nicht verstanden hat, kann sie nicht lösen; wer sie nicht löst, kann nichts Neues fügen.</li></ol>
       <figure class="circle-box anatomy">${renderCircle(sample, { text: st.formula.band, annotate: true })}</figure>
       <p class="hint">Beispiel: ${e(st.title)} (Fireball). Die Ziffern werden auf der folgenden Seite erklärt.</p>`,
+      `<h3>On the Reading of Circles</h3><p>Every formula in this book is written down as a circle. A circle is read from the outside inwards and drawn from the inside outwards. The doctrine follows three laws:</p>
+      <ol class="laws"><li><b>The circle is a river.</b> What circulates within it is preserved; what leaves it takes effect. Closed rings hold an effect through time, an open matrix releases it at once.</li>
+      <li><b>Nothing comes from nothing.</b> Every effect is paid for – with prepared power, with material or with the caster’s own self.</li>
+      <li><b>Grasp, loosen, join.</b> Whoever has not understood a formula cannot loosen it; whoever does not loosen it can join nothing new.</li></ol>
+      <figure class="circle-box anatomy">${renderCircle(sample, { text: st.formula.band, annotate: true })}</figure>
+      <p class="hint">Example: ${e(st.title)} (Fireball). The numerals are explained on the following page.</p>`),
     });
     pages.push({
-      html: `<h3>Erweitertes Beispiel: ${e(st.title)}</h3>
+      html: tx(`<h3>Erweitertes Beispiel: ${e(st.title)}</h3>
       <p>Der Feuerball ist eine Hervorrufung der III. Ordnung. So liest man seinen Kreis, Schicht für Schicht von außen nach innen:</p>
-      <ol class="annot-list">${circleAnnotations(sample).map((a) => `<li value="${a.n}"><b>${e(a.k)}:</b> ${e(a.t)}</li>`).join("")}</ol>
+      <ol class="annot-list">${annotList(sample).map((a) => `<li value="${a.n}"><b>${e(a.k)}:</b> ${e(a.t)}</li>`).join("")}</ol>
       <p>Zusammen gelesen: <i>Eine gesprochene, gestische Formel mit Schwefel als Preis, in einer Standard-Aktion gewirkt. Sie trägt weit (vier Ringe), entlädt sich augenblicklich (offene Matrix) als Ausbreitung von Ignis, gestützt von Vis. Ein Ziel kann ihr durch Reflex zur Hälfte ausweichen; Zauberresistenz wirkt.</i></p>`,
+      `<h3>Extended Example: ${e(st.title)}</h3>
+      <p>The fireball is an evocation of the third order. This is how its circle is read, layer by layer from the outside inwards:</p>
+      <ol class="annot-list">${annotList(sample).map((a) => `<li value="${a.n}"><b>${e(a.k)}:</b> ${e(a.t)}</li>`).join("")}</ol>
+      <p>Read together: <i>A spoken, gestured formula with sulfur as its price, cast as a standard action. It carries far (four rings) and discharges at once (open matrix) as a spread of Ignis, supported by Vis. A target can dodge half of it by Reflex; spell resistance applies.</i></p>`),
     });
     pages.push({
-      html: `<h3>Die Schichten</h3><dl class="struct">
+      html: tx(`<h3>Die Schichten</h3><dl class="struct">
         <dt>Ecksteine</dt><dd>Komponenten: Stimme (V), Geste (S), Stoff (M, mit alchemistischem Zeichen), Fokus (F) und göttlicher Fokus (GF).</dd>
         <dt>Zeitmarke</dt><dd>Über dem Kreis: wie lange das Wirken dauert – Punkt (Standard), Blitz (schnell), Bogen (volle Aktion), Stundenglas (Ritual).</dd>
         <dt>Schriftband</dt><dd>Die gesprochene Formel. Fehlt die Stimme, stehen dort stumme Runen.</dd>
@@ -386,46 +399,63 @@
         <dt>Dauerring</dt><dd>Gebrochen (augenblicklich), mit Zeitmarken (Runden), gestrichelt (Minuten), doppelt (Stunden), dreifach (Tage), geschlossene Schlange (permanent), mit Faden (Konzentration). Kerbe: jederzeit lösbar.</dd>
         <dt>Kernsiegel</dt><dd>Die Schule als Figur, darin die Hauptessenz.</dd>
         <dt>Gestaltvektoren</dt><dd>Blass unter allem: Kegel, Linie, Strahl, Explosion, Ausströmung, Wand, Berührung, Selbst, Ziele.</dd></dl>`,
+      `<h3>The Layers</h3><dl class="struct">
+        <dt>Cornerstones</dt><dd>Components: voice (V), gesture (S), material (M, with an alchemical sign), focus (F) and divine focus (DF).</dd>
+        <dt>Time mark</dt><dd>Above the circle: how long the casting takes – dot (standard), flash (swift), arc (full action), hourglass (ritual).</dd>
+        <dt>Script band</dt><dd>The spoken formula. Where the voice is missing, silent runes stand in its place.</dd>
+        <dt>Threshold gates</dt><dd>Red gates in the band: here the target can resist. Eye = Will, block = Fortitude, arrow = Reflex. Two gates: halving or partial effect. Dashed: harmless.</dd>
+        <dt>Seal band</dt><dd>Hatching beneath the band: the formula must prevail against spell resistance.</dd>
+        <dt>Knots of order</dt><dd>One knot for each order. From the third order on they are joined into a star that bears the load.</dd>
+        <dt>Spacing rings</dt><dd>None (personal) up to five (unlimited).</dd>
+        <dt>Ring of signs</dt><dd>Modifiers that give the essence movement. Clustered in the north: a directed effect. Evenly spread: an effect on all sides.</dd>
+        <dt>Essence ring</dt><dd>The essences of the formula, each with its share of the circumference. The red one is the principal essence.</dd>
+        <dt>Ring of duration</dt><dd>Broken (instantaneous), with time marks (rounds), dashed (minutes), double (hours), triple (days), closed serpent (permanent), with a thread (concentration). Notch: can be dismissed at any time.</dd>
+        <dt>Core seal</dt><dd>The school as a figure, with the principal essence at its heart.</dd>
+        <dt>Shape vectors</dt><dd>Pale beneath everything: cone, line, ray, burst, emanation, wall, touch, self, targets.</dd></dl>`),
     });
     // Schulen
     pages.push({
-      html: `<h3>Die Schulen – das Verb</h3>${LEGEND.grid(LEGEND.schools(14), "schools")}`,
+      html: `<h3>${tx("Die Schulen – das Verb", "The Schools – the Verb")}</h3>${LEGEND.grid(LEGEND.schools(14), "schools")}`,
     });
     // Essenzen
     pages.push({
-      html: `<h3>Die sechzehn Essenzen – das Substantiv</h3><p class="hint">Acht Gegensatzpaare, abgeleitet aus den Ebenen der Großen Ordnung. Jede Formel trägt einen Anteil mehrerer Essenzen.</p>${LEGEND.grid(LEGEND.essences(9), "ess")}`,
+      html: `<h3>${tx("Die sechzehn Essenzen – das Substantiv", "The Sixteen Essences – the Noun")}</h3><p class="hint">${tx("Acht Gegensatzpaare, abgeleitet aus den Ebenen der Großen Ordnung. Jede Formel trägt einen Anteil mehrerer Essenzen.", "Eight pairs of opposites, derived from the planes of the Great Order. Every formula carries a share of several essences.")}</p>${LEGEND.grid(LEGEND.essences(9), "ess")}`,
     });
     // Zeichen + Alchemie
     pages.push({
-      html: `<h3>Die Zeichen – das Wie</h3>${LEGEND.grid(LEGEND.signs(8), "signs")}`,
+      html: `<h3>${tx("Die Zeichen – das Wie", "The Signs – the How")}</h3>${LEGEND.grid(LEGEND.signs(8), "signs")}`,
     });
     const ex = ["Fireball", "Shield", "Charm Person", "Magic Missile", "Teleport", "Animate Dead"].map((n) => window.SPELLS.find((s) => s.name === n)).filter(Boolean).map(analyze);
     pages.push({
-      html: `<h3>Schnellglyphen</h3><p>Am Spieltisch bleibt keine Zeit für den vollen Kreis. Wer eine Formel einmal vollständig gezeichnet hat, kann sie mit ihrer Schnellglyphe abrufen – fünf Striche statt fünfzig:</p>
+      html: tx(`<h3>Schnellglyphen</h3><p>Am Spieltisch bleibt keine Zeit für den vollen Kreis. Wer eine Formel einmal vollständig gezeichnet hat, kann sie mit ihrer Schnellglyphe abrufen – fünf Striche statt fünfzig:</p>
       ${LEGEND.quickRules()}
       ${ex[0] ? LEGEND.quickSource(ex[0]) : ""}
       <h3>Kreise nach der Dauer</h3>${LEGEND.tiles(LEGEND.quickRings(), 4, "rings")}`,
+      `<h3>Quick Glyphs</h3><p>In the press of the moment there is no time for the full circle. Whoever has drawn a formula completely once can call it up again with its quick glyph – five strokes instead of fifty:</p>
+      ${LEGEND.quickRules()}
+      ${ex[0] ? LEGEND.quickSource(ex[0]) : ""}
+      <h3>Circles by Duration</h3>${LEGEND.tiles(LEGEND.quickRings(), 4, "rings")}`),
     });
     pages.push({
-      html: `<h3>Gestaltstriche</h3>${LEGEND.tiles(LEGEND.quickShapes(), 4, "shapes")}`,
+      html: `<h3>${tx("Gestaltstriche", "Shape Strokes")}</h3>${LEGEND.tiles(LEGEND.quickShapes(), 4, "shapes")}`,
     });
     pages.push({
-      html: `<h3>Schulfiguren der Schnellglyphen</h3>${LEGEND.grid(LEGEND.quickSchools(), "quick-schools")}
+      html: `<h3>${tx("Schulfiguren der Schnellglyphen", "School Figures of the Quick Glyphs")}</h3>${LEGEND.grid(LEGEND.quickSchools(), "quick-schools")}
       <div class="quick-ex">${ex.map((m) => `<figure>${quickGlyph(m)}<figcaption>${e(generateTexts(m).title)}<br><span>${e(RULES.name(m))}</span></figcaption></figure>`).join("")}</div>`,
     });
     pages.push({
-      html: `<h3>Stoffe und Zeichen der Alchemie</h3>${LEGEND.grid(LEGEND.alchemy(8), "alch")}
-        <h3>Benannte Verbindungen</h3><p class="combos">${Object.entries(T.COMBOS).map(([k, v]) => `<span><b>${e(v)}</b> ${k.split("+").map((x) => T.ESS[x].latin).join(" + ")}</span>`).join(" · ")}</p>`,
+      html: `<h3>${tx("Stoffe und Zeichen der Alchemie", "Substances and Signs of Alchemy")}</h3>${LEGEND.grid(LEGEND.alchemy(8), "alch")}
+        <h3>${tx("Benannte Verbindungen", "Named Combinations")}</h3><p class="combos">${Object.entries(T.COMBOS).map(([k, v]) => `<span><b>${e(EN() && T.COMBOS_EN[k] ? T.COMBOS_EN[k] : v)}</b> ${k.split("+").map((x) => T.ESS[x].latin).join(" + ")}</span>`).join(" · ")}</p>`,
     });
     // Affinitäten (aus allen Zaubern errechnet)
     const aff = schoolAffinities(allModels);
     const order = T.ESSENCES.map((x) => x.id);
     pages.push({
-      html: `<h3>Affinitäten der Schulen</h3><p class="hint">Durchschnittlicher Anteil jeder Essenz in allen ${allModels.length} bekannten Formeln einer Schule, in Prozent.</p>
-      <table class="aff"><tr><th></th>${order.map((id) => `<th title="${T.ESS[id].de}">${glyphSVG("essence", id, { s: 6 })}</th>`).join("")}</tr>
+      html: `<h3>${tx("Affinitäten der Schulen", "Affinities of the Schools")}</h3><p class="hint">${tx(`Durchschnittlicher Anteil jeder Essenz in allen ${allModels.length} bekannten Formeln einer Schule, in Prozent.`, `Average share of each essence in all ${allModels.length} known formulas of a school, in percent.`)}</p>
+      <table class="aff"><tr><th></th>${order.map((id) => `<th title="${enOf(T.ESS[id]).de}">${glyphSVG("essence", id, { s: 6 })}</th>`).join("")}</tr>
       ${Object.entries(aff)
         .sort((a, b) => b[1].n - a[1].n)
-        .map(([sc, a]) => `<tr><th>${e((T.SCHOOLS[sc] || T.SCHOOLS.universal).de)}</th>${order.map((id) => {
+        .map(([sc, a]) => `<tr><th>${e(enOf(T.SCHOOLS[sc] || T.SCHOOLS.universal).de)}</th>${order.map((id) => {
           const v = Math.round(a.ess[id] || 0);
           return `<td style="--v:${Math.min(v, 60) / 60}">${v || ""}</td>`;
         }).join("")}</tr>`)
@@ -439,29 +469,32 @@
   // ---------------------------------------------------------------------------
   const divine = () => !!(window.CLASS && CLASS.tradition === "divine");
   const ALIGN_DE = { LG: "rechtschaffen gut", NG: "neutral gut", CG: "chaotisch gut", LN: "rechtschaffen neutral", N: "neutral", CN: "chaotisch neutral", LE: "rechtschaffen böse", NE: "neutral böse", CE: "chaotisch böse" };
+  const ALIGN_EN = { LG: "lawful good", NG: "neutral good", CG: "chaotic good", LN: "lawful neutral", N: "neutral", CN: "chaotic neutral", LE: "lawful evil", NE: "neutral evil", CE: "chaotic evil" };
   function canonBlock(t) {
-    return `<div class="canon"><h4>Kanon der Kirche <span class="muted">· ${e(t.canon.tone)}</span></h4>${t.canon.lines.map((l) => `<div class="cl ${l.r ? "refrain" : ""}">${l.r ? "<span>℟</span> " : ""}${e(l.t)}</div>`).join("")}</div>`;
+    return `<div class="canon"><h4>${tx("Kanon der Kirche", "Canon of the Church")} <span class="muted">· ${e(t.canon.tone)}</span></h4>${t.canon.lines.map((l) => `<div class="cl ${l.r ? "refrain" : ""}">${l.r ? "<span>℟</span> " : ""}${e(l.t)}</div>`).join("")}</div>`;
   }
   function ownBlock(own) {
     const has = !!(own && own.trim());
     const body = has
       ? own.trim().split(/\n{2,}/).map((p) => `<p>${e(p).replace(/\n/g, "<br>")}</p>`).join("")
       : `<div class="own-lines">${"<i></i>".repeat(5)}</div>`;
-    return `<div class="own ${has ? "" : "empty"}"><h4>Eigene Worte</h4><div class="own-text">${body}</div></div>`;
+    return `<div class="own ${has ? "" : "empty"}"><h4>${tx("Eigene Worte", "The Petitioner’s Own Words")}</h4><div class="own-text">${body}</div></div>`;
   }
-  const SAVE_EFFECT = { negates: "hebt auf", half: "halbiert", partial: "teilweise", disbelief: "Anzweifeln" };
+  const SAVE_EFFECT_DE = { negates: "hebt auf", half: "halbiert", partial: "teilweise", disbelief: "Anzweifeln" };
+  const SAVE_EFFECT_EN = { negates: "negates", half: "halves", partial: "partial", disbelief: "disbelief" };
+  const SAVE_EFFECT = new Proxy({}, { get: (_, k) => (EN() ? SAVE_EFFECT_EN : SAVE_EFFECT_DE)[k] });
   function prayerPages(m, t, opts = {}) {
     const d = t.deity || window.DEITY;
     const fact = (k, v) => (v ? `<div><b>${k}</b> ${e(v)}</div>` : "");
     const html = `<header class="sp-head pr-head">${refBlock(m, opts.ref)}
-        <div class="sp-meta">${foreign(m) ? "Fremdes Gebet" : U.ROMAN[m.level] + ". Grad"} · ${e(m.schoolInfo.de)}</div>
+        <div class="sp-meta">${foreign(m) ? tx("Fremdes Gebet", "Foreign prayer") : tx(U.ROMAN[m.level] + ". Grad", "Degree " + U.ROMAN[m.level])} · ${e(SCHOOL_DE(m))}</div>
         <h2 class="sp-title">${e(t.title)}</h2>
         <div class="sp-rulename">${e(RULES.name(m))}</div>
       </header>
       <div class="pr-grid">
         <figure class="vt-box">${VITRAIL.render(m, d)}</figure>
         <div class="pr-side">
-          <div class="pr-facts">${fact("Gebet", m.casting.de)}${fact("Reichweite", m.range.de)}${fact("Dauer", m.duration.de)}${fact("Rettungswurf", m.save.type !== "none" ? m.save.de + (SAVE_EFFECT[m.save.effect] ? ", " + SAVE_EFFECT[m.save.effect] : "") + (m.save.harmless ? " (harmlos)" : "") : "")}</div>
+          <div class="pr-facts">${fact(tx("Gebet", "Prayer"), EN() ? U.cap(m.casting.en) : m.casting.de)}${fact(tx("Reichweite", "Reach"), enOf(m.range).de)}${fact(tx("Dauer", "Duration"), enOf(m.duration).de)}${fact(tx("Rettungswurf", "Saving throw"), m.save.type !== "none" ? enOf(m.save).de + (SAVE_EFFECT[m.save.effect] ? ", " + SAVE_EFFECT[m.save.effect] : "") + (m.save.harmless ? tx(" (harmlos)", " (harmless)") : "") : "")}</div>
           ${canonBlock(t)}
         </div>
       </div>
@@ -470,20 +503,21 @@
   }
 
   function deityPage(d) {
-    if (!d) return `<h3>Gottheit</h3><p class="hint">Keine Gottheit gewählt (Einstellungen → Charakter).</p>`;
+    if (!d) return `<h3>${tx("Gottheit", "Deity")}</h3><p class="hint">${tx("Keine Gottheit gewählt (Einstellungen → Charakter).", "No deity chosen (Settings → Character).")}</p>`;
     const ep = PRAYER.epithet(d);
     const base = VITRAIL.palette(d)[0];
     const row = (k, v) => (v ? `<dt>${k}</dt><dd>${v}</dd>` : "");
-    const de = (list, dict) => list.map((x) => e(dict[x] || dict[String(x).toLowerCase()] || x)).join(", ");
+    const de = (list, dict) => list.map((x) => e(EN() ? x : dict[x] || dict[String(x).toLowerCase()] || x)).join(", ");
+    const dom = (x) => e(EN() ? x : RULES.domain(x));
     return `<h3>${e(d.name)}</h3><div class="dt-title">${e(d.title)}${ep ? ` · ${e(ep)}` : ""}</div>
       <figure class="dt-symbol"><svg viewBox="-12 -12 24 24">${VITRAIL.symbolSVG(d.symbol, 0, 0, 10, base)}</svg></figure>
       <dl class="struct">
-        ${row("Gesinnung", e(ALIGN_DE[d.align] || d.align))}${row("Pantheon", e(d.pantheon))}
-        ${row("Zuständigkeiten", de(d.areas, PRAYER.AREA))}${row("Domänen", (d.domains || []).map((x) => e(RULES.domain(x))).join(", "))}${row("Unterdomänen", (d.subdomains || []).filter((x) => x !== "N/A").map((x) => e(RULES.domain(x))).join(", "))}
-        ${row("Lieblingswaffe", e(d.weapon))}${row("Heiliges Symbol", e(d.symbol))}${row("Heiliges Tier", e(d.animal))}
-        ${row("Heilige Farben", d.colors.map((c) => `<span class="swatch" style="background:${c.hex}"></span>${e(c.de || c.name)}`).join(" "))}
+        ${row(tx("Gesinnung", "Alignment"), e((EN() ? ALIGN_EN : ALIGN_DE)[d.align] || d.align))}${row("Pantheon", e(d.pantheon))}
+        ${row(tx("Zuständigkeiten", "Spheres of influence"), de(d.areas, PRAYER.AREA))}${row(tx("Domänen", "Domains"), (d.domains || []).map(dom).join(", "))}${row(tx("Unterdomänen", "Subdomains"), (d.subdomains || []).filter((x) => x !== "N/A").map(dom).join(", "))}
+        ${row(tx("Lieblingswaffe", "Favoured weapon"), e(d.weapon))}${row(tx("Heiliges Symbol", "Holy symbol"), e(d.symbol))}${row(tx("Heiliges Tier", "Holy animal"), e(d.animal))}
+        ${row(tx("Heilige Farben", "Holy colours"), d.colors.map((c) => `<span class="swatch" style="background:${c.hex}"></span>${e(EN() ? c.name : c.de || c.name)}`).join(" "))}
       </dl>
-      <p class="hint dt-legal">Angaben nach Archives of Nethys. Name und Angaben der Gottheit gehören Paizo Inc. und werden beschreibend unter Paizos Community Use Policy verwendet.</p>`;
+      <p class="hint dt-legal">${tx("Angaben nach Archives of Nethys. Name und Angaben der Gottheit gehören Paizo Inc. und werden beschreibend unter Paizos Community Use Policy verwendet.", "Details after Archives of Nethys. The name and details of the deity belong to Paizo Inc. and are used descriptively under Paizo’s Community Use Policy.")}</p>`;
   }
 
   function prayerFront(settings, d) {
@@ -500,23 +534,27 @@
       {
         cls: "title-page",
         html: `<div class="tp"><div class="tp-sigil tp-vitrail">${VITRAIL.render(sample, d)}</div>
-          <h1>${e(settings.bookTitle)}</h1><div class="tp-owner">${e(settings.owner)}</div><div class="tp-sub">${e(settings.subtitle || (d ? "Gebete an " + d.name : ""))}</div></div>`,
+          <h1>${e(EN() && window.CLASS && CLASS.bookTitleEn && settings.bookTitle === CLASS.bookTitle ? CLASS.bookTitleEn : PROFILE.bookValue(settings, "bookTitle"))}</h1><div class="tp-owner">${e(PROFILE.bookValue(settings, "owner"))}</div><div class="tp-sub">${e(PROFILE.bookValue(settings, "subtitle") || (d ? tx("Gebete an ", "Prayers to ") + d.name : ""))}</div></div>`,
       },
       { html: deityPage(d) },
       {
-        html: `<h3>${Wd.read}</h3><p>Zu jedem Gebet gehört ein ${Wd.item}. Es wird nicht ${stone ? "gemeißelt" : "gezeichnet"}, um verstanden zu werden, sondern um davor zu knien. Wer es dennoch lesen will, findet darin alles, worum das Gebet bittet:</p>
+        html: `<h3>${Wd.read}</h3><p>${tx(`Zu jedem Gebet gehört ein ${Wd.item}. Es wird nicht ${stone ? "gemeißelt" : "gezeichnet"}, um verstanden zu werden, sondern um davor zu knien. Wer es dennoch lesen will, findet darin alles, worum das Gebet bittet:`, `Every prayer has its own ${Wd.item}. It is not ${stone ? "carved" : "drawn"} to be understood, but to be knelt before. Whoever wishes to read it nonetheless will find in it everything the prayer asks for:`)}</p>
           <div class="pr-grid"><figure class="vt-box">${VITRAIL.render(sample, d, { annotate: true })}</figure>
           <ol class="annot-list vt-legend">${legend.map((l) => `<li value="${l.n}"><b>${e(l.k)}:</b> ${e(l.t)}</li>`).join("")}</ol></div>
-          <p class="hint">Beispiel: ${e(PRAYER.texts(sample, d).title)} (${e(sample.name)}). Die folgenden Seiten zeigen alle Farben und Formen.</p>`,
+          <p class="hint">${tx("Beispiel", "Example")}: ${e(PRAYER.texts(sample, d).title)} (${e(sample.name)}). ${tx("Die folgenden Seiten zeigen alle Farben und Formen.", "The following pages show all colours and forms.")}</p>`,
       },
       { html: glassPage(d) },
       { html: formsPage(d) },
       { html: medallionPage(d) },
       {
-        html: `<h3>Vom Gebet</h3>
+        html: tx(`<h3>Vom Gebet</h3>
           <p>Jeden Tag zur selben Stunde verbringt der Streiter eine Stunde in stillem Gebet und Betrachtung. Was er erbittet, wird ihm gewährt, solange er dem Kodex treu bleibt; er muss es nicht verstehen, nur darum bitten.</p>
           <p>Jedes Gebet in diesem Brevier hat zwei Teile. Der <b>Kanon der Kirche</b> ist überliefert: Alle Gläubigen sprechen ihn gleich, und sein Kehrvers kehrt in jedem Gebet wieder. Die <b>Eigenen Worte</b> gehören dem Betenden allein. Wo noch keine stehen, bleiben Linien frei.</p>
           <p>Ein heiliges Symbol in der Hand genügt als Fokus. Rüstung behindert das Gebet nicht.</p>`,
+          `<h3>On Prayer</h3>
+          <p>Every day at the same hour the champion spends an hour in quiet prayer and contemplation. What they ask is granted to them for as long as they remain true to the code; they need not understand it, only ask.</p>
+          <p>Every prayer in this breviary has two parts. The <b>Canon of the Church</b> is handed down: all the faithful speak it alike, and its refrain returns in every prayer. The <b>Petitioner’s Own Words</b> belong to the one who prays alone. Where none are written yet, the lines are left empty.</p>
+          <p>A holy symbol in the hand is enough as a focus. Armour does not hinder prayer.</p>`),
       },
     ]);
   }
@@ -527,43 +565,46 @@
     const base = VITRAIL.palette(d);
     const stone = VITRAIL.materialFor(d) === "stone";
     const intro = stone
-      ? "Jede Essenz hat ihren eigenen Stein. Er erscheint als Akzentstein, so oft wie ihr Anteil am Zauber, und im Medaillon, wenn sie die Hauptessenz ist."
-      : "Jede Essenz hat ihr eigenes Glas. Es erscheint als Akzentscheibe, so oft wie ihr Anteil am Zauber, und im Medaillon, wenn sie die Hauptessenz ist.";
+      ? tx("Jede Essenz hat ihren eigenen Stein. Er erscheint als Akzentstein, so oft wie ihr Anteil am Zauber, und im Medaillon, wenn sie die Hauptessenz ist.", "Every essence has its own stone. It appears as an accent stone as often as its share in the spell, and in the medallion when it is the principal essence.")
+      : tx("Jede Essenz hat ihr eigenes Glas. Es erscheint als Akzentscheibe, so oft wie ihr Anteil am Zauber, und im Medaillon, wenn sie die Hauptessenz ist.", "Every essence has its own glass. It appears as an accent pane as often as its share in the spell, and in the medallion when it is the principal essence.");
     const colors = d && d.colors.length
-      ? d.colors.map((c, i) => `<span class="swatch" style="background:${stone ? base[i] : c.hex}"></span>${e(c.de || c.name)}${stone ? ` (${e(VITRAIL.colorStoneName(c.name))})` : ""}`).join(" ")
-      : d ? "keine überliefert, daher eine Palette nach Gesinnung: " + base.map((c) => `<span class="swatch" style="background:${c}"></span>`).join("") : "";
-    return `<h3>${stone ? "Die Steine" : "Die Gläser"}</h3><p class="hint">${intro}</p>
-      <div class="legend-grid vt-glass">${T.ESSENCES.map((x) => `<div class="lg">${VITRAIL.essSwatch(x.id)}<div><b>${x.latin}</b> – ${e(x.de.replace(/ \(.*\)$/, ""))}${stone ? ` · <i>${e(VITRAIL.essStoneName(x.id))}</i>` : ""}<br><span>Gegenpol: ${T.ESS[x.opp].latin}</span></div></div>`).join("")}</div>
-      <h4>${stone ? "Grundsteine" : "Grundscheiben"}</h4><p>Die übrigen ${stone ? "Steine" : "Scheiben"} tragen die heiligen Farben der Gottheit${d ? ` – bei ${e(d.name)}: ` : ""}${colors}. Die erste Farbe fasst auch das Medaillon und färbt den Grund des ${stone ? "Sechseckfelds" : "Bogenfelds"}.</p>`;
+      ? d.colors.map((c, i) => `<span class="swatch" style="background:${stone ? base[i] : c.hex}"></span>${e(EN() ? c.name : c.de || c.name)}${stone ? ` (${e(VITRAIL.colorStoneName(c.name))})` : ""}`).join(" ")
+      : d ? tx("keine überliefert, daher eine Palette nach Gesinnung: ", "none handed down, and so a palette by alignment: ") + base.map((c) => `<span class="swatch" style="background:${c}"></span>`).join("") : "";
+    return `<h3>${stone ? tx("Die Steine", "The Stones") : tx("Die Gläser", "The Glass")}</h3><p class="hint">${intro}</p>
+      <div class="legend-grid vt-glass">${T.ESSENCES.map((x) => `<div class="lg">${VITRAIL.essSwatch(x.id)}<div><b>${x.latin}</b> – ${e(enOf(x).de.replace(/ \(.*\)$/, ""))}${stone ? ` · <i>${e(VITRAIL.essStoneName(x.id))}</i>` : ""}<br><span>${tx("Gegenpol", "Opposite pole")}: ${T.ESS[x.opp].latin}</span></div></div>`).join("")}</div>
+      <h4>${stone ? tx("Grundsteine", "Base Stones") : tx("Grundscheiben", "Base Panes")}</h4><p>${tx(`Die übrigen ${stone ? "Steine" : "Scheiben"} tragen die heiligen Farben der Gottheit${d ? ` – bei ${e(d.name)}: ` : ""}${colors}. Die erste Farbe fasst auch das Medaillon und färbt den Grund des ${stone ? "Sechseckfelds" : "Bogenfelds"}.`, `The remaining ${stone ? "stones" : "panes"} bear the holy colours of the deity${d ? ` – for ${e(d.name)}: ` : ""}${colors}. The first colour also frames the medallion and tints the ground of the ${stone ? "hexagon field" : "round window"}.`)}</p>`;
   }
   function formsPage(d) {
     const base = VITRAIL.palette(d);
     const tint = base[0];
     const schools = Object.entries(T.SCHOOLS).filter(([k]) => k !== "universal").concat([["universal", T.SCHOOLS.universal]]);
-    const durs = [["instant", "Augenblicklich – schlichtes Band"], ["rounds", "Runden – Quader"], ["minutes", "Minuten – Wellen"], ["hours", "Stunden – zwei Streifen"], ["days", "Tage – Zinnen"], ["permanent", "Permanent – Ringkette"], ["concentration", "Konzentration und Besonderes – Rauten"]];
+    const durs = tx([["instant", "Augenblicklich – schlichtes Band"], ["rounds", "Runden – Quader"], ["minutes", "Minuten – Wellen"], ["hours", "Stunden – zwei Streifen"], ["days", "Tage – Zinnen"], ["permanent", "Permanent – Ringkette"], ["concentration", "Konzentration und Besonderes – Rauten"]],
+      [["instant", "Instantaneous – plain band"], ["rounds", "Rounds – blocks"], ["minutes", "Minutes – waves"], ["hours", "Hours – two stripes"], ["days", "Days – battlements"], ["permanent", "Permanent – chain of rings"], ["concentration", "Concentration and special – lozenges"]]);
     const stone = VITRAIL.materialFor(d) === "stone";
-    return `<h3>Maßwerk, Zellen und Sockel</h3>
-      <h4>${stone ? "Schichten" : "Bahnen"} – der Grad</h4><div class="vt-row">${[1, 2, 3, 4].map((g) => `<figure>${VITRAIL.ornament(g).replace('class="vt-orn"', 'class="vt-orn small"')}<figcaption>${U.ROMAN[g]}. Grad</figcaption></figure>`).join("")}</div>
-      <h4>${stone ? "Rauten im Sechseckfeld" : "Pässe im Bogenfeld"} – die Schule</h4><div class="vt-row">${schools.map(([k, sc]) => `<figure>${VITRAIL.foilsMini(VITRAIL.foilCount(k), tint)}<figcaption>${e(sc.de)}<br>${VITRAIL.foilCount(k)} ${stone ? "Rauten" : "Pässe"}</figcaption></figure>`).join("")}</div>
-      <h4>Zellen – die Gestalt</h4><div class="vt-row">
-        <figure>${VITRAIL.cellsMini("even", base)}<figcaption>gleichmäßig<br>Ziele, Berührung, selbst</figcaption></figure>
-        <figure>${VITRAIL.cellsMini("stretched", base)}<figcaption>${stone ? "in Schichtrichtung" : "gestreckt"}<br>Strahl, Linie, Kegel</figcaption></figure>
-        <figure>${VITRAIL.cellsMini("radial", base)}<figcaption>in Ringen<br>Explosion, Ausbreitung, Ausströmung</figcaption></figure>
-        <figure>${VITRAIL.borderMini(true, base)}<figcaption>Bordüre<br>Rettungswurf</figcaption></figure>
-        <figure>${VITRAIL.borderMini(false, base)}<figcaption>ohne Bordüre<br>kein Rettungswurf</figcaption></figure></div>
-      <h4>Sockel – die Wirkungsdauer</h4><div class="vt-socles">${durs.map(([k, t]) => `<div>${VITRAIL.socleMini(k, base)}<span>${e(t)}</span></div>`).join("")}</div>`;
+    const nF = (k) => VITRAIL.foilCount(k);
+    return `<h3>${tx("Maßwerk, Zellen und Sockel", "Tracery, Cells and Socles")}</h3>
+      <h4>${stone ? tx("Schichten", "Layers") : tx("Bahnen", "Lanes")} – ${tx("der Grad", "the Degree")}</h4><div class="vt-row">${[1, 2, 3, 4].map((g) => `<figure>${VITRAIL.ornament(g).replace('class="vt-orn"', 'class="vt-orn small"')}<figcaption>${tx(U.ROMAN[g] + ". Grad", "Degree " + U.ROMAN[g])}</figcaption></figure>`).join("")}</div>
+      <h4>${stone ? tx("Rauten im Sechseckfeld", "Lozenges in the Hexagon Field") : tx("Pässe im Bogenfeld", "Foils in the Round Window")} – ${tx("die Schule", "the School")}</h4><div class="vt-row">${schools.map(([k, sc]) => `<figure>${VITRAIL.foilsMini(VITRAIL.foilCount(k), tint)}<figcaption>${e(enOf(sc).de)}<br>${nF(k)} ${EN() ? (stone ? (nF(k) === 1 ? "lozenge" : "lozenges") : nF(k) === 1 ? "foil" : "foils") : stone ? "Rauten" : "Pässe"}</figcaption></figure>`).join("")}</div>
+      <h4>${tx("Zellen – die Gestalt", "Cells – the Shape")}</h4><div class="vt-row">
+        <figure>${VITRAIL.cellsMini("even", base)}<figcaption>${tx("gleichmäßig<br>Ziele, Berührung, selbst", "even<br>targets, touch, self")}</figcaption></figure>
+        <figure>${VITRAIL.cellsMini("stretched", base)}<figcaption>${tx(stone ? "in Schichtrichtung" : "gestreckt", stone ? "along the layers" : "stretched")}<br>${tx("Strahl, Linie, Kegel", "ray, line, cone")}</figcaption></figure>
+        <figure>${VITRAIL.cellsMini("radial", base)}<figcaption>${tx("in Ringen<br>Explosion, Ausbreitung, Ausströmung", "in rings<br>burst, spread, emanation")}</figcaption></figure>
+        <figure>${VITRAIL.borderMini(true, base)}<figcaption>${tx("Bordüre<br>Rettungswurf", "border<br>saving throw")}</figcaption></figure>
+        <figure>${VITRAIL.borderMini(false, base)}<figcaption>${tx("ohne Bordüre<br>kein Rettungswurf", "no border<br>no saving throw")}</figcaption></figure></div>
+      <h4>${tx("Sockel – die Wirkungsdauer", "Socles – the Duration")}</h4><div class="vt-socles">${durs.map(([k, t]) => `<div>${VITRAIL.socleMini(k, base)}<span>${e(t)}</span></div>`).join("")}</div>`;
   }
 
   function medallionPage(d) {
     const base = VITRAIL.palette(d);
-    return `<h3>Das Medaillon</h3><p class="hint">Die Rosette in der Mitte der ${VITRAIL.materialFor(d) === "stone" ? "Schichten" : "Bahnen"} trägt die Farben der Haupt- und der zweiten Essenz. Ihre Form erzählt, wie das Gebet gesprochen wird:</p>
-      <h4>Blätter – die Reichweite</h4><div class="vt-row med">${[[0, "persönlich", false], [4, "Berührung"], [6, "nah"], [8, "mittel"], [12, "weit"], [16, "unbegrenzt", true]].map(([p, t, u]) => `<figure>${VITRAIL.medallionMini({ petals: p, unlimited: !!u }, base)}<figcaption>${t}${p ? `<br>${p} Blätter` : "<br>Scheibe"}</figcaption></figure>`).join("")}</div>
-      <h4>Fassung – die Komponenten</h4><div class="vt-row med">${[[0, "keine"], [3, "eine"], [4, "zwei, z. B. V, S"], [5, "drei, z. B. V, S, GF"], [6, "vier"], [7, "fünf"]].map(([c, t]) => `<figure>${VITRAIL.medallionMini({ corners: c }, base)}<figcaption>${t}</figcaption></figure>`).join("")}</div>
-      <h4>Blattform und Ring – Zeitaufwand und Zauberresistenz</h4><div class="vt-row med">
-        <figure>${VITRAIL.medallionMini({ tip: "pointed" }, base)}<figcaption>spitz<br>schnell, augenblicklich</figcaption></figure>
-        <figure>${VITRAIL.medallionMini({ tip: "round" }, base)}<figcaption>rund<br>Standard-Aktion</figcaption></figure>
-        <figure>${VITRAIL.medallionMini({ tip: "double" }, base)}<figcaption>zwei Kränze<br>volle Aktion und länger</figcaption></figure>
-        <figure>${VITRAIL.medallionMini({ sr: true, corners: 5 }, base)}<figcaption>zweiter Ring<br>Zauberresistenz</figcaption></figure></div>`;
+    const stoneM = VITRAIL.materialFor(d) === "stone";
+    return `<h3>${tx("Das Medaillon", "The Medallion")}</h3><p class="hint">${tx(`Die Rosette in der Mitte der ${stoneM ? "Schichten" : "Bahnen"} trägt die Farben der Haupt- und der zweiten Essenz. Ihre Form erzählt, wie das Gebet gesprochen wird:`, `The rosette in the middle of the ${stoneM ? "layers" : "lanes"} bears the colours of the principal and the second essence. Its shape tells how the prayer is spoken:`)}</p>
+      <h4>${tx("Blätter – die Reichweite", "Petals – the Reach")}</h4><div class="vt-row med">${tx([[0, "persönlich", false], [4, "Berührung"], [6, "nah"], [8, "mittel"], [12, "weit"], [16, "unbegrenzt", true]], [[0, "personal", false], [4, "touch"], [6, "close"], [8, "medium"], [12, "long"], [16, "unlimited", true]]).map(([p, t, u]) => `<figure>${VITRAIL.medallionMini({ petals: p, unlimited: !!u }, base)}<figcaption>${t}${p ? `<br>${p} ${tx("Blätter", "petals")}` : tx("<br>Scheibe", "<br>disc")}</figcaption></figure>`).join("")}</div>
+      <h4>${tx("Fassung – die Komponenten", "Setting – the Components")}</h4><div class="vt-row med">${tx([[0, "keine"], [3, "eine"], [4, "zwei, z. B. V, S"], [5, "drei, z. B. V, S, GF"], [6, "vier"], [7, "fünf"]], [[0, "none"], [3, "one"], [4, "two, e.g. V, S"], [5, "three, e.g. V, S, DF"], [6, "four"], [7, "five"]]).map(([c, t]) => `<figure>${VITRAIL.medallionMini({ corners: c }, base)}<figcaption>${t}</figcaption></figure>`).join("")}</div>
+      <h4>${tx("Blattform und Ring – Zeitaufwand und Zauberresistenz", "Petal Shape and Ring – Casting Time and Spell Resistance")}</h4><div class="vt-row med">
+        <figure>${VITRAIL.medallionMini({ tip: "pointed" }, base)}<figcaption>${tx("spitz<br>schnell, augenblicklich", "pointed<br>swift, instantaneous")}</figcaption></figure>
+        <figure>${VITRAIL.medallionMini({ tip: "round" }, base)}<figcaption>${tx("rund<br>Standard-Aktion", "round<br>standard action")}</figcaption></figure>
+        <figure>${VITRAIL.medallionMini({ tip: "double" }, base)}<figcaption>${tx("zwei Kränze<br>volle Aktion und länger", "two wreaths<br>full action and longer")}</figcaption></figure>
+        <figure>${VITRAIL.medallionMini({ sr: true, corners: 5 }, base)}<figcaption>${tx("zweiter Ring<br>Zauberresistenz", "second ring<br>spell resistance")}</figcaption></figure></div>`;
   }
 
   const DIVINE_TEXT = {
@@ -573,13 +614,23 @@
     4: ["Das volle Fenster", "Der vierte Grad ist das Höchste, was einem Streiter gewährt wird. Diese Gebete wenden Schlachten und rufen zurück, was verloren schien.", "Sie werden selten gesprochen und nie ohne Furcht."],
     foreign: ["Aus anderen Händen", "Formeln, die nicht aus dem Kanon dieser Kirche stammen. Sie stehen hier, weil sie einmal wichtig waren.", "Ob die Gottheit sie erhört, ist eine andere Frage."],
   };
+  const DIVINE_TEXT_EN = {
+    1: ["One Window, One Light", "The first prayers are short and near. They ask for what a champion needs every day: a steady hand, a clear eye, a word at the right time.", "Whoever speaks them learns that grace is not earned but received."],
+    2: ["Two Lanes", "With the second degree the prayer carries further. It heals what the fight has struck and shelters whoever stands behind the shield.", "The art of this stage is patience: not every request is answered at once."],
+    3: ["Three Lanes under One Arch", "Prayers of the third degree change what they touch. Curses give way, poison loses its power, and the light burns where it is called.", "Whoever prays here no longer stands alone before the altar."],
+    4: ["The Full Window", "The fourth degree is the highest that is granted to a champion. These prayers turn battles and call back what seemed lost.", "They are spoken rarely and never without fear."],
+    foreign: ["From Other Hands", "Formulas that do not come from the canon of this church. They stand here because they were once important.", "Whether the deity hears them is another question."],
+  };
   function divineChapterHTML(k, no, cont) {
     const g = /^\d$/.test(k) ? +k : 0;
-    const own = (window.PROFILE && PROFILE.chapters && PROFILE.chapters[k]) || null;
-    let [sub, ...paras] = own || DIVINE_TEXT[k] || [`${g} Bahnen`, "Gebete höheren Grades."];
-    if (!own && VITRAIL.materialFor(window.DEITY) === "stone") sub = { 1: "Ein Stein, ein Licht", 3: "Drei Bahnen unter einem Giebel", 4: "Die volle Tafel" }[k] || sub;
-    const title = (k === "foreign" ? "Fremde Gebete" : CLASS.chapter ? CLASS.chapter(g) : `Gebete des ${U.ROMAN[g]}. Grades`) + (cont ? " (Fortsetzung)" : "");
-    return `<div class="chapter"><div class="ch-kicker">Kapitel ${U.ROMAN[no] || no}</div><h1 class="ch-title">${e(title)}</h1>${VITRAIL.withMaterial(window.DEITY, () => VITRAIL.ornament(Math.max(1, g || 1)))}<div class="ch-sub">${e(sub)}</div>${paras.map((p) => `<p>${e(p)}</p>`).join("")}</div>`;
+    const PB = window.PROFILE && PROFILE.book ? PROFILE.book() : window.PROFILE;
+    const own = (PB && PB.chapters && PB.chapters[k]) || null;
+    let [sub, ...paras] = own || tx(DIVINE_TEXT, DIVINE_TEXT_EN)[k] || tx([`${g} Bahnen`, "Gebete höheren Grades."], [`${g} lanes`, "Prayers of a higher degree."]);
+    if (!own && VITRAIL.materialFor(window.DEITY) === "stone") sub = tx({ 1: "Ein Stein, ein Licht", 3: "Drei Bahnen unter einem Giebel", 4: "Die volle Tafel" }, { 1: "One Stone, One Light", 3: "Three Layers under One Gable", 4: "The Full Tablet" })[k] || sub;
+    const title = EN()
+      ? (k === "foreign" ? "Foreign Prayers" : g ? `Prayers of the ${U.cap(ORDINAL_EN[g])} Degree` : chapterName(k)) + (cont ? " (continued)" : "")
+      : (k === "foreign" ? "Fremde Gebete" : CLASS.chapter ? CLASS.chapter(g) : `Gebete des ${U.ROMAN[g]}. Grades`) + (cont ? " (Fortsetzung)" : "");
+    return `<div class="chapter"><div class="ch-kicker">${tx("Kapitel", "Chapter")} ${U.ROMAN[no] || no}</div><h1 class="ch-title">${e(title)}</h1>${VITRAIL.withMaterial(window.DEITY, () => VITRAIL.ornament(Math.max(1, g || 1)))}<div class="ch-sub">${e(sub)}</div>${paras.map((p) => `<p>${e(p)}</p>`).join("")}</div>`;
   }
 
   // ---------------------------------------------------------------------------
@@ -596,7 +647,7 @@
       // Band I: Bandzeile aufs Titelblatt; weitere Bände: nur Titelblatt (auch ohne Vorspann, damit die Bände unterscheidbar sind)
       const title = vol.no > 1 ? (ctx.front || frontMatter(settings, allModels))[0] : front[0];
       if (title && title.cls === "title-page") {
-        const line = `<div class="tp-vol">Band ${U.ROMAN[vol.no] || vol.no}${vol.label ? " · " + e(vol.label) : ""}</div>`;
+        const line = `<div class="tp-vol">${tx("Band", "Volume")} ${U.ROMAN[vol.no] || vol.no}${vol.label ? " · " + e(vol.label) : ""}</div>`;
         const t2 = { ...title, html: title.html.replace('<div class="tp-sub">', line + '<div class="tp-sub">') };
         front = vol.no > 1 ? [t2] : [t2, ...front.slice(1)];
       }
@@ -697,7 +748,7 @@
     for (const c of chapters) {
       (c.listPages || []).forEach((lp, i) => {
         const part = c.items.slice(i * c.perList, (i + 1) * c.perList);
-        lp.html = `<h3>${divine() ? "Gebete dieses Kapitels" : b("book.chList")}${i ? b("book.contShort") : ""}</h3><div class="ch-list">${part.map((x) => `<div class="ch-row"><span class="tq">${quickGlyph(x.m, { marks: false })}</span><span class="ch-nm">${e(x.t.title)}<i>${e(RULES.name(x.m))}</i></span><span class="tp">${x.page}</span></div>`).join("")}</div>`;
+        lp.html = `<h3>${divine() ? tx("Gebete dieses Kapitels", "Prayers of this chapter") : b("book.chList")}${i ? b("book.contShort") : ""}</h3><div class="ch-list">${part.map((x) => `<div class="ch-row"><span class="tq">${quickGlyph(x.m, { marks: false })}</span><span class="ch-nm">${e(x.t.title)}<i>${e(RULES.name(x.m))}</i></span><span class="tp">${x.page}</span></div>`).join("")}</div>`;
       });
     }
     front.forEach((p, i) => pages.push({ ...p, no: i + 1, running: "" }));
@@ -706,8 +757,8 @@
         const chunk = toc.slice(i * PER_TOC, (i + 1) * PER_TOC);
         pages.push({
           no: front.length + i + 1,
-          running: divine() ? "Verzeichnis" : b("book.tocRunning"),
-          html: (i === 0 ? `<h3>${divine() ? "Verzeichnis der Gebete" : b("book.tocTitle")}</h3>` : "") +
+          running: divine() && !EN() ? "Verzeichnis" : b("book.tocRunning"),
+          html: (i === 0 ? `<h3>${divine() ? tx("Verzeichnis der Gebete", "Index of Prayers") : b("book.tocTitle")}</h3>` : "") +
             `<table class="toc">${chunk.map((x) => `<tr><td class="tq">${quickGlyph(x.m, { marks: false })}</td><td class="tg">${x.m.spell.everyday ? b("book.everydayMark") : x.m.level === 0 ? "0" : U.ROMAN[x.m.level]}</td><td>${e(x.t.title)}<span class="tn">${e(RULES.name(x.m))}</span></td><td class="tp">${x.page}</td></tr>`).join("")}</table>`,
         });
       }
@@ -830,7 +881,7 @@
       const a = keys[i], b = keys[j - 1];
       const nm = (x) => chapterName(x);
       if (a === b) return nm(a);
-      return /^\d$/.test(a) && /^\d$/.test(b) ? (EN() && !divine() ? `Degrees ${U.ROMAN[+a]}–${U.ROMAN[+b]}` : `${U.ROMAN[+a]}.–${U.ROMAN[+b]}. Grad`) : `${nm(a)} – ${nm(b)}`;
+      return /^\d$/.test(a) && /^\d$/.test(b) ? (EN() ? `Degrees ${U.ROMAN[+a]}–${U.ROMAN[+b]}` : `${U.ROMAN[+a]}.–${U.ROMAN[+b]}. Grad`) : `${nm(a)} – ${nm(b)}`;
     };
     const vols = [];
     for (let v = 0; v < k; v++) {
@@ -849,9 +900,9 @@
   // Brevier: Zauber außerhalb der Klassenliste (z. B. nach einem Klassenwechsel) landen als „Fremde Gebete“ am Ende
   const foreign = (m) => divine() && (m.spell.everyday || m.spell.levels[CLASS.list] == null);
   const chapterKey = (m) => (foreign(m) ? "foreign" : m.spell.everyday ? "everyday" : m.level === 0 ? "cantrip" : String(m.level));
-  const chapterName = (k) => (divine() || !EN()
+  const chapterName = (k) => (!EN()
     ? (k === "foreign" ? "Fremde Gebete" : k === "everyday" ? "Alltagszauber" : k === "cantrip" ? "Zaubertricks" : U.ROMAN[+k] + ". Grad")
-    : (k === "everyday" ? "Everyday spells" : k === "cantrip" ? "Cantrips" : "Degree " + U.ROMAN[+k]));
+    : (k === "foreign" ? "Foreign prayers" : k === "everyday" ? "Everyday spells" : k === "cantrip" ? "Cantrips" : "Degree " + U.ROMAN[+k]));
   // Sortierschlüssel der Kapitel (Zaubertricks vor Alltagszaubern, Fremde Gebete zuletzt)
   const rank = (m) => (foreign(m) ? 100 : 0) + m.level + (m.spell.everyday ? 0.5 : 0);
   const ORDINAL = ["", "erste", "zweite", "dritte", "vierte", "fünfte", "sechste", "siebte", "achte", "neunte"];

@@ -46,7 +46,9 @@
     next.classList.add("flow-cont");
     next.classList.remove("recto-start");
     next.innerHTML = `<div class="page-inner"></div>${page.querySelector(".page-foot").outerHTML}`;
-    next.querySelector(".page-foot span").textContent = (page.querySelector(".page-foot span").textContent.replace(/ \(Forts\.\)$/, "")) + " (Forts.)";
+    // Fortsetzungsvermerk in der Buchsprache
+    const cont = window.I18N && I18N.lang.book === "en" ? " (cont.)" : " (Forts.)";
+    next.querySelector(".page-foot span").textContent = (page.querySelector(".page-foot span").textContent.replace(/ \((Forts|cont)\.\)$/, "")) + cont;
     // Ablage für den Rest: wird erst gesetzt, wenn sie selbst an der Reihe ist (sonst quadratisch bei langen Teilen)
     next.style.contentVisibility = "hidden";
     page.after(next);

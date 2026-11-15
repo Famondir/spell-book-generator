@@ -22,6 +22,7 @@ window.CLASSES = {
     alignments: ["LG", "LN", "NG"],
     book: "Brevier",
     bookTitle: "Brevier",
+    bookTitleEn: "Breviary",
     chapter: (g) => `Gebete des ${U.ROMAN[g]}. Grades`,
     day: "Gebetsstunde",
   },

@@ -608,7 +608,33 @@
   }
 
   window.renderCircle = circle;
-  window.circleAnnotations = annotations;
+  // Beschriftungen in der Buchsprache: im englischen Buch über den (stabilen) deutschen Schlüssel neu gebildet;
+  // die Lage der Marken bleibt dieselbe
+  const EN = () => window.I18N && I18N.lang.book === "en";
+  const enOf = (x) => (x && x.en) || x;
+  const ORDINAL_EN = ["", "first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth"];
+  const ANNOT_EN = {
+    "Eckstein Stimme (V)": () => ["Cornerstone Voice (V)", "The formula is spoken; its wording stands in the script band."],
+    "Eckstein Geste (S)": () => ["Cornerstone Gesture (S)", "The hands guide the formula; the gestures are given in the text."],
+    "Eckstein Stoff (M)": (m) => ["Cornerstone Material (M)", `Alchemical sign of the material: ${(m.components.nouns || []).map((n) => window.THEORY.MATERIAL_EN[n] || n).join(", ") || "unspecified"}.`],
+    "Eckstein Fokus": () => ["Cornerstone Focus", "Lozenge = focus, eye = divine focus. It is not used up."],
+    Zeitmarke: (m) => ["Time mark", U.cap(m.casting.en) + "."],
+    Schriftband: (m) => ["Script band", m.components.V ? "The spoken formula, to be read clockwise from the north." : "Silent runes – the formula has no voice."],
+    Schwellentor: (m, a) => ["Threshold gate", `${window.THEORY.SAVES[m.save.type].en.gate} for ${window.THEORY.SAVES[m.save.type].en.de}${/zwei Tore/.test(a.t) ? "; two gates: half or partial effect" : ""}${m.save.harmless ? "; dashed: harmless" : ""}.`],
+    Siegelband: () => ["Seal band", "Hatching: the formula must overcome spell resistance."],
+    Ordnungsknoten: (m) => ["Knots of order", `${m.level} knot${m.level > 1 ? "s" : ""} for the ${ORDINAL_EN[m.level]} order${m.level >= 3 ? ", joined into a star" : ""}.`],
+    Weitenringe: (m) => ["Spacing rings", `${m.range.tier} ring${m.range.tier > 1 ? "s" : ""}: ${["personal", "touch", "close range", "medium range", "long range", "unlimited range"][m.range.tier]}.`],
+    Zeichenring: (m) => ["Ring of signs", m.signs.map((x) => `${enOf(x).de} (${x.dir === "in" ? "inwards" : "outwards"})`).join(", ") + "."],
+    Essenzring: (m, a) => ["Essence ring", a.t],
+    Dauerring: (m) => ["Ring of duration", `${enOf(m.duration).ring}.`],
+    Kernsiegel: (m) => { const sc = enOf(window.THEORY.SCHOOLS[m.school] || window.THEORY.SCHOOLS.universal); return ["Core seal", `${sc.figure} – ${sc.de}.`]; },
+    Hauptessenz: (m) => ["Principal essence", `${window.THEORY.ESS[m.primary].latin} (${enOf(window.THEORY.ESS[m.primary]).de}).`],
+    Gestaltvektoren: (m) => ["Shape vectors", `${enOf(m.shape).de}: ${enOf(m.shape).figure}.`],
+  };
+  window.circleAnnotations = (m) => {
+    const list = annotations(m);
+    return EN() ? list.map((a) => { const f = ANNOT_EN[a.k]; const [k, t] = f ? f(m, a) : [a.k, a.t]; return { ...a, k, t }; }) : list;
+  };
   window.quickGlyph = quickGlyph;
   // Absichtszeichen für den Fließtext: Zeichen in der Formelschrift, Ursprache als kleines Strichbild
   window.quickMarksHTML = (m) => {

@@ -6,7 +6,30 @@
   const T = window.THEORY;
   const { S, polar, f } = window.G;
   const D = () => window.TIME_DATA;
-  const cal = () => (window.PROFILE && PROFILE.calendar) || {};
+  // Buchsprache und Profil in der Buchsprache (Profiltexte wie Monatsnamen; fremdsprachig: neutrales Profil)
+  const EN = () => !!(window.I18N && I18N.lang.book === "en");
+  const LANG = () => (EN() ? "en" : "de");
+  // in der Sprache des Profils das Profil selbst (live), sonst das neutrale Profil der Buchsprache
+  const PB = () => (window.PROFILE && (PROFILE.book && PROFILE.localLang && PROFILE.localLang !== LANG() ? PROFILE.book() : PROFILE)) || {};
+  const cal = () => PB().calendar || {};
+  // Beschriftungen der Tafel je Buchsprache
+  const TX = {
+    de: { aff: "Affinität", opp: "Gegenpol", and: " und ", days: (n) => `${n} Tage`, custom: "Brauch:", patron: "Schutzgott:", pole: "Polarstern", date: (d, m) => `${d}. ${m}` },
+    en: { aff: "Affinity", opp: "Opposite pole", and: " and ", days: (n) => `${n} days`, custom: "Custom:", patron: "Patron god:", pole: "Pole Star", date: (d, m) => `${d} ${m}` },
+  };
+  const tx = () => TX[LANG()];
+  // Farbstoffe der Gottheiten (deity-colors.js nennt deutsche Namen): englische Namen für die Farbstreifen der Monate
+  const PIGMENT_EN = {
+    Ultramarin: "ultramarine", Azurit: "azurite", Indigo: "indigo", Smalte: "smalt", Waid: "woad", Kornblumenblau: "cornflower blue",
+    Zinnober: "cinnabar", Krapprot: "madder red", Mennige: "red lead", Drachenblut: "dragon’s blood", Karmin: "carmine", Rötel: "red ochre", Kermes: "kermes",
+    Beinschwarz: "bone black", Rebschwarz: "vine black", Lampenruß: "lamp black", Eisengallustinte: "iron gall ink",
+    Grünspan: "verdigris", Malachit: "malachite", Saftgrün: "sap green", "Grüne Erde": "green earth",
+    Bleiweiß: "lead white", Kreideweiß: "chalk white", Muschelweiß: "shell white", Kalkweiß: "lime white", Knochenweiß: "bone white",
+    Blattgold: "leaf gold", Muschelgold: "shell gold", Goldocker: "gold ochre", Feingold: "fine gold",
+    Auripigment: "orpiment", Safran: "saffron", Schüttgelb: "stil de grain", Umbra: "umber", Sepia: "sepia", Siena: "sienna",
+    Schiefergrau: "slate grey", Aschgrau: "ash grey", Zinngrau: "pewter grey", Silber: "silver", Zinn: "tin", Realgar: "realgar",
+  };
+  const colorName = (c) => (EN() ? PIGMENT_EN[c.de] || String(c.name || c.de || "").replace(/gray/g, "grey") : c.de || c.name);
   const DEFAULT_DAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
   // ---------------------------------------------------------------------------
@@ -39,22 +62,27 @@
   // ---------------------------------------------------------------------------
   // Tage
   // ---------------------------------------------------------------------------
+  // Felder eines Wochentags in der Buchsprache (data/time.js: week[i].en)
+  const wk = (w) => (EN() && w.en ? { ...w, ...w.en } : w);
   function dayName(i) {
     const n = cal().dayNames;
-    return (Array.isArray(n) && n.length === 7 && n[i]) || D().week[i].day;
+    return (Array.isArray(n) && n.length === 7 && n[i]) || wk(D().week[i]).day;
   }
+  // Entsprechungen in der Buchsprache (Planeten- und Farbnamen der Sprache)
+  const corr = () => (window.TEXTGEN && (TEXTGEN.LX ? TEXTGEN.LX(LANG()).CORRESPOND : TEXTGEN.CORRESPOND)) || {};
   // Essenzen eines Wandelsterns: die, deren Entsprechung im Profil auf ihn zeigt
   function planetEssences(planetName) {
-    const C = (window.TEXTGEN && TEXTGEN.CORRESPOND) || {};
+    const C = corr();
     return T.ESSENCES.filter((x) => C[x.id] && C[x.id].planet === planetName).map((x) => x.id);
   }
   // Essenzen aus den Entsprechungen des Profils; nennen sie keinen der sieben Wandelsterne (eigene Planeten
   // der Spielwelt), gilt die Zuordnung aus data/time.js
   function week() {
-    const C = (window.TEXTGEN && TEXTGEN.CORRESPOND) || {};
-    const own = D().week.some((w) => planetEssences(w.name).length);
+    const C = corr();
+    const own = D().week.some((w) => planetEssences(wk(w).name).length);
     const customs = cal().dayTexts || [];
-    return D().week.map((w, i) => {
+    return D().week.map((w0, i) => {
+      const w = wk(w0);
       const ess = own ? planetEssences(w.name) : w.ess || [];
       return { day: dayName(i), planet: w.planet, name: w.name, metal: w.metal, ess, color: ess[0] && C[ess[0]] ? C[ess[0]].color : "", text: w.text || "", custom: customs[i] || "" };
     });
@@ -77,7 +105,8 @@
     const far = near.map((x) => T.ESS[x].opp).find((x) => !near.includes(x)) || T.ESS[near[0]].opp;
     return { near, far, schools };
   }
-  const affinityText = (a) => (a ? `${a.near.map((x) => T.ESS[x].latin).join(" und ")}${a.schools.length ? " · " + a.schools.map((s) => T.SCHOOLS[s].de).join(", ") : ""} · Gegenpol ${T.ESS[a.far].latin}` : "");
+  const schoolName = (s) => (EN() && T.SCHOOLS[s].en ? T.SCHOOLS[s].en.de : T.SCHOOLS[s].de);
+  const affinityText = (a) => (a ? `${a.near.map((x) => T.ESS[x].latin).join(tx().and)}${a.schools.length ? " · " + a.schools.map(schoolName).join(", ") : ""} · ${tx().opp} ${T.ESS[a.far].latin}` : "");
 
   // ---------------------------------------------------------------------------
   // Monate und Schutzgottheiten
@@ -93,7 +122,7 @@
     }
     return [...cnt.entries()].sort((a, b) => b[1] - a[1]).slice(0, 2).map(([x]) => x);
   }
-  const seasonOf = (i) => (cal().seasons || [])[i] || (monthNames().length === 12 ? D().seasons[i] : "");
+  const seasonOf = (i) => (cal().seasons || [])[i] || (monthNames().length === 12 ? (EN() ? D().seasonsEn : D().seasons)[i] : "");
   function months() {
     const names = monthNames(), earth = cal().earth || [], patrons = cal().patrons || [], texts = cal().monthTexts || [], md = monthDays();
     const P = names.map((_, i) => deityOf(patrons[i]));
@@ -104,7 +133,7 @@
       const patron = P[i];
       return {
         i, name, earth: earth[i] && earth[i] !== name ? earth[i] : "", days: md[i], a0, a1: deg(day), patron, colors: patron ? patron.colors || [] : [],
-        aff: affinity(deityEss(patron)), season: seasonOf(i), text: texts[i] || (names.length === 12 ? D().monthLore[i] : ""),
+        aff: affinity(deityEss(patron)), season: seasonOf(i), text: texts[i] || (names.length === 12 ? (EN() ? D().monthLoreEn : D().monthLore)[i] : ""),
       };
     });
   }
@@ -116,9 +145,11 @@
   // ---------------------------------------------------------------------------
   function feasts() {
     const deity = window.DEITY;
-    const vm = (deity && window.VADEMECUM && (VADEMECUM.local || {})[deity.id]) || null;
+    // lokale Vademecum-Feste sind Profiltexte: nur in der Sprache des Profils
+    const sameLang = !window.PROFILE || !PROFILE.localLang || PROFILE.localLang === LANG();
+    const vm = (sameLang && deity && window.VADEMECUM && (VADEMECUM.local || {})[deity.id]) || null;
     const own = ((vm && vm.feasts) || []).map((f) => ({ ...f, deity: deity.name }));
-    const pf = ((window.PROFILE && PROFILE.devotion) || {}).feasts || [];
+    const pf = (PB().devotion || {}).feasts || [];
     // derselbe Tag: Name aus dem Vademecum, fehlender Text aus der Andacht (dort steht das Gebet des Tages)
     const byKey = new Map();
     for (const f of [...own, ...pf]) {
@@ -133,7 +164,8 @@
   // ---------------------------------------------------------------------------
   // Zeichen des Himmels
   // ---------------------------------------------------------------------------
-  const signList = () => (Array.isArray(cal().signs) && cal().signs.length ? cal().signs : D().zodiac);
+  const ownSigns = () => Array.isArray(cal().signs) && cal().signs.length;
+  const signList = () => (ownSigns() ? cal().signs : D().zodiac.map((z) => (EN() && z.en ? { ...z, ...z.en } : z)));
   function signs() {
     return signList().map((s) => {
       const [a0, a1] = span(s.from, s.to);
@@ -241,10 +273,10 @@
     // dünner Außenkreis um die Farbstreifen: helle Farben heben sich so vom Papier ab
     if (stripes) out += S.circle(0, 0, R.mo + 3.4, "hair");
     // Festtage nur als nachträgliche Punkte einer Stimme (in ihrer Tinte)
-    const hand = cal().feastHand, ink = hand && ((((window.PROFILE && PROFILE.primer) || {}).voices || {})[hand] || {}).ink;
+    const hand = cal().feastHand, ink = hand && ((((window.PROFILE && PB().primer) || {}).voices || {})[hand] || {}).ink;
     if (hand) for (const fe of feasts()) if (fe.d) out += festDot(R.mi + 1.8, fe).replace('class="rub"', `class="hand-dot" fill="${e(ink || "#4a3220")}"`);
     // Mitte: Polarstern und Jahr
-    out += `<g class="accent">${S.circle(0, 0, 2, "fill")}</g>` + (cal().year ? S.text(0, 10, cal().year.replace(/^im\s+/i, ""), "lbl", 4) : "");
+    out += `<g class="accent">${S.circle(0, 0, 2, "fill")}</g>` + (cal().year ? S.text(0, 10, cal().year.replace(/^(im|in)\s+/i, ""), "lbl", 4) : "");
     return out;
   }
 
@@ -294,7 +326,7 @@
     }
     // Pol
     out += `<g class="accent">${S.circle(0, 0, 1.6, "fill")}${S.line(-4, 0, 4, 0, "thin")}${S.line(0, -4, 0, 4, "thin")}</g>`;
-    out += S.text(0, 9, cal().poleStar || "Polarstern", "lbl", 4.2);
+    out += S.text(0, 9, cal().poleStar || tx().pole, "lbl", 4.2);
     return out;
   }
 
@@ -302,28 +334,28 @@
   // Einträge als einzelne Blöcke (der Satz darf zwischen ihnen umbrechen): Kopfzeile, darunter die Überlieferung
   const essGlyphs = (ess) => ess.map((x) => `<span class="ess-g">${glyphSVG("essence", x, { s: 6 })}</span>`).join("");
   const entry = (head, body) => `<div class="tt-entry"><div class="tt-head">${head}</div>${body.filter(Boolean).map((t) => `<p>${t}</p>`).join("")}</div>`;
-  const affLine = (a) => (a ? `<span class="tt-aff">Affinität: ${e(affinityText(a))}</span>` : "");
+  const affLine = (a) => (a ? `<span class="tt-aff">${tx().aff}: ${e(affinityText(a))}</span>` : "");
 
   function weekEntries() {
     return week().map((w) => entry(
       `${glyphSVG("alch", w.planet, { s: 7 })} <b>${e(w.day)}</b> <span class="rn">${e(w.name)} · ${e(w.metal)}${w.color ? " · " + e(w.color) : ""}</span> ${essGlyphs(w.ess)}`,
-      [e(w.text), w.custom && `<i>Brauch:</i> ${e(w.custom)}`],
+      [e(w.text), w.custom && `<i>${tx().custom}</i> ${e(w.custom)}`],
     ));
   }
 
   function monthEntries() {
     return months().map((m) => {
-      const swatch = (m.colors || []).map((c) => `<span class="tt-sw" style="background:${e(c.hex)}"></span>${e(c.de || c.name)}`).join(" · ");
+      const swatch = (m.colors || []).map((c) => `<span class="tt-sw" style="background:${e(c.hex)}"></span>${e(colorName(c))}`).join(" · ");
       return entry(
-        `<b>${e(m.name)}</b> <span class="rn">${[m.earth, m.season, m.days + " Tage"].filter(Boolean).map(e).join(" · ")}</span>`,
-        [m.patron && `<i>Schutzgott:</i> ${e(m.patron.name)}${swatch ? ` · ${swatch}` : ""}`, e(m.text), affLine(m.aff)],
+        `<b>${e(m.name)}</b> <span class="rn">${[m.earth, m.season, tx().days(m.days)].filter(Boolean).map(e).join(" · ")}</span>`,
+        [m.patron && `<i>${tx().patron}</i> ${e(m.patron.name)}${swatch ? ` · ${swatch}` : ""}`, e(m.text), affLine(m.aff)],
       );
     });
   }
   function signEntries() {
     const mo = monthNames();
     return signs().map((z) => entry(
-      `<b>${e(z.name)}</b> <span class="rn">${z.dated.d}. ${e(mo[z.dated.m] || "")} – ${z.until.d}. ${e(mo[z.until.m] || "")}</span> ${essGlyphs(z.ess)}`,
+      `<b>${e(z.name)}</b> <span class="rn">${e(tx().date(z.dated.d, mo[z.dated.m] || ""))} – ${e(tx().date(z.until.d, mo[z.until.m] || ""))}</span> ${essGlyphs(z.ess)}`,
       [e(z.text), affLine(z.aff)],
     ));
   }

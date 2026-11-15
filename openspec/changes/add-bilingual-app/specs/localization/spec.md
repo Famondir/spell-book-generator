@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Drei Sprachebenen
-Die App SHALL die Sprache auf drei Ebenen getrennt einstellbar machen: Oberfläche (`uiLang`), Buch (`bookLang`: In-Game-Texte in Zauberbuch, Lehrheft, Brevier und Randnotizen) und Regeln (`rulesLang`: Regeltext, Werte und Zaubernamen). Jede Ebene MUST Deutsch und Englisch kennen. Ohne gespeicherten Zustand MUST jede Ebene der Browsersprache folgen (`de*` → Deutsch, sonst Englisch); besteht bereits ein Zustand aus einer Version ohne Sprachwahl, MUST alles Deutsch bleiben.
+Die App SHALL die Sprache auf drei Ebenen getrennt einstellbar machen: Oberfläche (`uiLang`), Buch (`bookLang`: In-Game-Texte in Zauberbuch, Lehrheft, Brevier und Randnotizen) und Regeln (`rulesLang`: Regeltext, Werte und Zaubernamen). Jede Ebene MUST Deutsch und Englisch kennen. Ohne gespeicherten Zustand MUST jede Ebene `?lang=de|en` aus der Adresse folgen, sonst der ersten Deutsch- oder Englisch-Angabe in den bevorzugten Sprachen des Browsers (`navigator.languages`), sonst Englisch sein; besteht bereits ein Zustand aus einer Version ohne Sprachwahl, MUST alles Deutsch bleiben.
 
 #### Scenario: Englische Oberfläche, deutsches Buch
 - **WENN** `uiLang = en` und `bookLang = de` eingestellt sind
@@ -10,6 +10,10 @@ Die App SHALL die Sprache auf drei Ebenen getrennt einstellbar machen: Oberfläc
 #### Scenario: Neuer Nutzer mit englischem Browser
 - **WENN** die App ohne gespeicherten Zustand in einem Browser mit `navigator.language = "en-US"` startet
 - **DANN** sind Oberfläche, Buch und Regeln englisch
+
+#### Scenario: Bevorzugte Sprachen und Adresse
+- **WENN** die App ohne gespeicherten Zustand mit `navigator.languages = ["fr-FR", "de-DE", "en"]` startet
+- **DANN** ist alles deutsch; mit `?lang=en` in der Adresse englisch, mit `["fr-FR"]` allein englisch
 
 #### Scenario: Bestehender Nutzer
 - **WENN** ein Zustand ohne Sprachfelder geladen wird

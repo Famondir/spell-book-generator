@@ -10,7 +10,111 @@ window.DEVOTION = (function () {
   const t = (k, v) => I18N.t(k, v);
   const ARCANE = () => !window.CLASS || CLASS.tradition !== "divine";
   const enabled = () => !!window.DEITY;
-  const cfg = () => ({ morning: [], evening: [], obedience: "prayer", feasts: [], occasions: {}, voice: "", tone: "", log: false, ...((window.PROFILE && PROFILE.devotion) || {}) });
+  // Buchsprache: Texte der Andacht stehen in TX (de/en); Profiltexte (Feste, Anlässe, Stimme, eigener Schritttext)
+  // gibt es nur in der Sprache des Profils, in der anderen Buchsprache gelten die des Profils dieser Sprache
+  const BL = () => (I18N.lang.book === "en" ? "en" : "de");
+  const foreign = () => !!(window.PROFILE && PROFILE.forLang && BL() !== (PROFILE.localLang || "de"));
+  const X = () => TX[BL()];
+  const cfg = () => {
+    const base = { morning: [], evening: [], obedience: "prayer", feasts: [], occasions: {}, voice: "", tone: "", log: false, ...((window.PROFILE && PROFILE.devotion) || {}) };
+    if (!foreign()) return base;
+    const o = PROFILE.forLang(BL()).devotion || {};
+    return { ...base, feasts: o.feasts || [], occasions: o.occasions || {}, voice: o.voice || "" };
+  };
+  const TX = {
+    de: {
+      label: {
+        invoke: "Anrufung", fetchBook: "Das Buch holen", obedience: "Andacht", prepare: "Vorbereitung", returnBook: "Das Buch zurücksenden",
+        studyBook: "Das Buch zum Studium", review: "Rückschau", keep: "Bitte ums Behalten", close: "Schluss", feast: "Festtag",
+      },
+      maskPair: "Die helle Seite deiner Maske hat den Tag gesehen, die dunkle sieht die Nacht.",
+      pair: [
+        "Am Morgen das Licht, am Abend der Schatten – beides kommt von dir.",
+        "Der Tag hat gesprochen, die Nacht schweigt; du hörst beide.",
+        "Was der Tag aufgedeckt hat, deckt die Nacht zu; beides ist dein.",
+      ],
+      fetchBook: "Ich hole das Buch aus seiner Verwahrung und schlage es auf.",
+      returnBook: "Ich schließe das Buch und gebe es zurück in seine Verwahrung.",
+      studyBook: "Ich hole das Buch noch einmal – nicht um zu wirken, sondern um zu lernen.",
+      fragment: ["Ich schreibe, was nicht vollendet werden soll: ein Bruchstück für den, der nach mir liest.", "Zum Abschluss wirke ich eine Formel, damit das Geschriebene nicht nur Tinte bleibt."],
+      obey: ["Ich halte inne und richte meine Gedanken auf dich.", "Ich schweige einen Atemzug lang und höre.", "Ich lege meine Hände still und denke an dich."],
+      prepArcane: ["Lass mich lesen, was geschrieben steht, und behalten, was ich heute brauche.", "Ordne meine Gedanken, wie die Zeichen im Kreis geordnet sind.", "Mach meinen Blick klar für die Formeln dieses Tages."],
+      prepDivine: ["Gib mir heute, was ich brauche, und nicht mehr.", "Lass mich empfangen, was du mir heute anvertraust.", "Fülle meine Hände für diesen Tag."],
+      keep: ["Lass mich morgen noch wissen, was ich heute gelernt habe.", "Nimm mir nicht, was ich heute verstanden habe.", "Was ich heute gelernt habe, lass mich behalten."],
+      night: ["Behüte die Nacht.", "Lass den Schlaf ruhig sein.", "Wache, während ich schlafe."],
+      reviewFixed: ["Was ich heute gewirkt habe, lege ich vor dich.", "Was ungenutzt blieb, gebe ich dir zurück."],
+      thanks: (name, n, more) => `Ich danke dir für ${name}${n > 1 ? ` (${n}-mal)` : ""}${more ? ` und ${more === 1 ? "eine weitere Formel" : more + " weitere Formeln"}` : ""}.`,
+      unusedCast: (k) => `${k === 1 ? "Eine Formel blieb" : k + " Formeln blieben"} ungenutzt; ich gebe sie dir zurück.`,
+      rest: ["Heute habe ich nichts gewirkt.", "Heute ruhten meine Hände."],
+      unusedRest: (k) => (k ? `Die ${k === 1 ? "Formel, die ich gelesen habe, gebe ich" : k + " Formeln, die ich gelesen habe, gebe ich"} dir ungenutzt zurück.` : "Die Formeln, die ich gelesen habe, gebe ich dir ungenutzt zurück."),
+      swapped: (name) => `Eine Formel war nicht die, die ich gelesen zu haben glaubte: ${name}. Du weißt, warum.`,
+      morning: "Morgengebet", evening: "Abendgebet",
+      today: (name) => `Heute ist ${name}.`,
+      occTitle: { decipher: "Vor dem Entziffern", failedRoll: "Nach einem misslungenen Wurf", banish: "Vor dem Bannen", copy: "Beim Abschreiben", dead: "Für die Toten", feast: "An Festtagen" },
+      occ: (v) => ({
+        decipher: [`${v.call} öffne mir die alte Schrift.`, "Lass mich lesen, was eine andere Hand geschrieben hat,", "und verstehen, was sie gemeint hat."],
+        failedRoll: [`${v.name}, ich habe falsch gelesen.`, "Was ich heute in der Hand halte, ist nicht, was ich wollte.", "Lehre mich, mit dem zu wirken, was ich habe."],
+        banish: [`${v.call} schließe, was nicht offen sein darf.`, "Was hierher nicht gehört, schicke zurück.", v.dual || "Gib meinem Kreis Bestand."],
+        copy: [`${v.call} führe meine Feder.`, "Kein Zeichen zu viel, keines zu wenig.", "Was ich abschreibe, soll halten wie das Original."],
+        dead: [`${v.call} nimm sie auf, die vor mir gegangen sind.`, "Was sie wussten, ist nicht verloren, solange einer liest.", "Ich erinnere mich an sie, so gut ich kann."],
+        feast: [`${v.call} heute ist dein Tag.`, v.praise, "Ich halte inne und danke dir."],
+      }),
+      optional: "(wenn Zeit bleibt)", castEnd: "Zum Abschluss gewirkt:", fragK: "Formelfragment",
+      log: { title: "Protokoll", diary: "Tagebuch", prepared: "Vorbereitet", cast: "Gewirkt", load: "Auslastung", formulas: "Formeln", unused: "Ungenutzt", swapped: "Vertauscht", devotion: "Andacht", close: "Abschluss",
+        prepVal: (n, k) => `${n} · ab Grad 1: ${k}`, castVal: (a, b) => `${a} ${a === 1 ? "Wirkung" : "Wirkungen"} · ${b} ${b === 1 ? "Formel" : "Formeln"}`, fragVal: (n) => `Formelfragment aus „${n}“` },
+      rv: { real: "Echtes Datum", deity: "Gottheit", voice: "Stimme des Tagebuchs", log: "Protokoll", prepared: "Vorbereitet", cast: "Gewirkt", unused: "Ungenutzt", swapped: "Vertauscht",
+        morning: "Morgenandacht", held: "gehalten", closing: ", zum Abschluss ", none: "nicht vermerkt", vespers: "Abendgebet", devotion: "Andacht",
+        frag: (n, t) => `Formelfragment aus ${n} („${t}“):`, gen: "Abendgebet (erzeugt)", last: "Letzte Einträge", answer: "Antwort",
+        howto: "Den Tagebucheintrag (darf auch ein spontanes Gebet enthalten) in das JSON unten schreiben, dann in der App importieren." },
+      gm: { released: "freigegeben", sealed: "versiegelt", cols: "| Kennung | Status | Ingame | Datum |" },
+    },
+    en: {
+      label: {
+        invoke: "Invocation", fetchBook: "Fetching the book", obedience: "Devotion", prepare: "Preparation", returnBook: "Returning the book",
+        studyBook: "The book for study", review: "Review", keep: "Prayer to remember", close: "Closing", feast: "Feast day",
+      },
+      maskPair: "The bright side of your mask has seen the day; the dark side sees the night.",
+      pair: [
+        "Light in the morning, shadow in the evening – both come from you.",
+        "The day has spoken, the night is silent; you hear them both.",
+        "What the day has uncovered, the night covers; both are yours.",
+      ],
+      fetchBook: "I take the book from its keeping and open it.",
+      returnBook: "I close the book and give it back into its keeping.",
+      studyBook: "I take the book once more – not to cast, but to learn.",
+      fragment: ["I write what is not meant to be finished: a fragment for whoever reads after me.", "To close, I cast one formula, so that what is written is more than ink."],
+      obey: ["I pause and turn my thoughts to you.", "I keep silence for one breath and listen.", "I lay my hands still and think of you."],
+      prepArcane: ["Let me read what is written, and keep what I need today.", "Set my thoughts in order, as the signs in the circle are set in order.", "Make my eye clear for the formulas of this day."],
+      prepDivine: ["Give me today what I need, and no more.", "Let me receive what you entrust to me today.", "Fill my hands for this day."],
+      keep: ["Let me still know tomorrow what I have learned today.", "Do not take from me what I have understood today.", "What I have learned today, let me keep."],
+      night: ["Watch over the night.", "Let sleep be quiet.", "Keep watch while I sleep."],
+      reviewFixed: ["What I have cast today, I lay before you.", "What went unused, I give back to you."],
+      thanks: (name, n, more) => `I thank you for ${name}${n > 1 ? ` (${n} times)` : ""}${more ? ` and ${more === 1 ? "one other formula" : more + " other formulas"}` : ""}.`,
+      unusedCast: (k) => `${k === 1 ? "One formula remained" : k + " formulas remained"} unused; I give ${k === 1 ? "it" : "them"} back to you.`,
+      rest: ["Today I have cast nothing.", "Today my hands were at rest."],
+      unusedRest: (k) => (k ? `${k === 1 ? "The formula I read, I give" : "The " + k + " formulas I read, I give"} back to you unused.` : "The formulas I read, I give back to you unused."),
+      swapped: (name) => `One formula was not the one I believed I had read: ${name}. You know why.`,
+      morning: "Morning prayer", evening: "Evening prayer",
+      today: (name) => `Today is ${name}.`,
+      occTitle: { decipher: "Before deciphering", failedRoll: "After a failed attempt", banish: "Before banishing", copy: "While copying", dead: "For the dead", feast: "On feast days" },
+      occ: (v) => ({
+        decipher: [`${v.call} open the old writing to me.`, "Let me read what another hand has written,", "and understand what it meant."],
+        failedRoll: [`${v.name}, I have read wrongly.`, "What I hold in my hand today is not what I wanted.", "Teach me to work with what I have."],
+        banish: [`${v.call} close what must not stand open.`, "Send back what does not belong here.", v.dual || "Give my circle lasting strength."],
+        copy: [`${v.call} guide my quill.`, "No sign too many, none too few.", "What I copy shall hold as the original holds."],
+        dead: [`${v.call} take them in, who have gone before me.`, "What they knew is not lost while one still reads.", "I remember them as well as I can."],
+        feast: [`${v.call} today is your day.`, v.praise, "I pause and give you thanks."],
+      }),
+      optional: "(if time allows)", castEnd: "Cast at the close:", fragK: "Formula fragment",
+      log: { title: "Log", diary: "Journal", prepared: "Prepared", cast: "Cast", load: "Utilisation", formulas: "Formulas", unused: "Unused", swapped: "Swapped", devotion: "Devotion", close: "Closing",
+        prepVal: (n, k) => `${n} · from degree 1: ${k}`, castVal: (a, b) => `${a} ${a === 1 ? "casting" : "castings"} · ${b} ${b === 1 ? "formula" : "formulas"}`, fragVal: (n) => `Formula fragment from “${n}”` },
+      rv: { real: "Real date", deity: "Deity", voice: "Voice of the journal", log: "Log", prepared: "Prepared", cast: "Cast", unused: "Unused", swapped: "Swapped",
+        morning: "Morning devotion", held: "held", closing: ", closing with ", none: "not recorded", vespers: "Evening prayer", devotion: "Devotion",
+        frag: (n, t) => `Formula fragment from ${n} (“${t}”):`, gen: "Evening prayer (generated)", last: "Latest entries", answer: "Reply",
+        howto: "Write the journal entry (which may also contain a spontaneous prayer) into the JSON below, then import it in the app." },
+      gm: { released: "released", sealed: "sealed", cols: "| ID | Status | In-game | Date |" },
+    },
+  };
   let ctx = null, api = null;
 
   // --- Speicher -----------------------------------------------------------------------
@@ -72,68 +176,62 @@ window.DEVOTION = (function () {
     morning: [{ step: "invoke" }, { step: "prepare" }, { step: "close" }],
     evening: [{ step: "invoke" }, { step: "review" }, { step: "keep" }, { step: "close" }],
   };
-  const LABEL = {
-    invoke: "Anrufung", fetchBook: "Das Buch holen", obedience: "Andacht", prepare: "Vorbereitung", returnBook: "Das Buch zurücksenden",
-    studyBook: "Das Buch zum Studium", review: "Rückschau", keep: "Bitte ums Behalten", close: "Schluss", feast: "Festtag",
-  };
   // Abend: zwei Gegensätze wie der Doppelvers am Morgen; ein zweifarbiges Maskensymbol gibt die eigene Fassung
   function eveningPair(v) {
-    if (/mask/i.test((v.d && v.d.symbol) || "") && /two|half|black|white/i.test(v.d.symbol)) return "Die helle Seite deiner Maske hat den Tag gesehen, die dunkle sieht die Nacht.";
-    return v.r.pick([
-      "Am Morgen das Licht, am Abend der Schatten – beides kommt von dir.",
-      "Der Tag hat gesprochen, die Nacht schweigt; du hörst beide.",
-      "Was der Tag aufgedeckt hat, deckt die Nacht zu; beides ist dein.",
-    ]);
+    if (/mask/i.test((v.d && v.d.symbol) || "") && /two|half|black|white/i.test(v.d.symbol)) return X().maskPair;
+    return v.r.pick(X().pair);
   }
   // Ein Schritt → { step, label, lines, optional }
   function step(s, v, part, d, frag) {
     const r = v.r;
-    const own = s.text ? lines(s.text) : null;
-    const out = (ls) => ({ step: s.step, label: LABEL[s.step] || s.step, lines: own || ls, optional: !!s.optional });
+    const own = s.text && !foreign() ? lines(s.text) : null;
+    const T = X();
+    const out = (ls) => ({ step: s.step, label: T.label[s.step] || s.step, lines: own || ls, optional: !!s.optional });
     switch (s.step) {
       case "invoke":
         return out(part === "morning"
           ? [v.call, v.praise, ...(v.dual ? [v.dual] : [])]
           : [v.call, eveningPair(v), ...(v.dual ? [v.dual] : [])]);
       case "fetchBook":
-        return out(["Ich hole das Buch aus seiner Verwahrung und schlage es auf."]);
+        return out([T.fetchBook]);
       case "returnBook":
-        return out(["Ich schließe das Buch und gebe es zurück in seine Verwahrung."]);
+        return out([T.returnBook]);
       case "studyBook":
-        return out(["Ich hole das Buch noch einmal – nicht um zu wirken, sondern um zu lernen."]);
+        return out([T.studyBook]);
       case "obedience":
         return out(frag || cfg().obedience === "fragment"
-          ? ["Ich schreibe, was nicht vollendet werden soll: ein Bruchstück für den, der nach mir liest.", "Zum Abschluss wirke ich eine Formel, damit das Geschriebene nicht nur Tinte bleibt."]
-          : [r.pick(["Ich halte inne und richte meine Gedanken auf dich.", "Ich schweige einen Atemzug lang und höre.", "Ich lege meine Hände still und denke an dich."])]);
+          ? T.fragment
+          : [r.pick(T.obey)]);
       case "prepare":
         return out([ARCANE()
-          ? r.pick(["Lass mich lesen, was geschrieben steht, und behalten, was ich heute brauche.", "Ordne meine Gedanken, wie die Zeichen im Kreis geordnet sind.", "Mach meinen Blick klar für die Formeln dieses Tages."])
-          : r.pick(["Gib mir heute, was ich brauche, und nicht mehr.", "Lass mich empfangen, was du mir heute anvertraust.", "Fülle meine Hände für diesen Tag."])]);
+          ? r.pick(T.prepArcane)
+          : r.pick(T.prepDivine)]);
       case "review":
         return out(review(d, r));
       case "keep":
-        return out([r.pick(["Lass mich morgen noch wissen, was ich heute gelernt habe.", "Nimm mir nicht, was ich heute verstanden habe.", "Was ich heute gelernt habe, lass mich behalten."])]);
+        return out([r.pick(T.keep)]);
       case "close":
-        return out(part === "morning" ? [v.close, v.amen] : [r.pick(["Behüte die Nacht.", "Lass den Schlaf ruhig sein.", "Wache, während ich schlafe."]), v.amen]);
+        return out(part === "morning" ? [v.close, v.amen] : [r.pick(T.night), v.amen]);
       default:
         return out([]);
     }
   }
   // Rückschau des Abends aus dem Protokoll; ohne Tag (Lehrheft) als feste Form
   function review(d, r) {
-    if (!d) return ["Was ich heute gewirkt habe, lege ich vor dich.", "Was ungenutzt blieb, gebe ich dir zurück."];
+    const T = X();
+    if (!d) return T.reviewFixed;
     const f = dayFacts(d);
     const out = [];
     if (f.casts.size) {
       const [top, n] = [...f.casts].sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])))[0];
       const more = f.casts.size - 1;
-      out.push(`Ich danke dir für ${spellName(top)}${n > 1 ? ` (${n}-mal)` : ""}${more ? ` und ${more === 1 ? "eine weitere Formel" : more + " weitere Formeln"}` : ""}.`);
-      if (f.unused.length) out.push(`${f.unused.length === 1 ? "Eine Formel blieb" : f.unused.length + " Formeln blieben"} ungenutzt; ich gebe ${f.unused.length === 1 ? "sie" : "sie"} dir zurück.`);
+      out.push(T.thanks(spellName(top), n, more));
+      if (f.unused.length) out.push(T.unusedCast(f.unused.length));
     } else {
-      out.push(r.pick(["Heute habe ich nichts gewirkt.", "Heute ruhten meine Hände."]));
-      out.push(f.unused.length ? `Die ${f.unused.length === 1 ? "Formel, die ich gelesen habe, gebe ich" : f.unused.length + " Formeln, die ich gelesen habe, gebe ich"} dir ungenutzt zurück.` : "Die Formeln, die ich gelesen habe, gebe ich dir ungenutzt zurück.");
+      out.push(r.pick(T.rest));
+      out.push(T.unusedRest(f.unused.length));
     }
-    if (f.swapped.length) out.push(`Eine Formel war nicht die, die ich gelesen zu haben glaubte: ${spellName(f.swapped[0])}. Du weißt, warum.`);
+    if (f.swapped.length) out.push(T.swapped(spellName(f.swapped[0])));
     return out;
   }
   function prayer(part, d) {
@@ -150,28 +248,20 @@ window.DEVOTION = (function () {
     const fe = part === "morning" ? feastOf(d) : null;
     if (fe) {
       const at = steps.findIndex((s) => s.step === "invoke") + 1;
-      steps.splice(at, 0, { step: "feast", label: fe.name, lines: [`Heute ist ${fe.name}.`, ...(fe.text ? lines(fe.text) : occasion("feast").lines.slice(1))] });
+      steps.splice(at, 0, { step: "feast", label: fe.name, lines: [X().today(fe.name), ...(fe.text ? lines(fe.text) : occasion("feast").lines.slice(1))] });
     }
-    return { part, title: part === "morning" ? "Morgengebet" : "Abendgebet", feast: fe, steps, frag };
+    return { part, title: part === "morning" ? X().morning : X().evening, feast: fe, steps, frag };
   }
   const morning = (d) => prayer("morning", d);
   const evening = (d) => prayer("evening", d);
 
   // Anlass-Gebete: höchstens vier Zeilen, mit Anrede der Gottheit; das Profil kann sie ersetzen
   const OCCASIONS = ["decipher", "failedRoll", "banish", "copy", "dead", "feast"];
-  const OCC_TITLE = { decipher: "Vor dem Entziffern", failedRoll: "Nach einem misslungenen Wurf", banish: "Vor dem Bannen", copy: "Beim Abschreiben", dead: "Für die Toten", feast: "An Festtagen" };
   function occasion(kind) {
     const v = PRAYER.voice(window.DEITY, "occasion|" + kind);
     const own = cfg().occasions && cfg().occasions[kind];
-    const gen = {
-      decipher: [`${v.call} öffne mir die alte Schrift.`, "Lass mich lesen, was eine andere Hand geschrieben hat,", "und verstehen, was sie gemeint hat."],
-      failedRoll: [`${v.name}, ich habe falsch gelesen.`, "Was ich heute in der Hand halte, ist nicht, was ich wollte.", "Lehre mich, mit dem zu wirken, was ich habe."],
-      banish: [`${v.call} schließe, was nicht offen sein darf.`, "Was hierher nicht gehört, schicke zurück.", v.dual || "Gib meinem Kreis Bestand."],
-      copy: [`${v.call} führe meine Feder.`, "Kein Zeichen zu viel, keines zu wenig.", "Was ich abschreibe, soll halten wie das Original."],
-      dead: [`${v.call} nimm sie auf, die vor mir gegangen sind.`, "Was sie wussten, ist nicht verloren, solange einer liest.", "Ich erinnere mich an sie, so gut ich kann."],
-      feast: [`${v.call} heute ist dein Tag.`, v.praise, "Ich halte inne und danke dir."],
-    }[kind] || [];
-    return { kind, title: OCC_TITLE[kind] || kind, lines: (own ? lines(own) : gen).slice(0, 4) };
+    const gen = X().occ(v)[kind] || [];
+    return { kind, title: X().occTitle[kind] || kind, lines: (own ? lines(own) : gen).slice(0, 4) };
   }
 
   // --- Formelfragment -----------------------------------------------------------------------
@@ -224,9 +314,9 @@ window.DEVOTION = (function () {
   }
 
   // --- Seiten ------------------------------------------------------------------------------
-  const stepHTML = (s) => `<div class="dv-step${s.optional ? " opt-step" : ""}"><h4>${e(s.label)}${s.optional ? ` <span class="dv-opt">(wenn Zeit bleibt)</span>` : ""}</h4><p>${s.lines.map(e).join("<br>")}</p></div>`;
+  const stepHTML = (s) => `<div class="dv-step${s.optional ? " opt-step" : ""}"><h4>${e(s.label)}${s.optional ? ` <span class="dv-opt">${X().optional}</span>` : ""}</h4><p>${s.lines.map(e).join("<br>")}</p></div>`;
   function fragHTML(f) {
-    return f ? `<div class="dv-frag"><figure>${f.svg}</figure><div><div class="dv-frag-k">Formelfragment · ${e(f.name)}</div><b>${e(f.title)}</b><p class="dv-formula">${f.lines.map(e).join("<br>")}</p></div></div>` : "";
+    return f ? `<div class="dv-frag"><figure>${f.svg}</figure><div><div class="dv-frag-k">${X().fragK} · ${e(f.name)}</div><b>${e(f.title)}</b><p class="dv-formula">${f.lines.map(e).join("<br>")}</p></div></div>` : "";
   }
   // Vollständiges Gebet (zum Lesen am Tisch, Reiter „Heute“)
   const fullHTML = (P) => P.steps.map((s) => (s.step === "obedience" ? stepHTML(s) + fragHTML(P.frag) : stepHTML(s))).join("");
@@ -235,13 +325,13 @@ window.DEVOTION = (function () {
   function castField(d) {
     const held = d ? dayFacts(d).held : null;
     const cast = held && held.x && held.x.cast ? spellName(held.x.cast) : "";
-    return `<div class="dv-fields"><div>Zum Abschluss gewirkt: <span class="dv-line">${e(cast)}</span></div></div>`;
+    return `<div class="dv-fields"><div>${X().castEnd} <span class="dv-line">${e(cast)}</span></div></div>`;
   }
   // Vorderseite: mit Fragment Verweis auf die feste Form und großer Kreis; ohne Fragment das ganze Gebet
   function morningHTML(d, P) {
     if (!P.frag) return fullHTML(P) + castField(d);
     const f = P.frag;
-    return `${invokeHTML(P)}<div class="dv-frag-big"><div class="dv-frag-k">Formelfragment · ${e(f.name)}</div><b>${e(f.title)}</b><figure>${f.svg}</figure><p class="dv-formula">${f.lines.map(e).join("<br>")}</p></div>${castField(d)}`;
+    return `${invokeHTML(P)}<div class="dv-frag-big"><div class="dv-frag-k">${X().fragK} · ${e(f.name)}</div><b>${e(f.title)}</b><figure>${f.svg}</figure><p class="dv-formula">${f.lines.map(e).join("<br>")}</p></div>${castField(d)}`;
   }
   const ruled = (n) => `<div class="dv-lines">${"<i></i>".repeat(n)}</div>`;
   const paras = (s) => String(s).split(/\n\s*\n/).map((p) => `<p>${e(p.trim()).replace(/\n/g, "<br>")}</p>`).join("");
@@ -253,15 +343,16 @@ window.DEVOTION = (function () {
     const total = casts.reduce((a, [, n]) => a + n, 0);
     const names = (ids) => ids.map((id) => e(spellName(id))).join(", ") || "–";
     const held = f.held;
+    const L = X().log;
     const rows = [
-      ["Vorbereitet", `${f.prepared.length} · ab Grad 1: ${slots}`],
-      ["Gewirkt", `${total} ${total === 1 ? "Wirkung" : "Wirkungen"} · ${casts.length} ${casts.length === 1 ? "Formel" : "Formeln"}`],
-      ["Auslastung", slots ? `${Math.round((100 * (slots - f.unused.length)) / slots)} %` : "–"],
-      ["Formeln", casts.map(([id, n]) => `${e(spellName(id))} ×${n}`).join(", ") || "–"],
-      ["Ungenutzt", names(f.unused)],
-      ...(f.swapped.length ? [["Vertauscht", names(f.swapped)]] : []),
-      ...(J.days[d.id] && J.days[d.id].frag ? [["Andacht", `Formelfragment aus „${e(spellName(J.days[d.id].frag))}“`]] : []),
-      ["Abschluss", held && held.x && held.x.cast ? e(spellName(held.x.cast)) : "–"],
+      [L.prepared, L.prepVal(f.prepared.length, slots)],
+      [L.cast, L.castVal(total, casts.length)],
+      [L.load, slots ? `${Math.round((100 * (slots - f.unused.length)) / slots)} %` : "–"],
+      [L.formulas, casts.map(([id, n]) => `${e(spellName(id))} ×${n}`).join(", ") || "–"],
+      [L.unused, names(f.unused)],
+      ...(f.swapped.length ? [[L.swapped, names(f.swapped)]] : []),
+      ...(J.days[d.id] && J.days[d.id].frag ? [[L.devotion, L.fragVal(e(spellName(J.days[d.id].frag)))]] : []),
+      [L.close, held && held.x && held.x.cast ? e(spellName(held.x.cast)) : "–"],
     ];
     return `<table class="dv-log">${rows.map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join("")}</table>`;
   }
@@ -274,8 +365,8 @@ window.DEVOTION = (function () {
     const r = (d && J.days[d.id]) || {};
     const log = d && cfg().log;
     return `${r.evening ? `<div class="dv-step dv-own">${paras(r.evening)}</div>` : invokeHTML(P)}
-      ${log ? `<div class="dv-step"><h4>Protokoll</h4>${logHTML(d)}</div>` : ""}
-      <div class="dv-step dv-diary"><h4>Tagebuch</h4>${r.diary ? paras(r.diary) : ruled(log ? lined - 6 : lined)}</div>
+      ${log ? `<div class="dv-step"><h4>${X().log.title}</h4>${logHTML(d)}</div>` : ""}
+      <div class="dv-step dv-diary"><h4>${X().log.diary}</h4>${r.diary ? paras(r.diary) : ruled(log ? lined - 6 : lined)}</div>
       ${d ? gmHTML(d.id) : ""}`;
   }
   const head = (d, P) => `<div class="dv-head"><div class="dv-date">${e(dateText(d))}</div>${P.feast ? `<div class="dv-feast">${e(P.feast.name)}</div>` : ""}<h3>${e(P.title)}</h3></div>`;
@@ -283,8 +374,8 @@ window.DEVOTION = (function () {
   function sheetPages(d, no = 1) {
     const M = morning(d), E = evening(d);
     return [
-      { cls: "devotion-page sheet-front bind", running: `${t("dv.sheet")} · ${dateText(d)}`, no, html: head(d, M) + morningHTML(d, M) },
-      { cls: "devotion-page sheet-back bind", running: `${t("dv.sheet")} · ${dateText(d)}`, no: no + 1, html: head(d, E) + eveningHTML(d, E) },
+      { cls: "devotion-page sheet-front bind", running: `${I18N.b("dv.sheet")} · ${dateText(d)}`, no, html: head(d, M) + morningHTML(d, M) },
+      { cls: "devotion-page sheet-back bind", running: `${I18N.b("dv.sheet")} · ${dateText(d)}`, no: no + 1, html: head(d, E) + eveningHTML(d, E) },
     ];
   }
   // ganzes Gebet als eine Seite (Lesen am Tisch)
@@ -293,7 +384,7 @@ window.DEVOTION = (function () {
   // Andachtsbuch: Titelseite, dann je Spieltag eine Doppelseite (links Morgen, rechts Abend), älteste zuerst
   function bookPages() {
     const owner = ctx && ctx.owner ? ctx.owner() : "";
-    const pages = [{ cls: "devotion-page title-page dv-title", running: "", html: `<div class="tp"><h1>${e(t("dv.bookTitle"))}</h1><div class="tp-owner">${e(owner)}</div><div class="tp-sub">${e(window.DEITY ? window.DEITY.name : "")}</div></div>` }];
+    const pages = [{ cls: "devotion-page title-page dv-title", running: "", html: `<div class="tp"><h1>${e(I18N.b("dv.bookTitle"))}</h1><div class="tp-owner">${e(owner)}</div><div class="tp-sub">${e(window.DEITY ? window.DEITY.name : "")}</div></div>` }];
     for (const d of bookDays()) {
       const M = morning(d), E = evening(d);
       pages.push({ cls: "devotion-page dv-morning break-before", running: dateText(d), html: head(d, M) + morningHTML(d, M), day: d.id });
@@ -311,29 +402,30 @@ window.DEVOTION = (function () {
     const E = evening(d);
     const prev = bookDays().filter((x) => x.start < d.start && J.days[x.id] && J.days[x.id].diary).slice(-3);
     const fr = fragment(d);
+    const R = X().rv;
     const md = [
-      `# ${t("dv.review")} – ${ch.name} – ${dateText(d)}`,
+      `# ${I18N.b("dv.review")} – ${ch.name} – ${dateText(d)}`,
       "",
-      `- Echtes Datum: ${realDate(d.start)}`,
-      `- Gottheit: ${window.DEITY ? window.DEITY.name : "–"}`,
-      `- Stimme des Tagebuchs: ${cfg().voice || "–"}`,
+      `- ${R.real}: ${realDate(d.start)}`,
+      `- ${R.deity}: ${window.DEITY ? window.DEITY.name : "–"}`,
+      `- ${R.voice}: ${cfg().voice || "–"}`,
       "",
-      "## Protokoll",
-      `- Vorbereitet: ${f.prepared.map(spellName).join(", ") || "–"}`,
-      `- Gewirkt: ${[...f.casts].map(([id, n]) => spellName(id) + (n > 1 ? " ×" + n : "")).join(", ") || "–"}`,
-      `- Ungenutzt: ${f.unused.map(spellName).join(", ") || "–"}`,
-      ...(f.swapped.length ? [`- Vertauscht: ${f.swapped.map(spellName).join(", ")}`] : []),
-      `- Morgenandacht: ${f.held ? "gehalten" + (f.held.x && f.held.x.cast ? ", zum Abschluss " + spellName(f.held.x.cast) : "") : "nicht vermerkt"}`,
-      `- Abendgebet: ${f.vespers ? "gehalten" : "nicht vermerkt"}`,
+      `## ${R.log}`,
+      `- ${R.prepared}: ${f.prepared.map(spellName).join(", ") || "–"}`,
+      `- ${R.cast}: ${[...f.casts].map(([id, n]) => spellName(id) + (n > 1 ? " ×" + n : "")).join(", ") || "–"}`,
+      `- ${R.unused}: ${f.unused.map(spellName).join(", ") || "–"}`,
+      ...(f.swapped.length ? [`- ${R.swapped}: ${f.swapped.map(spellName).join(", ")}`] : []),
+      `- ${R.morning}: ${f.held ? R.held + (f.held.x && f.held.x.cast ? R.closing + spellName(f.held.x.cast) : "") : R.none}`,
+      `- ${R.vespers}: ${f.vespers ? R.held : R.none}`,
       "",
-      ...(fr ? ["## Andacht", `Formelfragment aus ${fr.name} („${fr.title}“):`, "", ...fr.lines.map((l) => "> " + l), ""] : []),
-      "## Abendgebet (erzeugt)",
+      ...(fr ? [`## ${R.devotion}`, R.frag(fr.name, fr.title), "", ...fr.lines.map((l) => "> " + l), ""] : []),
+      `## ${R.gen}`,
       ...E.steps.flatMap((s) => s.lines),
       "",
-      "## Letzte Einträge",
+      `## ${R.last}`,
       ...(prev.length ? prev.flatMap((x) => [`### ${dateText(x)}`, J.days[x.id].diary, ""]) : ["–", ""]),
-      "## Antwort",
-      "Den Tagebucheintrag (darf auch ein spontanes Gebet enthalten) in das JSON unten schreiben, dann in der App importieren.",
+      `## ${R.answer}`,
+      R.howto,
       "",
       `<!-- devotion-review ${JSON.stringify({ character: ch.name, day: d.id, date: dateText(d), diary: "" })} -->`,
       "",
@@ -438,9 +530,9 @@ window.DEVOTION = (function () {
   function statusText() {
     const rows = J.gm.map((g) => {
       const d = g.released && dayById(g.released.day);
-      return `| ${g.id} | ${g.released ? "freigegeben" : "versiegelt"} | ${g.released ? (d ? dateText(d) : "–") : ""} | ${g.released ? realDate(g.released.t) : ""} |`;
+      return `| ${g.id} | ${g.released ? X().gm.released : X().gm.sealed} | ${g.released ? (d ? dateText(d) : "–") : ""} | ${g.released ? realDate(g.released.t) : ""} |`;
     });
-    return [`# ${t("dv.gmStatus")} – ${CHARS.current().name}`, "", "| Kennung | Status | Ingame | Datum |", "|---|---|---|---|", ...rows, ""].join("\n");
+    return [`# ${t("dv.gmStatus")} – ${CHARS.current().name}`, "", X().gm.cols, "|---|---|---|---|", ...rows, ""].join("\n");
   }
 
   // Tag gelöscht (Verlauf): Tagebuch fort, dort freigegebene Einträge wieder versiegelt

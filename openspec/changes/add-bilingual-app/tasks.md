@@ -40,27 +40,27 @@
 - [x] 5.1 Stilnotiz `data/lang/README.md` mit Mustersätzen je Textart (Ton, klassische Lehre, keine Meta-Texte)
 - [x] 5.2 `textgen.js` in Kern und Phrasenmodule teilen (`textgen.de.js`, `textgen.en.js`); deutsche Sollwerte unverändert (Kern legt die Zufallszüge fest, `TEXTGEN_LANG.<lang>(ctx)` je Sprache einmal gebaut; Theorie-Absätze mit fester `id`)
 - [x] 5.3 Englische Pools: Titel, Beinamen, Zusammenfassung, Theorie, Gesten, Schritte, Fehlschläge, Aufbau, Randnotizen (dazu Entsprechungen, Zaubertinten, Kalibrierung, Übungsprotokoll, Herkunft, Brückennotizen; Zauberseiten, Kapitel, Kolumnentitel, Verzeichnis, Titelblatt und Füllseiten in `book.js` über Schlüssel `sp.*`/`book.*`)
-- [ ] 5.4 `theory.js`, `legend.js`, `book.js` (Kapitel, Vorspann, Füllseiten, Kolumnentitel): `en`-Felder bzw. Tabellen
-- [ ] 5.5 `prayer.js` und Gottheitstexte (`data/deities.js`) englisch; Brevier mit `bookLang = en`
+- [x] 5.4 `theory.js`, `legend.js`, `book.js` (Kapitel, Vorspann, Füllseiten, Kolumnentitel): `en`-Felder bzw. Tabellen (Vorspann „Lehre der Kreise“, Legenden, Kreisbeschriftungen in circle.js)
+- [x] 5.5 `prayer.js` und Gottheitstexte (`data/deities.js`) englisch; Brevier mit `bookLang = en` (Gebete, Kanon, Gottheitsseite, Brevier-Vorspann und -Kapitel; Sollwert `brevier-paladin-en`)
 - [x] 5.6 Neutrales Profil (`data/profile.js`) mit `en`-Unterobjekt; Profilregel „einsprachig“ mit Hinweis im Dialog (`PROFILE.forLang`, `PROFILE.bookValue` für Besitzer/Titel/Untertitel; Alltagszauber aus dem Profil bleiben einsprachig)
-- [ ] 5.8 Tafel der Zeit: `data/time.js` (Woche, Tierkreis, Jahreszeiten, Monatsüberlieferung) mit `en`-Feldern; `time.js` (Lektionstexte, Beschriftungen von Jahresring und Sternkarte) über Tabellen
-- [ ] 5.9 Vademecum und Andacht: `data/vademecum.js` (Kapitel, Lückensätze, Hälftennamen) mit `en`-Feldern; `vademecum.js` und `devotion.js` (Choräle, Festkalender, Andachtsbild) über Tabellen; lokale Vademecum-Daten bleiben einsprachig
-- [ ] 5.10 `vitrail.js` (Beschriftungen und Texte der Glasfenster) über Tabellen
-- [ ] 5.11 `scripts.js` und `lang.js`: Beschriftungen der Formelsprachen in der Buchsprache (Umschrift folgt schon der Buchsprache, prüfen)
-- [ ] 5.7 Test: Kreise in beiden Sprachen gleich (SVG-Fingerabdruck), Texte deterministisch; Sollwerte `buch-klein-en`, `brevier-paladin-en` — erledigt: `tools/bilingual-check.mjs` (Fall `node-zweisprachig`; fremde Formelsprachen: nur die Umschrift folgt der Buchsprache), Sollwert `buch-klein-en`; offen: `brevier-paladin-en` (mit 5.5)
+- [x] 5.8 Tafel der Zeit: `data/time.js` (Woche, Tierkreis, Jahreszeiten, Monatsüberlieferung) mit `en`-Feldern; `time.js` (Lektionstexte, Beschriftungen von Jahresring und Sternkarte) über Tabellen
+- [x] 5.9 Vademecum und Andacht: `data/vademecum.js` (Kapitel, Lückensätze, Hälftennamen) mit `en`-Feldern; `vademecum.js` und `devotion.js` (Choräle, Festkalender, Andachtsbild) über Tabellen; lokale Vademecum-Daten bleiben einsprachig (lokaler Vademecum-Inhalt nur in der Profilsprache, sonst dünne Fassung; Sollwerte `vademecum-*-en`)
+- [x] 5.10 `vitrail.js` (Beschriftungen und Texte der Glasfenster) über Tabellen
+- [x] 5.11 `scripts.js` und `lang.js`: Beschriftungen der Formelsprachen in der Buchsprache (Umschrift folgt schon der Buchsprache, prüfen) (Sprachnamen aus dem Profil nur in dessen Sprache)
+- [x] 5.7 Test: Kreise in beiden Sprachen gleich (SVG-Fingerabdruck), Texte deterministisch; Sollwerte `buch-klein-en`, `brevier-paladin-en` — erledigt: `tools/bilingual-check.mjs` (Fall `node-zweisprachig`; fremde Formelsprachen: nur die Umschrift folgt der Buchsprache), Sollwert `buch-klein-en`; `brevier-paladin-en` mit 5.5
 
 ## 6. Lehrheft und Alltagszauber englisch (Stufe 5)
 
 Lademodell: `data/primer.en.js` setzt `window.PRIMER_EN` (Teile, Kästen, Lektionen je Id); `data/everyday_spells.en.js` setzt `window.EVERYDAY_SPELLS_EN` (Schlüssel = deutscher Name, damit die Id bleibt). Fehlende Felder fallen auf Deutsch zurück und werden in `I18N.untranslated` gezählt. Prosa nach Stilnotiz und Glossar in `data/lang/README.md`.
 
 
-- [ ] 6.1 `data/primer.en.js` (gleiche Ids): Vorspann, Lesestücke, Glossar, Kästen, Aufgaben, Prüfkriterien; dazu die Lektionen `w-soap`, `w-seal`, `g-sigil` (eigene englische Beispielsätze für die Sigillen), `l-inks`; dazu Zaubertinten in `textgen.js` (Farbstoffe, Metallformen, Begründungen, Warnsatz) und Verweise als `{{lesson:<id>}}`
-- [ ] 6.2 Erzeugte Teile des Lehrhefts (Formulare, Zuschnitt, Prüfbogen) über Tabellen
+- [x] 6.1 `data/primer.en.js` (gleiche Ids): Vorspann, Lesestücke, Glossar, Kästen, Aufgaben, Prüfkriterien; dazu die Lektionen `w-soap`, `w-seal`, `g-sigil` (eigene englische Beispielsätze für die Sigillen), `l-inks`; dazu Zaubertinten in `textgen.js` (Farbstoffe, Metallformen, Begründungen, Warnsatz) und Verweise als `{{lesson:<id>}}` (Zaubertinten über `TEXTGEN.LX(lang)`)
+- [x] 6.2 Erzeugte Teile des Lehrhefts (Formulare, Zuschnitt, Prüfbogen) über Tabellen
 - [x] 6.3 `data/everyday_spells.en.js`: Namen, Regeltext, Flavour; Suche findet beide Namen (Flavour als Randnotiz in der Buchsprache)
-- [ ] 6.4 Zähler unübersetzter Felder im Test = 0; Sollwerte `lehrheft-klein-en`, `pruefbogen-klein-en`
+- [x] 6.4 Zähler unübersetzter Felder im Test = 0; Sollwerte `lehrheft-klein-en`, `pruefbogen-klein-en` (Fall `ui-englisch-unuebersetzt` prüft Buch, Lehrheft und Prüfbogen; Sollwerte `lehrheft-klein-en`, `pruefbogen-klein-en`)
 
 ## 7. Abschluss
 
 - [ ] 7.1 Ganze App auf Englisch durchklicken und drucken (Buch, Regelband, Rollen, Lehrheft, Brevier); Funde beheben
-- [ ] 7.2 README zweisprachig (Kurzfassung englisch), Backlog-Eintrag „Deutsche Regeltexte (MyPFDB) und zweisprachige App“ entfernen
+- [x] 7.2 README zweisprachig (Kurzfassung englisch), Backlog-Eintrag „Deutsche Regeltexte (MyPFDB) und zweisprachige App“ entfernen (Backlog-Eintrag war schon entfernt)
 - [x] 7.3 Veröffentlichung prüfen: deutsche Regeldaten nach PRD-FAQ (OGL-Freigabe durch Ulisses) veröffentlicht als `data/rules.de.js` und `data/domains.de.js`; Abschnitt 15 aus MyPFDB in `LICENSE-OGL.txt`, Ulisses-Vermerk und „keiner Abnahme“ in README, Datenköpfen und Quellenkasten; keine Rohdaten, Prüflisten oder privaten Profile im Baum

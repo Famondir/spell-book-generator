@@ -100,6 +100,12 @@ export const CASES = [
   { name: "vademecum-paladin", book: "paladin", cls: "paladin", job: "vademecum" },
   { name: "vademecum-nethys-wendebuch", book: "klein", deity: "nethys", job: "vademecum" },
   { name: "brevier-paladin", book: "paladin", cls: "paladin", job: "book" },
+  // englische Fassungen (Buchsprache Englisch)
+  { name: "brevier-paladin-en", book: "paladin", cls: "paladin", settings: { bookLang: "en" }, job: "book" },
+  { name: "lehrheft-klein-en", book: "klein", settings: { bookLang: "en" }, job: "primer" },
+  { name: "pruefbogen-klein-en", book: "klein", settings: { bookLang: "en" }, job: "checks" },
+  { name: "vademecum-paladin-en", book: "paladin", cls: "paladin", settings: { bookLang: "en" }, job: "vademecum" },
+  { name: "vademecum-nethys-wendebuch-en", book: "klein", deity: "nethys", settings: { bookLang: "en" }, job: "vademecum" },
 
   // --- Testschnittstelle selbst ---------------------------------------------------------------
   {
@@ -265,6 +271,19 @@ export const CASES = [
           soap: sec("w-soap").querySelector(".ls-k").textContent, sigil: sec("g-sigil").querySelector(".ls-k").textContent, ref: sec("l30").textContent.includes("aus Lektion 18 und"), raw: r.textContent.includes("{{lesson") };
         APP_TEST.done(); return out; })`;
       await t.expect("Nummern, Notiz, Ersatz und Verweis", probe, { l8: "Lektion 10", note: true, l30: "ERSATZ-L30", soap: "Lektion 6", sigil: "Lektion 29", ref: true, raw: false });
+    },
+  },
+
+  // --- Englisch: keine unübersetzten Stellen (I18N.untranslated) in Buch, Lehrheft und Prüfbogen ---------
+  {
+    name: "ui-englisch-unuebersetzt",
+    book: "klein",
+    // eigene Profiltexte sind einsprachig; mit Profil fehlen deren Übersetzungen erwartungsgemäß nicht im Zähler
+    run: async (t) => {
+      const probe = `(I18N.untranslated.clear(), APP_TEST.load({ book: ${JSON.stringify(BOOKS.klein)}, settings: { bookLang: "en", uiLang: "en" } }))
+        && APP_TEST.print("book").then(() => APP_TEST.print("primer")).then(() => APP_TEST.print("checks")).then(() => {
+          const out = [...I18N.untranslated]; APP_TEST.done(); return out; })`;
+      await t.expect("keine unübersetzten Stellen", probe, []);
     },
   },
 

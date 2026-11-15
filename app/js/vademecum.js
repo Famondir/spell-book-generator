@@ -13,8 +13,32 @@
 (function () {
   const e = U.esc;
   const V = () => window.VADEMECUM;
-  const prof = () => (window.PROFILE && PROFILE.vademecum) || {};
-  const voices = () => ({ ...((window.PROFILE && PROFILE.primer) || {}).voices, ...(prof().voices || {}) });
+  // Buchsprache; Profiltexte (Randnotizen, Stimmen, Monatsnamen) kommen aus dem Profil in der Buchsprache
+  const EN = () => !!(window.I18N && I18N.lang.book === "en");
+  const LANG = () => (EN() ? "en" : "de");
+  // in der Sprache des Profils das Profil selbst (live), sonst das neutrale Profil der Buchsprache
+  const PB = () => (window.PROFILE && (PROFILE.book && PROFILE.localLang && PROFILE.localLang !== LANG() ? PROFILE.book() : PROFILE)) || {};
+  // Beschriftungen des Bandes je Buchsprache
+  const TX = {
+    de: {
+      congregation: "Gemeinde", feasts: "Festkalender", hymn: (r) => `Choral ${r}`, chapter: "Kapitel", toc: "Verzeichnis", and: " und ",
+      monthN: (n) => `${n}. Monat`, dayOfMonth: (d, m) => `${d}. Tag des ${m}. Monats`, date: (d, m) => `${d}. ${m}`,
+    },
+    en: {
+      congregation: "Congregation", feasts: "Calendar of Feasts", hymn: (r) => `Hymn ${r}`, chapter: "Chapter", toc: "Contents", and: " and ",
+      monthN: (n) => `Month ${n}`, dayOfMonth: (d, m) => `Day ${d} of month ${m}`, date: (d, m) => `${d} ${m}`,
+    },
+  };
+  const tx = () => TX[LANG()];
+  // Wert aus data/vademecum.js in der Buchsprache (en-Fassung, sonst deutsch)
+  const tv = (k) => (EN() && V().en && V().en[k] != null ? V().en[k] : V()[k]);
+  const chTitle = (c) => (EN() && V().en && (V().en.chapters || {})[c.id]) || c.title;
+  const chNote = (c) => (EN() && V().en && (V().en.chapterNotes || {})[c.id]) || c.note;
+  const schoolName = (x) => (EN() && x && x.en ? x.en.de : x.de);
+  // lokaler Vademecum-Inhalt ist ein Profiltext: nur in der Sprache des Profils
+  const sameLang = () => !window.PROFILE || !PROFILE.localLang || PROFILE.localLang === LANG();
+  const prof = () => PB().vademecum || {};
+  const voices = () => ({ ...(PB().primer || {}).voices, ...(prof().voices || {}) });
   // römische Zahl (U.ROMAN reicht nur bis X)
   const ROMAN = (n) => {
     let out = "";
@@ -22,7 +46,7 @@
     return out || String(n);
   };
 
-  const entryOf = (deity) => (deity && (V().local || {})[deity.id]) || null;
+  const entryOf = (deity) => (deity && sameLang() && (V().local || {})[deity.id]) || null;
 
   // ---------------------------------------------------------------------------
   // Hälften
@@ -39,7 +63,7 @@
       const k = pair ? pair[i] : null;
       return {
         key: own.key || (k ? k.toLowerCase() : "ab"[i]),
-        name: own.name || (k && V().pairNames[k]) || (V().marks || "AB")[i],
+        name: own.name || (k && tv("pairNames")[k]) || (V().marks || "AB")[i],
         mark: own.mark || (V().marks || "AB")[i],
         ownMark: !!own.mark,
         schools: (own.schools || []).map((s) => String(s).toLowerCase()),
@@ -135,7 +159,7 @@
         (s.head ? `<div class="vm-hymn-k">${e(s.head)}</div>` : "") +
         (s.use ? `<p class="vm-use">${richHTML(s.use, b, g)}</p>` : "") +
         verseHTML(s.html ? s.html.map((h) => (h === "" ? "" : { html: h })) : s.lines || [], b, g) +
-        (s.response ? `<p class="vm-response"><b>${e(s.responseLabel || "Gemeinde")}:</b> ${richHTML(s.response, b, g)}</p>` : "") +
+        (s.response ? `<p class="vm-response"><b>${e(s.responseLabel || tx().congregation)}:</b> ${richHTML(s.response, b, g)}</p>` : "") +
         parasHTML(s.text, b, g) + `</section>`;
     }
     return open + head + notesHTML(anchor, b) + epigraphHTML(s.epigraph, b, g) + asideHTML(s.aside, b, g) + parasHTML(s.text, b, g) + boxHTML(s.box, b, g) + `</section>`;
@@ -144,15 +168,18 @@
   // ---------------------------------------------------------------------------
   // Dünne Fassung aus den Gottheitsdaten
   // ---------------------------------------------------------------------------
-  const list = (xs) => (xs.length < 2 ? xs.join("") : xs.slice(0, -1).join(", ") + " und " + xs[xs.length - 1]);
+  const list = (xs) => (xs.length < 2 ? xs.join("") : xs.slice(0, -1).join(", ") + tx().and + xs[xs.length - 1]);
   function essenceFacts(d) {
     const P = window.PRAYER || {};
-    const areas = (d.areas || []).map((x) => (P.AREA || {})[String(x).toLowerCase()]).filter(Boolean);
-    const doms = (d.domains || []).map((x) => (P.DOMAIN || {})[x]).filter(Boolean);
+    // Zuständigkeiten und Domänen in der Buchsprache (prayer.js: AREA/DOMAIN bzw. AREA_EN/DOMAIN_EN)
+    const en = window.I18N && I18N.lang.book === "en";
+    const AREA = (en ? P.AREA_EN : P.AREA) || {}, DOMAIN = (en ? P.DOMAIN_EN : P.DOMAIN) || {};
+    const areas = (d.areas || []).map((x) => AREA[String(x).toLowerCase()]).filter(Boolean);
+    const doms = (d.domains || []).map((x) => DOMAIN[x]).filter(Boolean);
     return {
       name: d.name,
       title: (P.epithet && P.epithet(d)) || "",
-      align: V().align[d.align] || "",
+      align: tv("align")[d.align] || "",
       areas: list([...new Set(areas)]),
       domains: list([...new Set(doms)]),
       symbol: (P.symbolName && P.symbolName(d)) || "",
@@ -165,7 +192,7 @@
       const out = s.replace(/\{(\w+)\}/g, (_, k) => (f[k] ? f[k] : ((ok = false), "")));
       return ok ? out : null;
     };
-    return V().essence.map((s) => [].concat(s).map(fill).find(Boolean)).filter(Boolean);
+    return tv("essence").map((s) => [].concat(s).map(fill).find(Boolean)).filter(Boolean);
   }
 
   // ---------------------------------------------------------------------------
@@ -175,7 +202,7 @@
   // Datei (das Profil nennt dasselbe Fest oft anders). Ohne Tag: when beschreibt den Termin im Monat (steht am Ende).
   function feastsOf(loc, halfKey) {
     const own = ((loc && loc.feasts) || []).filter((f) => !f.half || f.half === halfKey);
-    const pf = (((window.PROFILE && PROFILE.devotion) || {}).feasts || []).filter((f) => !f.half || f.half === halfKey);
+    const pf = ((PB().devotion || {}).feasts || []).filter((f) => !f.half || f.half === halfKey);
     const seen = new Set();
     return [...own, ...pf]
       .filter((f) => {
@@ -185,15 +212,15 @@
       .sort((a, b) => a.m - b.m || (a.d || 99) - (b.d || 99));
   }
   function feastDate(f) {
-    const months = ((window.PROFILE && PROFILE.calendar) || {}).months || [];
-    const mo = months[f.m] || `${f.m + 1}. Monat`;
+    const months = (PB().calendar || {}).months || [];
+    const mo = months[f.m] || tx().monthN(f.m + 1);
     if (!f.d) return f.when ? `${mo}, ${f.when}` : mo;
-    return months[f.m] ? `${f.d}. ${months[f.m]}` : `${f.d}. Tag des ${f.m + 1}. Monats`;
+    return months[f.m] ? tx().date(f.d, months[f.m]) : tx().dayOfMonth(f.d, f.m + 1);
   }
   function feastsSection(feasts, b) {
     if (!feasts.length) return "";
     const rows = feasts.map((f) => `<div class="vm-feast"><b>${e(feastDate(f))}</b> <span class="vm-feast-n">${e(f.name)}</span>${f.text ? `<div class="vm-feast-t">${e(f.text).replace(/\n/g, "<br>")}</div>` : ""}</div>`).join("");
-    return `<section class="lesson splittable" data-lesson="feasts" data-anchor="${e(b.key)}/feasts"><div class="ls-head keep-next"><h4 class="ls-t">Festkalender</h4></div>${notesHTML(b.key + "/feasts", b)}${rows}</section>`;
+    return `<section class="lesson splittable" data-lesson="feasts" data-anchor="${e(b.key)}/feasts"><div class="ls-head keep-next"><h4 class="ls-t">${e(tx().feasts)}</h4></div>${notesHTML(b.key + "/feasts", b)}${rows}</section>`;
   }
 
   // ---------------------------------------------------------------------------
@@ -311,7 +338,7 @@
     const frames = (ch && ch.frames) || [];
     const lvlName = (n) => (n ? ROMAN(n) : "0");
     const made = picks.map((x) => {
-      const t = generateTexts(x.m, { name: (settings && settings.owner) || "" });
+      const t = generateTexts(x.m, { name: (window.PROFILE && PROFILE.bookValue ? PROFILE.bookValue(settings || {}, "owner") : settings && settings.owner) || "" });
       const lines = t.formula.lines.map((l, k) => hymnLine(l, `${deity ? deity.id : "-"}|hymn|${x.m.id}|${k}`));
       return { x, lines, school: x.m.spell.school, level: x.m.level };
     });
@@ -326,9 +353,9 @@
     const gen = (g, fr, i) => ({
       kind: "hymn",
       id: fr.id || "hymn-" + g.x.m.id,
-      title: fr.title || `Choral ${ROMAN(i + 1)}`,
-      head: `${g.x.m.schoolInfo.de} · ${lvlName(g.level)}`,
-      use: fr.use || V().hymnUse[g.school] || V().hymnUse.default,
+      title: fr.title || tx().hymn(ROMAN(i + 1)),
+      head: `${schoolName(g.x.m.schoolInfo)} · ${lvlName(g.level)}`,
+      use: fr.use || tv("hymnUse")[g.school] || tv("hymnUse").default,
       response: fr.response,
       text: fr.after,
       html: g.lines.map(lineHTML),
@@ -361,7 +388,7 @@
     const dual = halves.length === 2;
     const bind = settings.primerGutter === false ? "" : " bind";
     // Name des Bandes in der Oberfläche; auf dem Titelblatt ohne Gottheit (die steht darunter)
-    const title = (loc && loc.title) || `${V().title} · ${deity.name}`;
+    const title = (loc && loc.title) || `${tv("title")} · ${deity.name}`;
     const picks = pickHymns(deity, ctx.entries || [], halves, loc);
     const gl0 = (loc && loc.glosses) || {};
 
@@ -379,7 +406,7 @@
         let extra = "";
         if (c.id === "essence" && !secs.length) {
           const thin = essenceThin(deity);
-          if (dual) thin.push(`Dieses Buch hat zwei Hälften. Diese gilt ${h.name.replace(/^(Die|Der|Das) /, (m, a) => ({ Die: "der ", Der: "dem ", Das: "dem " })[a])}; wende es, um die andere zu lesen.`);
+          if (dual) thin.push(EN() && V().en && V().en.dualNote ? V().en.dualNote.replace("{half}", h.name) : `Dieses Buch hat zwei Hälften. Diese gilt ${h.name.replace(/^(Die|Der|Das) /, (m, a) => ({ Die: "der ", Der: "dem ", Das: "dem " })[a])}; wende es, um die andere zu lesen.`);
           if (thin.length) secs = [{ id: "essence", title: "", text: thin }];
         }
         if (c.id === "hymns") {
@@ -396,11 +423,11 @@
         if (c.id === "rites") extra = feastsSection(feastsOf(loc, dual ? h.key : null), b);
         if (!secs.length && !extra) continue;
         const roman = c.unnumbered ? "" : ROMAN(++n);
-        chapters.push({ c, roman, secs, extra, lc, title: (lc && lc.title) || c.title });
+        chapters.push({ c, roman, secs, extra, lc, title: (lc && lc.title) || chTitle(c) });
       }
       // Titelblatt und Verzeichnis
-      const tpTitle = h.title || (loc && loc.title) || V().title;
-      const sub = h.subtitle || (loc && loc.subtitle) || V().subtitle;
+      const tpTitle = h.title || (loc && loc.title) || tv("title");
+      const sub = h.subtitle || (loc && loc.subtitle) || tv("subtitle");
       const motto = h.motto || (loc && loc.motto);
       const temple = loc && loc.temple ? [loc.temple.name, loc.temple.place].filter(Boolean).join(" · ") : deity.name;
       const pages = [
@@ -411,19 +438,19 @@
         },
         {
           cls: "primer-page vm-page vm-toc-page flow" + bind,
-          running: "Verzeichnis",
-          html: `<h3>Verzeichnis</h3><div class="vm-toc">${chapters.map((x) => `<div class="vm-toc-row"><span class="no">${e(x.roman)}</span><span class="nm">${e(x.title)}</span><span class="vref" data-ref="${e(h.key)}/ch-${e(x.c.id)}">☐ 000</span></div>`).join("")}${dual ? `<div class="vm-toc-row"><span class="no"></span><span class="nm">${e((loc && loc.middle && loc.middle.title) || V().middleTitle)}</span><span class="vref" data-ref="${e(h.key)}/middle">☐ 000</span></div>` : ""}</div>`,
+          running: tx().toc,
+          html: `<h3>${e(tx().toc)}</h3><div class="vm-toc">${chapters.map((x) => `<div class="vm-toc-row"><span class="no">${e(x.roman)}</span><span class="nm">${e(x.title)}</span><span class="vref" data-ref="${e(h.key)}/ch-${e(x.c.id)}">☐ 000</span></div>`).join("")}${dual ? `<div class="vm-toc-row"><span class="no"></span><span class="nm">${e((loc && loc.middle && loc.middle.title) || tv("middleTitle"))}</span><span class="vref" data-ref="${e(h.key)}/middle">☐ 000</span></div>` : ""}</div>`,
         },
       ];
       parts.push({ id: "front", title: tpTitle, lessons: [], pages });
       for (const x of chapters) {
         const run = (x.roman ? x.roman + " · " : "") + x.title;
-        const head = `<div class="vm-ch keep-next" data-anchor="${e(h.key)}/ch-${e(x.c.id)}">${x.roman ? `<div class="ch-kicker">Kapitel ${e(x.roman)}</div>` : ""}<h3>${e(x.title)}</h3>${x.c.otherworldly ? `<p class="vm-ow">${e((x.lc && x.lc.note) || x.c.note || "")}</p>` : ""}</div>`;
+        const head = `<div class="vm-ch keep-next" data-anchor="${e(h.key)}/ch-${e(x.c.id)}">${x.roman ? `<div class="ch-kicker">${e(tx().chapter)} ${e(x.roman)}</div>` : ""}<h3>${e(x.title)}</h3>${x.c.otherworldly ? `<p class="vm-ow">${e((x.lc && x.lc.note) || chNote(x.c) || "")}</p>` : ""}</div>`;
         const html = head + epigraphHTML(x.lc && x.lc.epigraph, b, gl0) + x.secs.map((s) => sectionHTML(s, b, gl0)).join("") + x.extra;
         parts.push({
           id: x.c.id,
           title: run,
-          lessons: x.secs.filter((s) => s.title).map((s) => ({ id: s.id, title: s.title, label: "·" })).concat(x.extra ? [{ id: "feasts", title: "Festkalender", label: "·" }] : []),
+          lessons: x.secs.filter((s) => s.title).map((s) => ({ id: s.id, title: s.title, label: "·" })).concat(x.extra ? [{ id: "feasts", title: tx().feasts, label: "·" }] : []),
           pages: [{ cls: `primer-page vm-page flow part-${x.c.id}${bind}${bind ? " recto-start" : ""}${x.c.otherworldly ? " vm-otherworldly" : ""}`, running: run, html }],
         });
       }
@@ -437,7 +464,7 @@
     let middle = null;
     if (dual) {
       const m = (loc && loc.middle) || {};
-      const mt = m.title || V().middleTitle;
+      const mt = m.title || tv("middleTitle");
       const page = (part, b) => ({
         cls: "primer-page vm-page vm-middle" + bind,
         running: mt,

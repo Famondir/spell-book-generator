@@ -4,7 +4,18 @@
 // Fehlt ein Schlüssel, gilt die andere Sprache (und er wird in I18N.missing gezählt).
 // Im HTML: data-i18n="schlüssel" (Text), data-i18n-html="schlüssel" (HTML), data-i18n-attr="placeholder:schlüssel;title:…".
 (function () {
-  const browser = /^de/i.test(navigator.language || "de") ? "de" : "en";
+  // Vorgabe für neue Nutzer (ohne gespeicherten Zustand): ?lang=de|en in der Adresse, sonst die erste Deutsch- oder
+  // Englisch-Angabe unter den bevorzugten Sprachen des Browsers (folgt meist dem Betriebssystem), sonst Englisch
+  const urlLang = (() => {
+    try {
+      return new URLSearchParams(location.search).get("lang");
+    } catch (_) {
+      return null;
+    }
+  })();
+  const prefs = (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ""]);
+  const pref = prefs.map((l) => String(l).slice(0, 2).toLowerCase()).find((l) => l === "de" || l === "en");
+  const browser = /^(de|en)$/.test(urlLang || "") ? urlLang : pref || "en";
   const lang = { ui: "de", book: "de", rules: "de", units: "m" };
   const missing = new Set();
   // Lange Prosa je Sprache (Lehrheft, Alltagszauber, Gottheitstexte …): fehlt die Fassung der Buchsprache,

@@ -36,7 +36,7 @@ Die App läuft ohne Build über `file://`. Daten kommen per `<script>`, Zustand 
 
 ### 1. Drei Sprachebenen als Einstellungen
 Die Einstellungen heißen `uiLang`, `bookLang` und `rulesLang` (je `de`/`en`), dazu `units` (`ft`/`m`).
-- Ab Werk gilt `navigator.language`: `de*` ergibt Deutsch, sonst Englisch.
+- Ab Werk gilt `?lang=de|en` aus der Adresse, sonst die erste Deutsch- oder Englisch-Angabe in `navigator.languages` (Reihenfolge der Browser- bzw. Systemeinstellung), sonst Englisch.
 - `rulesLang: de` wirkt voll erst mit deutschen Regeldaten. Ohne sie zeigt Deutsch die übersetzten Begriffe und den englischen Regeltext, mit einem Hinweis.
 - `units` folgt ab Werk der Regelsprache, also Meter bei Deutsch.
 

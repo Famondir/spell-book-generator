@@ -64,10 +64,14 @@
     return o[1] === "" ? onset(lang, w.slice(o[0].length)) : o[1];
   }
   const readLang = () => (window.I18N && I18N.lang.book) || "de";
-  // Anzeigename: Profil (Name im Spiel) vor irdischer Bezeichnung
+  // Anzeigename: Profil (Name im Spiel) vor irdischer Bezeichnung. Ein einfacher Name im Profil gilt nur in dessen
+  // Sprache (Profiltexte sind einsprachig); in der anderen Sprache steht der Name der Tabelle { de, en } oder des Lexikons.
   function name(id, read = readLang()) {
     const own = (PR.formulaLangNames || {})[id];
-    if (own) return typeof own === "string" ? own : own[read] || own.de;
+    if (own) {
+      if (typeof own === "string") { if (!PR.localLang || read === PR.localLang) return own; }
+      else if (own[read] || !PR.localLang || read === PR.localLang) return own[read] || own.de;
+    }
     const l = LANGS[id];
     return l ? l.name[read] || l.name.de : id;
   }
