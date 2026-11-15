@@ -597,7 +597,7 @@ export const CASES = [
     run: async (t) => {
       await t.click(t.ui.tab("theory"));
       await t.settled();
-      await t.expect("Auswahl sichtbar: Vom Gebet / Vademecum", `[...document.querySelectorAll("#lehre-switch button")].map((b) => b.textContent)`, ["Vom Gebet", "Vademecum"]);
+      await t.expect("Auswahl sichtbar: Vom Gebet / Vademecum", `[...document.querySelectorAll("#lehre-switch button")].map((b) => b.textContent).join("|") === [I18N.t("lehre.mainDivine"), I18N.t("lehre.vademecum")].join("|")`, true);
       await t.expect("zuerst Vom Gebet", `!document.querySelector("#theory-view").hidden`, true);
       await t.click('#lehre-switch [data-lehre="vademecum"]');
       await t.settled();
@@ -625,7 +625,7 @@ export const CASES = [
     run: async (t) => {
       await t.click(t.ui.tab("theory"));
       await t.settled();
-      await t.expect("Magier mit Gottheit: Auswahl Lehrheft / Vademecum", `[...document.querySelectorAll("#lehre-switch button")].map((b) => b.textContent)`, ["Lehrheft", "Vademecum"]);
+      await t.expect("Magier mit Gottheit: Auswahl Lehrheft / Vademecum", `[...document.querySelectorAll("#lehre-switch button")].map((b) => b.textContent).join("|") === [I18N.t("lehre.main"), I18N.t("lehre.vademecum")].join("|")`, true);
       await t.click('#lehre-switch [data-lehre="vademecum"]');
       await t.settled();
       await t.expect("Wendebuch: Wenden sichtbar", `!document.querySelector("#btn-vm-turn").hidden`, true);
@@ -803,7 +803,7 @@ export const CASES = [
       await t.settled();
       await t.expect("ohne Stufe: Notiz verborgen", `document.querySelector("${u.primerPages}").textContent.includes("NOTIZ-STUFE4")`, false);
       await t.click(u.settingsBtn);
-      await t.expect("Meister: Platzhalter ohne Profilname", `document.querySelector('${u.settings} [name="primerMaster"]').placeholder`, "der Meister");
+      await t.expect("Meister: Platzhalter ohne Profilname", `document.querySelector('${u.settings} [name="primerMaster"]').placeholder === I18N.t("set.book.masterDefault")`, true);
       const set = (k, v, sec) => t.eval(`(() => { document.querySelector('${u.settings} [data-sec="${sec}"]').click(); const el = document.querySelector('${u.settings} [name="${k}"]'); el.value = ${JSON.stringify(v)}; el.dispatchEvent(new Event("input", { bubbles: true })); })()`);
       await set("charLevel", "4", "charakter");
       await set("primerMaster", "Meisterin Testa", "buch");
@@ -1068,13 +1068,13 @@ export const CASES = [
       // Detailansicht: Feuerball (Grad 3) in beherrschter Sprache → 10 + 3
       await t.eval(`(() => { const q = document.querySelector("#q"); q.value = "fireball"; q.dispatchEvent(new Event("input", { bubbles: true })); })()`);
       await t.click('#list [data-id="fireball"] .nm');
-      await t.expect("SG in der Detailansicht", `document.querySelector("#detail .formula-fact").textContent`, /Akkadisch.*Station A.*SG 13/);
+      await t.expect("SG in der Detailansicht", `(() => { const x = document.querySelector("#detail .formula-fact").textContent; return x.includes(FORMULA.name("akkadian", I18N.lang.ui)) && /Station A/.test(x) && /(SG|DC) 13/.test(x); })()`, true);
       // Heute vorbereitet: Zauber eintragen, SG steht in der Zeile
       await t.click(u.tab("prepare"));
       await t.eval(`(() => { const el = document.querySelector('#prep tr[data-g="3"] input[data-f="n"]'); el.value = "1"; el.dispatchEvent(new Event("input", { bubbles: true })); })()`);
       await t.click('#prep .p-fill[data-g="3"]');
       await t.click('#prep-pick li[data-id="fireball"]');
-      await t.expect("SG in Heute vorbereitet", `document.querySelector("#prep .decipher")?.textContent`, /SG 13 \(Akkadisch\)/);
+      await t.expect("SG in Heute vorbereitet", `(document.querySelector("#prep .decipher")?.textContent || "") === I18N.t("prep.decipher", { dc: 13, lang: FORMULA.name("akkadian", I18N.lang.ui) })`, true);
     },
   },
 

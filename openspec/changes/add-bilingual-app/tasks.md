@@ -9,7 +9,7 @@
 
 - [x] 2.1 `index.html` und `app.js` (Reiter, Liste, Detailansicht, Einstellungen, Druck, Lizenzen, Meldungen) auf Schlüssel umstellen
 - [x] 2.2 `prepare.js`, `stats.js`, `import.js`, `chars.js`, `viewer.js` (Blätterleiste) auf Schlüssel umstellen
-- [ ] 2.3 Englische Tabelle vollständig; Bedienungstests laufen mit `uiLang = en` grün (Selektoren unabhängig vom Text)
+- [x] 2.3 Englische Tabelle vollständig; Bedienungstests laufen mit `uiLang = en` grün (Selektoren unabhängig vom Text) (`tools/test-browser.mjs --ui-lang en`: 86/86; vier Erwartungen auf Sprachtabellen umgestellt; Fund: Sprachname beim Entziffern in „Heute vorbereitet“ folgte der Buch- statt der Oberflächensprache)
 
 ## 3. Regelbegriffe (Stufe 2)
 

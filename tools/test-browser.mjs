@@ -5,6 +5,7 @@
 //   node tools/test-browser.mjs                 alle Fälle
 //   node tools/test-browser.mjs --only lehrheft nur Fälle, deren Name „lehrheft“ enthält (auch: satz, ui, node)
 //   node tools/test-browser.mjs --update        Sollwerte der gelaufenen Satz-Fälle übernehmen
+//   --ui-lang en     Oberfläche in allen Fällen englisch (Buch und Regeln wie eingestellt)
 //   --with-profile   data/profile.local.js laden (eigene Sollwerte in test-baseline.local.json; Fälle mit noProfile entfallen)
 //   --json           Ergebnis maschinenlesbar     --pdf <ordner>   je Satz-Fall ein PDF ablegen
 //   --verbose        Konsolenausgaben der App zeigen
@@ -25,6 +26,8 @@ const WITH_PROFILE = opt("--with-profile");
 const JSON_OUT = opt("--json");
 const PDF_DIR = val("--pdf");
 const VERBOSE = opt("--verbose");
+// Oberflächensprache für alle Fälle erzwingen (Buch- und Regelsprache bleiben): prüft, dass Bedienungstests nicht am Text hängen
+const UI_LANG = val("--ui-lang");
 const BASELINE = join(ROOT, "tools", WITH_PROFILE ? "test-baseline.local.json" : "test-baseline.json");
 const DEFAULT_LIMIT = 10000;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -105,6 +108,8 @@ function initSource(cls, deity = cls === "wizard" ? "" : "iomedae") {
   return `(() => {
     // Browsersprache: Deutsch, damit die Sollwerte nicht vom Rechner abhängen
     Object.defineProperty(Navigator.prototype, "language", { get: () => "de-DE", configurable: true });
+    Object.defineProperty(Navigator.prototype, "languages", { get: () => ["de-DE", "de"], configurable: true });
+    ${UI_LANG ? `window.TEST_UI_LANG = ${JSON.stringify(UI_LANG)};` : ""}
     ${WITH_PROFILE ? "" : `for (const k of ["PROFILE_LOCAL", "PROFILES_LOCAL"]) Object.defineProperty(window, k, { get: () => undefined, set: () => {}, configurable: false });
     // lokale Regeldaten: gesperrt, ein Testfall darf eigene setzen (Object.defineProperty)
     for (const k of ["RULES_DE", "DOMAINS_DE"]) Object.defineProperty(window, k, { get: () => undefined, set: () => {}, configurable: true });

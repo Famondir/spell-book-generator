@@ -261,7 +261,8 @@ window.PREP = (function () {
   // Hausregel Entziffern: Sprachenkunde-SG der Formel (nur wenn das Profil die Hausregel einschaltet)
   function decipherNote(m) {
     const d = window.FORMULA && FORMULA.decipher(m, ctx.knownLangs && ctx.knownLangs());
-    return d ? ` · <span class="decipher">${e(t("prep.decipher", { dc: d.dc, lang: d.name }))}</span>` : "";
+    // Sprachname in der Oberflächensprache (FORMULA.decipher liefert ihn in der Buchsprache)
+    return d ? ` · <span class="decipher">${e(t("prep.decipher", { dc: d.dc, lang: FORMULA.name(d.lang, I18N.lang.ui) }))}</span>` : "";
   }
 
   function gradeHTML(g) {

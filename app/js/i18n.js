@@ -34,7 +34,8 @@
     return fmt(s, vars);
   }
   function configure(st = {}) {
-    lang.ui = st.uiLang || "de";
+    // TEST_UI_LANG: nur der Testlauf (tools/test-browser.mjs --ui-lang) erzwingt die Oberflächensprache
+    lang.ui = window.TEST_UI_LANG || st.uiLang || "de";
     lang.book = st.bookLang || "de";
     lang.rules = st.rulesLang || "de";
     lang.units = st.units || (lang.rules === "de" ? "m" : "ft");

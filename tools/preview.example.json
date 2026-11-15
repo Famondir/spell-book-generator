@@ -1,0 +1,18 @@
+{
+  "name": "example",
+  "book": ["Light", "Detect Magic", "Prestidigitation", "Magic Missile", "Shield", "Mage Armor", "Protection from Evil", "Glitterdust", "Fireball", "Haste", "Dimension Door", "Pfannkuchenwende"],
+  "char": { "cls": "wizard", "deity": "nethys", "profile": null },
+  "settings": {},
+  "langs": ["en"],
+  "shots": [
+    { "name": "browse", "hash": "#browse/fireball" },
+    { "name": "circle", "hash": "#browse/fireball", "click": "#detail svg.circle", "close": true },
+    { "name": "book", "hash": "#book/fireball", "wait": 3000 },
+    { "name": "prepare", "hash": "#prepare" },
+    { "name": "primer", "hash": "#theory/primer/II/l13", "wait": 4000 },
+    { "name": "settings", "hash": "#browse", "click": "#btn-settings", "close": true }
+  ],
+  "parts": [
+    { "job": "book", "pick": ["title", "spell:fireball"] }
+  ]
+}
